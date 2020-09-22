@@ -10,6 +10,7 @@ Description: This package employs the Tucker tensor decomposition method
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
+biocViews:
 Imports: 
     rTensor,
     Matrix,
