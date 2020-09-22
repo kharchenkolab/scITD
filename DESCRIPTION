@@ -1,0 +1,42 @@
+Package: scITD
+Type: Package
+Title: Single-Cell Interpretable Tucker Decomposition
+Version: 0.1.0
+Author: Jonathan Mitchel
+Maintainer: Jonathan Mitchel <mitchel@mit.edu>
+Description: This package employs the Tucker tensor decomposition method
+    to extract multi cell type gene expression patterns that are variably
+    expressed across donors/individuals in a single-cell dataset of interest.
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+Imports: 
+    rTensor,
+    Matrix,
+    ica,
+    venn,
+    msigdbr,
+    fgsea,
+    circlize,
+    reshape2,
+    ComplexHeatmap,
+    Seurat,
+    Rcpp,
+    parallel,
+    ggpubr,
+    ggplot2,
+    mgcv,
+    methods,
+    stats,
+    utils,
+    grid,
+    Rmisc,
+    RcppArmadillo,
+    RcppProgress
+RoxygenNote: 7.0.2
+LinkingTo: Rcpp, RcppArmadillo, RcppProgress
+NeedsCompilation: yes
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
