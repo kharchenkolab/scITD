@@ -74,7 +74,7 @@ set_vargenes_container <- function(container,vargenes) {
   vargenes <- unique(vargenes)
 
   # need to make sure vargenes union genes in all cell types
-  for (ct in container$ctypes) {
+  for (ct in container$experiment_params$ctypes_use) {
     scMinimal <- container$scMinimal_ctype[[ct]]
     genes_in_ctype <- rownames(scMinimal$data_sparse)
     vargenes <- intersect(vargenes,genes_in_ctype)
