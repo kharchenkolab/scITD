@@ -30,12 +30,8 @@ determine_ranks_tucker <- function(container, max_ranks_test, method='svd', num_
   # extract needed inputs from experiment parameters
   ncores <- container$experiment_params$ncores
 
-  if (ncores > num_iter) {
-    ncores <- 1
-  }
-
   # generate reconstruction errors under the null condition
-  null_res <- mclapply(1:num_iter, function(x) {
+  null_res <- lapply(1:num_iter, function(x) {
 
     # first get donor means shuffled
     container <- collapse_by_donors(container, shuffle=T)
@@ -48,10 +44,10 @@ determine_ranks_tucker <- function(container, max_ranks_test, method='svd', num_
     if (method == 'svd') {
       rec_errors <- get_reconstruct_errors_svd(tmp_tnsr,max_ranks_test)
     } else if (method == 'tucker') {
-      rec_errors <- get_reconstruct_errors_tucker(tmp_tnsr,max_ranks_test)
+      rec_errors <- get_reconstruct_errors_tucker(tmp_tnsr,max_ranks_test,ncores)
     }
     return(rec_errors)
-  }, mc.cores = ncores)
+  })
 
   # get actual reconstruction errors
   container <- collapse_by_donors(container, shuffle=F)
@@ -64,7 +60,7 @@ determine_ranks_tucker <- function(container, max_ranks_test, method='svd', num_
   if (method == 'svd') {
     rec_errors_real <- get_reconstruct_errors_svd(tmp_tnsr,max_ranks_test)
   } else if (method == 'tucker') {
-    rec_errors_real <- get_reconstruct_errors_tucker(tmp_tnsr,max_ranks_test)
+    rec_errors_real <- get_reconstruct_errors_tucker(tmp_tnsr,max_ranks_test,ncores)
     print(rec_errors_real)
   }
 
@@ -130,19 +126,20 @@ get_reconstruct_errors_svd <- function(tnsr, max_ranks_test) {
 #' donors, genes, and cell types in that order
 #' @param max_ranks_test numeric Vector of length 3 with maximum number of
 #' ranks to test for donor, gene, and cell type modes in that order
+#' @param ncores numeric The number of cores to use
 #'
 #' @return the reconstruction errors
 #' @export
-get_reconstruct_errors_tucker <- function(tnsr,max_ranks_test) {
+get_reconstruct_errors_tucker <- function(tnsr,max_ranks_test,ncores) {
   mycombos <- get_factor_combos(max_ranks_test)
 
-  # calculate percent of norm explained with each set of ranks
-  for (i in 1:nrow(mycombos)) {
+  fits <- mclapply(1:nrow(mycombos),function(i) {
     invisible(utils::capture.output(
       tucker_decomp <- rTensor::tucker(rTensor::as.tensor(tnsr), ranks=unlist(mycombos[i,1:3]))
     ))
-    mycombos[i,"fit"] <- tucker_decomp$norm_percent
-  }
+    return(tucker_decomp$norm_percent)
+  },mc.cores = ncores)
+  mycombos$fit <- unlist(fits)
 
   # keep only max fit for a given totalrank
   totalrank_vals <- unique(mycombos$totalrank)

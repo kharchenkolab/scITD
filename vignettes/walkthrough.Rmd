@@ -62,21 +62,21 @@ pbmc_container <- get_ctype_vargenes(pbmc_container, method="empir", thresh=0.01
 When constructing the tensor for Tucker decomposition, we simply stack the collapsed gene by donor matrices (for each cell type) to form the tensor. However, we can enhance Tucker's ability to extract biological signal by properly scaling expression values in the tensor. For a given collapsed matrix, we recommend applying a variance scaling procedure whereby the variance for each gene across donors is first scaled to unit variance. Then, we multiple the unit scaled values by the gene's normalized variance, where normalized variance is the variance after taking into account the gene-variance trend. We can enhance the signal extraction by applying an exponent to the normalized variance before multiplying. To get an idea for what value of the exponent to use we run the following function and plot its results.
 
 ```{r, fig.show = "hold", fig.width = 10, fig.height = 4}
-pbmc_container <- optimize_var_scale_power(pbmc_container, max_ranks_test=c(7,15,5))
+pbmc_container <- optimize_var_scale_power(pbmc_container, max_ranks_test=c(6,10,3))
 pbmc_container$plots$var_scale_plot
 ```
 
 This figure shows us the values of the var_scale_power parameter that yield a Tucker decomposition with a factor highly associated with donor sex metadata. Since we know that a handful of genes are highly associated with donor sex, this should be one of the extracted results. Therefore, we can see that an exponent of ~1.25 reliably extracts this factor when we do Tucker decomposition to at least 5 donor factors and at least 6 gene factors. Therefore, we should go ahead and set this scaling parameter as follows.
 
 ```{r}
-pbmc_container <- set_experiment_params(pbmc_container, var_scale_power = 1)
+pbmc_container <- set_experiment_params(pbmc_container, var_scale_power = 1.25)
 ```
 
 To run Tucker, we have to specify the number of factors (ranks) to get out for each mode of the tensor (donors, genes, ctypes). This is a fairly important specification as it will determine the number of multi-cell type processes we get and their quality. To get an idea for the proper number of ranks we implemented a method that computes svd for the tensor unfolded along each mode separately. The reconstruction errors from the svd (to varying numbers of ranks) are compared to reconstruction errors from a tensor generated on shuffled cell to donor linkages. This can allow us to see how reconstruction error changes when the signal is purely noise.
 
 ```{r, fig.show = "hold", fig.width = 8, fig.height = 8}
-pbmc_container <- determine_ranks_tucker(pbmc_container, max_ranks_test=c(7,15,5),
-                                 method='svd', num_iter=10)
+pbmc_container <- determine_ranks_tucker(pbmc_container, max_ranks_test=c(6,10,3),
+                                 method='tucker', num_iter=20)
 pbmc_container$plots$rank_determination_plot
 ```
 
