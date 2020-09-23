@@ -31,7 +31,7 @@ You can install scITD with:
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("j-mitchel/scITD")
+devtools::install_github("kharchenkolab/scITD")
 ```
 
 ## Walkthrough
