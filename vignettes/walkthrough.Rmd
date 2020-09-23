@@ -23,7 +23,14 @@ library(scITD)
 Load a dataset to use. Here, we're going to analyze PBMC's from 45 donors already stored in a Seurat object. The object must have metadata columns including "donors", "sex", and "ctypes". The raw data can be found here: <https://genenetwork.nl/scrna-seq/>
 
 ```{r}
-pbmc <- readRDS(file.path(find.package('scITD'),'data','PBMC_vanderwijst_clean.rds'))
+# load raw counts matrix
+load(file.path(find.package('scITD'),'data','pbmc_sub_counts.RData'))
+
+# load the normalized, log-transformed counts matrix
+load(file.path(find.package('scITD'),'data','pbmc_sub_transformed.RData'))
+
+# load the metadata
+load(file.path(find.package('scITD'),'data','pbmc_sub_meta.RData'))
 ```
 
 Sometimes, as in this dataset, the genes are labeled with identifiers other than the official gene symbols. If this is the case, we need to provide a dataframe to convert gene identifiers to gene symbols because much of this package's functionality relies on having gene symbols.
@@ -37,10 +44,9 @@ feature.names = read.delim(file.path(find.package('scITD'),'data','genes.tsv'),
 Next, we need to set up a project container that will hold all of our raw data as well as results. The scMinimal object is a sub-container that holds gene expression counts and metadata. The container object holds sub-containers and results. When instantiating a new project container, it is necessary to specify the experiment parameters ctypes_use, scale_var, rotate_modes, ncores, and rand_seed. The gn_convert parameter contains the above dataframe with gene name conversions. The ctypes_use parameter should contain the names of the cell types to use in all of the analysis. The scale_var and rotate_modes parameters will be explained below.
 
 ```{r}
-pbmc_scMinimal <- seurat_to_scMinimal(pbmc)
+pbmc_scMinimal <- instantiate_scMinimal(pbmc_sub_transformed, pbmc_sub_counts, pbmc_sub_meta)
 pbmc_container <- make_new_container(pbmc_scMinimal,
-                                     ctypes_use = c("CD4+ T", "cMonocyte", "B",
-                                                  "CD8+ T", "CD56(dim) NK"),
+                                     ctypes_use = c("CD4+ T", "cMonocyte", "CD56(dim) NK"),
                                      gn_convert = feature.names,
                                      scale_var = T,
                                      rotate_modes = 'donors',
