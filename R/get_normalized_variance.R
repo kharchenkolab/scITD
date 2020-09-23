@@ -13,9 +13,11 @@
 #' @export
 get_normalized_variance <- function(scMinimal, use_counts=F) {
   if (use_counts) {
-    dge_sparse <- Matrix::t(scMinimal$count_data_sparse)
+    dge_sparse <- methods::as(scMinimal$count_data_sparse,'sparseMatrix')
+    dge_sparse <- Matrix::t(dge_sparse)
   } else {
-    dge_sparse <- Matrix::t(scMinimal$data_sparse)
+    dge_sparse <- methods::as(scMinimal$data_sparse,'sparseMatrix')
+    dge_sparse <- Matrix::t(dge_sparse)
   }
 
   donor_meta <- as.factor(scMinimal$metadata$donors)

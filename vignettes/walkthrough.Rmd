@@ -20,17 +20,20 @@ Load the package.
 library(scITD)
 ```
 
-Load a dataset to use. Here, we're going to analyze PBMC's from 45 donors already stored in a Seurat object. The object must have metadata columns including "donors", "sex", and "ctypes". The raw data can be found here: <https://genenetwork.nl/scrna-seq/>
+Load a dataset to use. Here, we're going to analyze a subsetted dataset of PBMC's from 25 donors. We should have on hand the UMI count matrix, normalized log-transformed count matrix, and metadata corresponding to the cells. The metadata columns should include "donors", "sex", and "ctypes" as columns but may include others as well. The raw data used in this example can be found here: <https://genenetwork.nl/scrna-seq/>
 
 ```{r}
 # load raw counts matrix
-load(file.path(find.package('scITD'),'data','pbmc_sub_counts.RData'))
+# load(file.path(find.package('scITD'),'data','pbmc_sub_counts.RData'))
+invisible(pbmc_sub_counts)
 
 # load the normalized, log-transformed counts matrix
-load(file.path(find.package('scITD'),'data','pbmc_sub_transformed.RData'))
+# load(file.path(find.package('scITD'),'data','pbmc_sub_transformed.RData'))
+invisible(pbmc_sub_transformed)
 
 # load the metadata
-load(file.path(find.package('scITD'),'data','pbmc_sub_meta.RData'))
+# load(file.path(find.package('scITD'),'data','pbmc_sub_meta.RData'))
+invisible(pbmc_sub_meta)
 ```
 
 Sometimes, as in this dataset, the genes are labeled with identifiers other than the official gene symbols. If this is the case, we need to provide a dataframe to convert gene identifiers to gene symbols because much of this package's functionality relies on having gene symbols.
@@ -61,7 +64,7 @@ pbmc_container <- get_ctype_vargenes(pbmc_container, method="empir", thresh=0.01
 
 When constructing the tensor for Tucker decomposition, we simply stack the collapsed gene by donor matrices (for each cell type) to form the tensor. However, we can enhance Tucker's ability to extract biological signal by properly scaling expression values in the tensor. For a given collapsed matrix, we recommend applying a variance scaling procedure whereby the variance for each gene across donors is first scaled to unit variance. Then, we multiple the unit scaled values by the gene's normalized variance, where normalized variance is the variance after taking into account the gene-variance trend. We can enhance the signal extraction by applying an exponent to the normalized variance before multiplying. To get an idea for what value of the exponent to use we run the following function and plot its results.
 
-```{r, fig.show = "hold", fig.width = 10, fig.height = 4}
+```{r, fig.show = "hold", fig.width = 8.5, fig.height = 3.5}
 pbmc_container <- optimize_var_scale_power(pbmc_container, max_ranks_test=c(6,10,3))
 pbmc_container$plots$var_scale_plot
 ```
@@ -72,15 +75,15 @@ This figure shows us the values of the var_scale_power parameter that yield a Tu
 pbmc_container <- set_experiment_params(pbmc_container, var_scale_power = 1.25)
 ```
 
-To run Tucker, we have to specify the number of factors (ranks) to get out for each mode of the tensor (donors, genes, ctypes). This is a fairly important specification as it will determine the number of multi-cell type processes we get and their quality. To get an idea for the proper number of ranks we implemented a method that computes svd for the tensor unfolded along each mode separately. The reconstruction errors from the svd (to varying numbers of ranks) are compared to reconstruction errors from a tensor generated on shuffled cell to donor linkages. This can allow us to see how reconstruction error changes when the signal is purely noise.
+To run Tucker, we have to specify the number of factors (ranks) to get out for each mode of the tensor (donors, genes, ctypes). This is a fairly important specification as it will determine the number of multi-cell type processes we get and their quality. To get an idea for the proper number of ranks we implemented a method that computes Tucker to varying rank combinations and compares the reconstruction errors to those of the same rank decompositions done on shuffled tensors. This can allow us to see at what point, additional ranks do not provide more signal over a noise signal.
 
-```{r, fig.show = "hold", fig.width = 8, fig.height = 8}
+```{r, fig.show = "hold", fig.width = 8.5, fig.height = 5}
 pbmc_container <- determine_ranks_tucker(pbmc_container, max_ranks_test=c(6,10,3),
                                  method='tucker', num_iter=5)
 pbmc_container$plots$rank_determination_plot
 ```
 
-From these plots we can see that the proper number of donor ranks is somewhere around 5 and the proper number of gene ranks is around 7 or 8 (donor mode is mode 1 and gene mode is mode 2). The number of ctype ranks should just be set at the maximum (5 in this case, as there are only 5 cell types). Therefore we will run Tucker with ranks set to c(5,8,5).
+From these plots we can see that the proper number of total ranks is around 11. Looking at the table printed out above the plot, we can see that a total ranks of 11 corresponds to 3 donor factors, 5 gene factors, and 3 cell type factors. Therefore we will run Tucker with ranks set to c(3,5,3).
 
 We are finally ready to run Tucker and analyze the interesting biological variation present in our dataset!
 To run the decomposition simply run the following line.
@@ -101,7 +104,7 @@ When plotting the donor sex metadata next to the donor scores matrix we can imme
 
 Now it's time to look at our extracted factor loadings (multi-cell type processes).
 
-```{r, fig.show = "hold", fig.width = 10, fig.height = 6}
+```{r, fig.show = "hold", fig.width = 8, fig.height = 5}
 pbmc_container <- get_all_lds_factor_plots(pbmc_container)
 render_all_lds_plots(pbmc_container$plots$all_lds_plots)
 ```
@@ -118,7 +121,7 @@ pbmc_container <- run_jackstraw(pbmc_container, n_fibers=200, n_iter=1000)
 Let's now look at the loadings plot for the sex-linked factor restricted to just the significant genes.
 
 ```{r, fig.show = "hold", fig.width = 6, fig.height = 6}
-pbmc_container <- plot_loadings_annot(pbmc_container, factor_select=1,
+pbmc_container <- plot_loadings_annot(pbmc_container, factor_select=3,
                                         use_sig_only=T, annot='sig_genes',
                                         sig_thresh=0.05, display_genes=T)
 pbmc_container$plots$single_lds_plot
@@ -127,7 +130,7 @@ pbmc_container$plots$single_lds_plot
 We can see that the method identified several X-linked and Y-linked genes. Now let's look at the loadings from a more biologically interesting factor.
 
 ```{r, fig.show = "hold", fig.width = 6, fig.height = 6}
-pbmc_container <- plot_loadings_annot(pbmc_container, factor_select=3,
+pbmc_container <- plot_loadings_annot(pbmc_container, factor_select=1,
                                         use_sig_only=T, annot='sig_genes',
                                         sig_thresh=0.05, display_genes=F)
 pbmc_container$plots$single_lds_plot
@@ -138,7 +141,7 @@ We can see that within this process there appears to be similar genes involved i
 To see what biological pathways are enriched in the highly loading cMonocyte genes, we can apply gsea as follows.
 
 ```{r}
-gsea_res <- run_fgsea(pbmc_container, factor_select=3,
+gsea_res <- run_fgsea(pbmc_container, factor_select=1,
                       "cMonocyte", db_use=c("GO","Reactome"),
                       num_iter=10000)
 ```
@@ -146,7 +149,7 @@ gsea_res <- run_fgsea(pbmc_container, factor_select=3,
 Likewise we can see what pathways are enriched in the highly loading genes for CD4+ T cells in this factor.
 
 ```{r}
-gsea_res <- run_fgsea(pbmc_container, factor_select=3,
+gsea_res <- run_fgsea(pbmc_container, factor_select=1,
                       "CD4+ T", db_use=c("GO","Reactome"),
                       num_iter=10000)
 ```
@@ -164,7 +167,7 @@ gene_sets <- c("GO_RESPONSE_TO_TYPE_I_INTERFERON",
                "GO_RNA_CATABOLIC_PROCESS")
 
 # highlight genes in pathways - limit heatmap to significant genes only
-pbmc_container <- plot_loadings_annot(pbmc_container, factor_select=3,
+pbmc_container <- plot_loadings_annot(pbmc_container, factor_select=1,
                                       use_sig_only=T, annot='pathways',
                                       pathways=gene_sets, sig_thresh=0.05,
                                       display_genes=F)

@@ -13,8 +13,8 @@
 #' @export
 instantiate_scMinimal <- function(data_sparse,count_data,meta_data) {
   scMinimal <- new.env()
-  scMinimal$data_sparse <- data_sparse
-  scMinimal$count_data_sparse <- count_data
+  scMinimal$data_sparse <- as.matrix(data_sparse)
+  scMinimal$count_data_sparse <- as.matrix(count_data)
   scMinimal$data_residuals <- NULL
   scMinimal$data_means <- NULL
   scMinimal$metadata <- meta_data
