@@ -76,7 +76,7 @@ To run Tucker, we have to specify the number of factors (ranks) to get out for e
 
 ```{r, fig.show = "hold", fig.width = 8, fig.height = 8}
 pbmc_container <- determine_ranks_tucker(pbmc_container, max_ranks_test=c(6,10,3),
-                                 method='tucker', num_iter=20)
+                                 method='tucker', num_iter=5)
 pbmc_container$plots$rank_determination_plot
 ```
 
@@ -86,7 +86,7 @@ We are finally ready to run Tucker and analyze the interesting biological variat
 To run the decomposition simply run the following line.
 
 ```{r}
-pbmc_container <- run_tucker_ica(pbmc_container, ranks=c(5,8,5), shuffle=F)
+pbmc_container <- run_tucker_ica(pbmc_container, ranks=c(3,5,3), shuffle=F)
 ```
 
 Next, we will plot the donor scores matrix that tells us the amount of each factor (aka multi-cell type process) present in each donor.

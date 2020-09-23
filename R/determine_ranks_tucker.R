@@ -346,8 +346,8 @@ plot_rec_errors_bar_svd <- function(real,shuffled,mode_to_show) {
   plot_res$num_ranks <- as.numeric(as.character(plot_res$num_ranks))
 
   # calculate summary stats
-  tgc <- Rmisc::summarySE(plot_res, measurevar="error_diff",
-                   groupvars=c("num_ranks","run_type"))
+  suppressWarnings(tgc <- Rmisc::summarySE(plot_res, measurevar="error_diff",
+                                           groupvars=c("num_ranks","run_type")))
 
   p <- ggplot(tgc, aes(x=num_ranks, y=error_diff, fill=run_type)) +
     geom_bar(stat="identity", color="black", position=position_dodge()) +
@@ -443,8 +443,8 @@ plot_rec_errors_bar_tucker <- function(real,shuffled) {
   plot_res$error_diff <- plot_res$error_diff / 100
 
   # calculate summary stats
-  tgc <- Rmisc::summarySE(plot_res, measurevar="error_diff",
-                   groupvars=c("total_ranks","run_type"))
+  suppressWarnings(tgc <- Rmisc::summarySE(plot_res, measurevar="error_diff",
+                                           groupvars=c("total_ranks","run_type")))
 
   p <- ggplot(tgc, aes(x=total_ranks, y=error_diff, fill=run_type)) +
     geom_bar(stat="identity", color="black", position=position_dodge()) +
