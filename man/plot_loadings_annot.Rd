@@ -11,7 +11,8 @@ plot_loadings_annot(
   annot = "none",
   pathways = NULL,
   sig_thresh = 0.05,
-  display_genes = F
+  display_genes = F,
+  show_xlab = T
 )
 }
 \arguments{
@@ -37,6 +38,8 @@ TRUE the threshold is used as a cutoff for genes to include. If annot is "sig_ge
 this value is used in the gene significance colormap as a minimum threshold. (default=0.05)}
 
 \item{display_genes}{logical If TRUE, displays the names of gene names (default=FALSE)}
+
+\item{show_xlab}{logical If TRUE, displays the xlabel 'genes' (default=FALSE)}
 }
 \value{
 container with the plot put in container$plots$single_lds_plot

@@ -37,7 +37,8 @@ plot_donor_matrix <- function(container, meta_vars=NULL,
                       cluster_columns = FALSE,
                       cluster_rows = FALSE,
                       column_names_gp = gpar(fontsize = 10),
-                      col = col_fun)
+                      col = col_fun, row_title = "Donors",
+                      row_title_gp = gpar(fontsize = 14))
   } else {
     meta <- container$scMinimal_full$metadata[,c('donors',meta_vars)]
     meta <- unique(meta)
@@ -65,13 +66,23 @@ plot_donor_matrix <- function(container, meta_vars=NULL,
                       cluster_columns = FALSE,
                       cluster_rows = FALSE,
                       column_names_gp = gpar(fontsize = 10),
-                      col = col_fun)
+                      col = col_fun, row_title = "Donors",
+                      row_title_gp = gpar(fontsize = 14))
 
     for (j in 1:ncol(meta)) {
-      myhmap <- myhmap +
-        Heatmap(meta[,j,drop=F], name = colnames(meta)[j], cluster_rows = FALSE,
+      if (colnames(meta)[j]=='sex') {
+        mycol <- RColorBrewer::brewer.pal(n = 3, name = "Accent")
+        names(mycol) <- c("M","F")
+        myhmap <- myhmap +
+          Heatmap(meta[,j,drop=F], name = colnames(meta)[j], cluster_rows = FALSE,
+                  cluster_columns = FALSE, show_column_names = FALSE,
+                  show_row_names = FALSE, col = mycol)
+      } else {
+        myhmap <- myhmap +
+          Heatmap(meta[,j,drop=F], name = colnames(meta)[j], cluster_rows = FALSE,
                   cluster_columns = FALSE, show_column_names = FALSE,
                   show_row_names = FALSE)
+      }
     }
   }
 
@@ -99,11 +110,12 @@ plot_donor_matrix <- function(container, meta_vars=NULL,
 #' TRUE the threshold is used as a cutoff for genes to include. If annot is "sig_genes"
 #' this value is used in the gene significance colormap as a minimum threshold. (default=0.05)
 #' @param display_genes logical If TRUE, displays the names of gene names (default=FALSE)
+#' @param show_xlab logical If TRUE, displays the xlabel 'genes' (default=FALSE)
 #'
 #' @return container with the plot put in container$plots$single_lds_plot
 #' @export
 plot_loadings_annot <- function(container, factor_select, use_sig_only=F, annot='none',
-                                pathways=NULL, sig_thresh=0.05, display_genes=F) {
+                                pathways=NULL, sig_thresh=0.05, display_genes=F, show_xlab=T) {
   # check that Tucker has been run
   if (is.null(container$tucker_results)) {
     stop("Need to run run_tucker_ica() first.")
@@ -143,16 +155,24 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=F, annot=
     rownames(tmp_casted_num) <- convert_gn(container,rownames(tmp_casted_num))
   }
 
+  if (show_xlab) {
+    rt <- "Genes"
+  } else {
+    rt <- ""
+  }
+
   # make main part of heatmap (loadings)
   col_fun <- colorRamp2(c(min(tmp_casted_num), 0, max(tmp_casted_num)),
                         c("blue", "white", "red"))
+
   hm_list <- Heatmap(tmp_casted_num, show_row_dend = FALSE, show_column_dend = FALSE,
                      name = "loadings", show_row_names = display_genes,
                      column_names_gp = gpar(fontsize = 20), cluster_columns = FALSE,
                      clustering_method_rows = "ward.D",
                      row_names_side = "left", col = col_fun,
                      column_title = paste0('Factor ', factor_select),
-                     column_title_gp = gpar(fontsize = 20, fontface = "bold"))
+                     column_title_gp = gpar(fontsize = 20, fontface = "bold"),
+                     row_title = rt, row_title_gp = gpar(fontsize = 14))
 
   if (display_genes) {
     rownames(tmp_casted_num) <- old_names
@@ -318,9 +338,14 @@ get_all_lds_factor_plots <- function(container, use_sig_only=F, annot='none',
   num_fact <- nrow(container$tucker_results[[2]])
   hm_list <- list()
   for (i in 1:num_fact) {
+    if (i==1) {
+      show_xlab <- TRUE
+    } else {
+      show_xlab <- FALSE
+    }
     container <- plot_loadings_annot(container, factor_select=i, use_sig_only=use_sig_only, annot=annot,
                         pathways=pathways_list[[i]], sig_thresh=sig_thresh,
-                        display_genes=display_genes)
+                        display_genes=display_genes, show_xlab=show_xlab)
     hm_list[[i]] <- container$plots$single_lds_plot
   }
 

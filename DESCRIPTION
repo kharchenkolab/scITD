@@ -33,7 +33,8 @@ Imports:
     grid,
     Rmisc,
     RcppArmadillo,
-    RcppProgress
+    RcppProgress,
+    RColorBrewer
 RoxygenNote: 7.0.2
 LinkingTo: Rcpp, RcppArmadillo, RcppProgress
 NeedsCompilation: yes

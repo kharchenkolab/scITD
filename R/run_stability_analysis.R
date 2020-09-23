@@ -127,7 +127,7 @@ plot_stability_results <- function(container) {
 
   p <- ggplot(stability_res, aes(x=as.factor(ana_type), y=as.numeric(as.character(all_res)))) +
     geom_dotplot(binaxis = 'y', stackdir = 'center', method = 'histodot',
-                 dotsize = .75, binwidth = .005) +
+                 dotsize = .70, binwidth = .003) +
     scale_y_continuous(breaks=seq(0,1,.1), limits=c(0,1)) +
     scale_x_discrete(labels= c('Donor Scores', 'Loadings')) +
     ylab('Mean Max Correlation (All Factors)') +

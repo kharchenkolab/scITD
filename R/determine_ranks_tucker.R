@@ -138,7 +138,9 @@ get_reconstruct_errors_tucker <- function(tnsr,max_ranks_test) {
 
   # calculate percent of norm explained with each set of ranks
   for (i in 1:nrow(mycombos)) {
-    tucker_decomp <- rTensor::tucker(rTensor::as.tensor(tnsr), ranks=unlist(mycombos[i,1:3]))
+    invisible(utils::capture.output(
+      tucker_decomp <- rTensor::tucker(rTensor::as.tensor(tnsr), ranks=unlist(mycombos[i,1:3]))
+    ))
     mycombos[i,"fit"] <- tucker_decomp$norm_percent
   }
 
