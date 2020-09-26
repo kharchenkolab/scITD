@@ -5,7 +5,6 @@
 #' for each cell type as well as results and plots from all analyses
 #' @param factor_select numeric The factor of interest
 #' @param ctype character The cell type of interest
-#' @param thresh numeric Pvalue significance threshold (default=0.05)
 #' @param db_use character The database of gene sets to use. Database
 #' options include "GO", "Reactome", "KEGG", and "BioCarta". More than
 #' one database can be used. (default="GO")
@@ -17,7 +16,7 @@
 #' @return data.frame of the fgsea results limited to genes passing the
 #' significance threshold.
 #' @export
-run_fgsea <- function(container, factor_select, ctype, thresh=0.05,
+run_fgsea <- function(container, factor_select, ctype,
                       db_use="GO", num_iter=10000, print_res=T) {
 
   # make sure Tucker has been run
@@ -73,35 +72,37 @@ run_fgsea <- function(container, factor_select, ctype, thresh=0.05,
   }
 
   my_pathways = split(m_df$gene_symbol, f = m_df$gs_name)
-
   fgsea_res <- fgsea::fgsea(pathways = my_pathways,
                           stats = ctype_lds,
                           minSize=15,
                           maxSize=500,
-                          nperm=num_iter)
+                          nperm=num_iter,
+                          gseaParam=2)
 
-  fgsea_res <- fgsea_res[fgsea_res$padj < thresh,]
-  fgsea_res <- fgsea_res[order(fgsea_res$NES, decreasing=T),]
+  # if (!is.null(thresh)) {
+  #   fgsea_res <- fgsea_res[fgsea_res$padj < thresh,]
+  # }
+  # fgsea_res <- fgsea_res[order(fgsea_res$NES, decreasing=T),]
+
+  fgsea_res <- fgsea_res[order(fgsea_res$padj, decreasing=F),]
 
   if (print_res) {
-    if (nrow(fgsea_res) >= 10) {
-      tmp <- fgsea_res
-      tmp$pathway <- sapply(tmp$pathway,function(x) {
-        if (nchar(x) > 40) {
-          return(paste0(substr(x,1,40),"..."))
-        } else {
-          return(x)
-        }
-      })
+    tmp <- fgsea_res
+    tmp$pathway <- sapply(tmp$pathway,function(x) {
+      if (nchar(x) > 40) {
+        return(paste0(substr(x,1,40),"..."))
+      } else {
+        return(x)
+      }
+    })
 
-      print('Enriched in positive loading genes')
-      printout1 <- tmp[order(tmp$NES, decreasing=T)[1:10],c('pathway', 'padj', 'NES')]
-      print(printout1[printout1$NES>0,])
-      print('')
-      print('Enriched in negative loading genes')
-      printout2 <- tmp[order(tmp$NES, decreasing=F)[1:10],c('pathway', 'padj', 'NES')]
-      print(printout2[printout2$NES<0,])
-    }
+    print('Top enriched gene sets in positive loading genes')
+    printout1 <- tmp[tmp$NES>0,c('pathway', 'padj', 'NES')]
+    print(printout1[order(printout1$padj,decreasing=F)[1:10],])
+    print('')
+    print('Top enriched in negative loading genes')
+    printout2 <- tmp[tmp$NES<0,c('pathway', 'padj', 'NES')]
+    print(printout2[order(printout2$padj,decreasing=F)[1:10],])
   }
 
   return(fgsea_res)
@@ -117,8 +118,8 @@ run_fgsea <- function(container, factor_select, ctype, thresh=0.05,
 #' @param up_down character Either "up" to compute enrichment among the significant
 #' positive loading genes or "down" to compute enrichment among the significant
 #' negative loading genes.
-#' @param thresh numeric Pvalue significance threshold. Used for both significant
-#' gene selection as well as selection of significant gene sets. (default=0.05)
+#' @param thresh numeric Pvalue significance threshold. Used for significant
+#' gene selection (default=0.05)
 #' @param db_use character The database of gene sets to use. Database
 #' options include "GO", "Reactome", "KEGG", and "BioCarta". More than
 #' one database can be used. (default="GO")
@@ -219,8 +220,74 @@ run_hypergeometric_gsea <- function(container, factor_select, ctype, up_down,
     pvals[pth_name] <- pval
   }
   padj <- p.adjust(pvals,method='fdr')
-  padj <- padj[padj<thresh]
+  # padj <- padj[padj<thresh]
   return(padj)
+}
+
+#' Run gsea separately for all cell types of one specified factor
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param factor_select numeric The factor of interest
+#' @param method character The method of gsea to use. Can either be "fgsea" or
+#' "hypergeometric". (default="fgsea")
+#' @param thresh numeric Pvalue significance threshold to use. Will include gene sets in
+#' resulting heatmap if pvalue is below this threshold for at least one cell type. (default=0.05)
+#' @param db_use character The database of gene sets to use. Database
+#' options include "GO", "Reactome", "KEGG", and "BioCarta". More than
+#' one database can be used. (default="GO")
+#' @param num_iter numeric The number of random shufflings to perform. Only
+#' applies if using fgsea method (default=10000)
+#'
+#' @return a heatmap plot of the gsea results
+#' @export
+run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh=0.05,
+                                 db_use="GO", num_iter=10000) {
+  up_sets_all <- list()
+  down_sets_all <- list()
+  ctypes_use <- container$experiment_params$ctypes_use
+  for (ct in ctypes_use) {
+    if (method == 'fgsea') {
+      fgsea_res <- run_fgsea(container, factor_select=factor_select, ctype=ct,
+                             db_use=db_use, num_iter=num_iter,
+                             print_res=F)
+
+      # remove results where NES is na
+      fgsea_res <- fgsea_res[!is.na(fgsea_res$NES),]
+
+      # keep separate track of positive/negative enriched sets
+      up_sets_names <- fgsea_res$pathway[fgsea_res$NES > 0]
+      up_sets <- fgsea_res$padj[fgsea_res$NES > 0]
+      names(up_sets) <- up_sets_names
+      down_sets_names <- fgsea_res$pathway[fgsea_res$NES < 0]
+      down_sets <- fgsea_res$padj[fgsea_res$NES < 0]
+      names(down_sets) <- down_sets_names
+      up_sets_all[[ct]] <- up_sets
+      down_sets_all[[ct]] <- down_sets
+    } else if (method == 'hypergeometric') {
+      gsea_res_up <- run_hypergeometric_gsea(container, factor_select=factor_select, ctype=ct,
+                                             up_down='up', thresh=thresh, db_use=db_use)
+      gsea_res_down <- run_hypergeometric_gsea(container, factor_select=i, ctype=ct,
+                                               up_down='down', thresh=thresh, db_use=db_use)
+
+      up_sets_all[[ct]] <- gsea_res_up
+      down_sets_all[[ct]] <- gsea_res_down
+    }
+  }
+
+
+  # plot results
+  plot_up <- plot_gsea_hmap(up_sets_all,thresh)
+  plot_down <- plot_gsea_hmap(down_sets_all,thresh)
+
+  # add results and venn diagram to container
+  factor_name <- paste0('Factor', as.character(factor_select))
+  container$gsea_results[[factor_name]] <- list('up'=up_sets_all,
+                                                'down'=down_sets_all)
+  container$plots$gsea[[factor_name]] <- list('up'=plot_up,
+                                              'down'=plot_down)
+
+  return(container)
 }
 
 
@@ -345,8 +412,70 @@ get_intersecting_pathways <- function(container, factor_select, these_ctypes_onl
 }
 
 
+#' Plot enriched gene sets from all cell types in a heatmap
+#'
+#' @param up_down_sets list The gsea results with either only the up genes sets or down gene sets
+#' @param thresh numeric Pvalue threshold to use for including gene sets in the heatmap
+#'
+#' @return the heatmap plot
+#' @export
+plot_gsea_hmap <- function(up_down_sets,thresh) {
 
+  # get unique gene sets
+  all_sets <- c()
+  for (i in 1:length(up_down_sets)) {
+    all_sets <- c(all_sets, names(up_down_sets[[i]]))
+  }
+  all_sets <- unique(all_sets)
+  all_sets <- all_sets[!is.na(all_sets)]
 
+  res <- data.frame(matrix(1,ncol=length(up_down_sets),nrow = length(all_sets)))
+  colnames(res) <- names(up_down_sets)
+  rownames(res) <- all_sets
+
+  for (i in 1:length(up_down_sets)) {
+    ctype_res <- up_down_sets[[i]]
+    ctype <- names(up_down_sets)[i]
+    for (j in 1:length(ctype_res)) {
+      sum(is.na(ctype_res))
+      res[names(ctype_res)[j],ctype] <- ctype_res[j]
+    }
+  }
+
+  res_plot <- res[rowSums(res<thresh)>0,]
+
+  if (nrow(res_plot) == 0) {
+    return(NULL)
+  }
+
+  # parse gene set names at first underscore
+  rownames(res_plot) <- sapply(rownames(res_plot),function(x) {
+    regmatches(x, regexpr("_", x), invert = TRUE)[[1]][[2]]
+  })
+
+  # cutoff gene set names
+  tmp_names <- sapply(rownames(res_plot),function(x) {
+    if (nchar(x) > 32) {
+      return(paste0(substr(x,1,30),"..."))
+    } else {
+      return(x)
+    }
+  })
+
+  # ensure repeats given unique name
+  rownames(res_plot) <- make.names(tmp_names, unique = T)
+
+  col_fun <- colorRamp2(c(.05, 0), c("white", "green"))
+
+  myhmap <- Heatmap(res_plot, name = "padj",
+                    show_row_dend = FALSE, show_column_dend = FALSE,
+                    column_names_gp = gpar(fontsize = 10),
+                    col = col_fun, row_title = "Gene Sets",
+                    show_row_names = T,
+                    row_title_gp = gpar(fontsize = 14),
+                    row_names_gp = gpar(fontsize = 6))
+  return(myhmap)
+}
 
 
 

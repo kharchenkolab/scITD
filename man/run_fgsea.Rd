@@ -8,7 +8,6 @@ run_fgsea(
   container,
   factor_select,
   ctype,
-  thresh = 0.05,
   db_use = "GO",
   num_iter = 10000,
   print_res = T
@@ -21,8 +20,6 @@ for each cell type as well as results and plots from all analyses}
 \item{factor_select}{numeric The factor of interest}
 
 \item{ctype}{character The cell type of interest}
-
-\item{thresh}{numeric Pvalue significance threshold (default=0.05)}
 
 \item{db_use}{character The database of gene sets to use. Database
 options include "GO", "Reactome", "KEGG", and "BioCarta". More than
