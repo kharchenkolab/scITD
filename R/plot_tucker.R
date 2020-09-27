@@ -51,11 +51,11 @@ plot_donor_matrix <- function(container, meta_vars=NULL,
     }
 
     # limit rows of meta to those of donor_mat
-    meta <- meta[rownames(donor_mat),,drop=F]
+    meta <- meta[rownames(donor_mat),,drop=FALSE]
 
     # reorder meta rows by specified meta covariate
     if (!is.null(cluster_by_meta)) {
-      meta <- meta[order(meta[,cluster_by_meta]),,drop=F]
+      meta <- meta[order(meta[,cluster_by_meta]),,drop=FALSE]
 
       # order rows of main matrix by metadata ordering
       donor_mat <- donor_mat[rownames(meta),]
@@ -74,12 +74,12 @@ plot_donor_matrix <- function(container, meta_vars=NULL,
         mycol <- RColorBrewer::brewer.pal(n = 3, name = "Accent")
         names(mycol) <- c("M","F")
         myhmap <- myhmap +
-          Heatmap(meta[,j,drop=F], name = colnames(meta)[j], cluster_rows = FALSE,
+          Heatmap(meta[,j,drop=FALSE], name = colnames(meta)[j], cluster_rows = FALSE,
                   cluster_columns = FALSE, show_column_names = FALSE,
                   show_row_names = FALSE, col = mycol)
       } else {
         myhmap <- myhmap +
-          Heatmap(meta[,j,drop=F], name = colnames(meta)[j], cluster_rows = FALSE,
+          Heatmap(meta[,j,drop=FALSE], name = colnames(meta)[j], cluster_rows = FALSE,
                   cluster_columns = FALSE, show_column_names = FALSE,
                   show_row_names = FALSE)
       }
@@ -114,8 +114,8 @@ plot_donor_matrix <- function(container, meta_vars=NULL,
 #'
 #' @return container with the plot put in container$plots$single_lds_plot
 #' @export
-plot_loadings_annot <- function(container, factor_select, use_sig_only=F, annot='none',
-                                pathways=NULL, sig_thresh=0.05, display_genes=F, show_xlab=T) {
+plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, annot='none',
+                                pathways=NULL, sig_thresh=0.05, display_genes=FALSE, show_xlab=TRUE) {
   # check that Tucker has been run
   if (is.null(container$tucker_results)) {
     stop("Need to run run_tucker_ica() first.")
@@ -329,8 +329,8 @@ get_significance_vectors <- function(container, factor_select, ctypes) {
 #'
 #' @return the project container with the list of plots placed in container$plots$all_lds_plots
 #' @export
-get_all_lds_factor_plots <- function(container, use_sig_only=F, annot='none',
-                                     pathways_list=NULL, sig_thresh=0.05, display_genes=F) {
+get_all_lds_factor_plots <- function(container, use_sig_only=FALSE, annot='none',
+                                     pathways_list=NULL, sig_thresh=0.05, display_genes=FALSE) {
 
   # save any plot previously in the single lds plot slot because will be overwrittern
   prev_lds_plot <- container$plots$single_lds_plot

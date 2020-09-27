@@ -30,7 +30,7 @@ run_stability_analysis <- function(container, downsample_ratio=0.9, n_iter=500) 
 
   vargenes <- container$all_vargenes
   donors_keep <- container$tensor_data[[1]]
-  scMinimal <- subset_scMinimal(container$scMinimal_full, make_copy=T,
+  scMinimal <- subset_scMinimal(container$scMinimal_full, make_copy=TRUE,
                                 donors_use = donors_keep, genes_use = vargenes)
   all_avmax_lds_cors <- c()
   all_avmax_dnr_cors <- c()
@@ -40,7 +40,7 @@ run_stability_analysis <- function(container, downsample_ratio=0.9, n_iter=500) 
     cells_keep <- sample(cells,length(cells) * downsample_ratio)
 
     # create new container
-    scMinimal_sub <- subset_scMinimal(scMinimal, make_copy=T,
+    scMinimal_sub <- subset_scMinimal(scMinimal, make_copy=TRUE,
                                       cells_use=cells_keep)
     container_sub <- make_new_container(scMinimal_sub,
                                         ctypes_use=container$experiment_params$ctypes_use,
@@ -52,7 +52,7 @@ run_stability_analysis <- function(container, downsample_ratio=0.9, n_iter=500) 
                                         rand_seed=container$experiment_params$rand_seed)
 
     # create donor av ctype matrices (we already limited it to vargenes above)
-    container_sub <- get_ctype_data(container_sub, make_clean=F)
+    container_sub <- get_ctype_data(container_sub, make_clean=FALSE)
 
     # run tucker
     container_sub <- run_tucker_ica(container_sub)

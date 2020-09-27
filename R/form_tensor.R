@@ -45,7 +45,7 @@ form_tensor <- function(container, var_scale_power=NULL) {
     donor_means <- donor_means[donors_in_all,]
 
     # center with unit variance
-    donor_means <- scale(donor_means,center=T)
+    donor_means <- scale(donor_means, center=TRUE)
 
     # to change gene variance across donors by normalized variability
     if (scale_var) {
@@ -56,7 +56,7 @@ form_tensor <- function(container, var_scale_power=NULL) {
       donor_means <- t(donor_means)
     }
 
-    tnsr[, ,i]    <- as.matrix(donor_means)
+    tnsr[, ,i] <- as.matrix(donor_means)
   }
 
   container$tensor_data <- list(donors_in_all, colnames(donor_means), ctypes_use, tnsr)

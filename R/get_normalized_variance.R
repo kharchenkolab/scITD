@@ -11,7 +11,7 @@
 #'
 #' @return a vector of the normalized variance for each gene
 #' @export
-get_normalized_variance <- function(scMinimal, use_counts=F) {
+get_normalized_variance <- function(scMinimal, use_counts=FALSE) {
   if (use_counts) {
     dge_sparse <- methods::as(scMinimal$count_data_sparse,'sparseMatrix')
     dge_sparse <- Matrix::t(dge_sparse)
@@ -48,7 +48,7 @@ get_normalized_variance <- function(scMinimal, use_counts=F) {
 
   df$res <- -Inf;  df$res <- stats::resid(m,type='response')
   n.obs <- df$nobs;
-  suppressWarnings(df$lp <- as.numeric(stats::pf(exp(df$res),n.obs,n.obs,lower.tail=F,log.p=T)))
+  suppressWarnings(df$lp <- as.numeric(stats::pf(exp(df$res),n.obs,n.obs,lower.tail=FALSE,log.p=TRUE)))
   n.cells <- nrow(donor_sum_counts)
   scaled_var <- as.numeric(stats::qchisq(df$lp, n.cells-1, lower.tail = FALSE,log.p=TRUE)/n.cells)
   names(scaled_var) <- colnames(donor_sum_counts)

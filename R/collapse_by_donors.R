@@ -8,7 +8,7 @@
 #' @return an updated container with the collapsed gene by donor average matrices
 #' in the slots of container$scMinimal_ctype
 #' @export
-collapse_by_donors <- function(container, shuffle=F) {
+collapse_by_donors <- function(container, shuffle=FALSE) {
   for (ct in container$experiment_params$ctypes_use) {
     scMinimal <- container$scMinimal_ctype[[ct]]
     dge_sparse <- methods::as(scMinimal$data_sparse,'sparseMatrix')

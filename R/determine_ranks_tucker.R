@@ -34,7 +34,7 @@ determine_ranks_tucker <- function(container, max_ranks_test, method='svd', num_
   null_res <- lapply(1:num_iter, function(x) {
 
     # first get donor means shuffled
-    container <- collapse_by_donors(container, shuffle=T)
+    container <- collapse_by_donors(container, shuffle=TRUE)
 
     # form a tensor
     container <- form_tensor(container)
@@ -50,7 +50,7 @@ determine_ranks_tucker <- function(container, max_ranks_test, method='svd', num_
   })
 
   # get actual reconstruction errors
-  container <- collapse_by_donors(container, shuffle=F)
+  container <- collapse_by_donors(container, shuffle=FALSE)
 
   # form a tensor
   container <- form_tensor(container)
@@ -143,7 +143,7 @@ get_reconstruct_errors_tucker <- function(tnsr,max_ranks_test,ncores) {
 
   # keep only max fit for a given totalrank
   totalrank_vals <- unique(mycombos$totalrank)
-  totalrank_vals <- totalrank_vals[order(totalrank_vals,decreasing=F)]
+  totalrank_vals <- totalrank_vals[order(totalrank_vals,decreasing=FALSE)]
   new_combos <- data.frame(matrix(nrow=0,ncol=5))
   for (i in totalrank_vals) {
     sets_for_totalrank <- mycombos[mycombos$totalrank==i,]
@@ -185,7 +185,7 @@ optimize_var_scale_power <- function(container, max_ranks_test) {
   mycombos <- mycombos[mycombos[,3]==max_ranks_test[3],]
 
   # get donor means
-  container <- collapse_by_donors(container, shuffle=F)
+  container <- collapse_by_donors(container, shuffle=FALSE)
 
   powers_test <- seq(.5,2,by=.25)
   power_results <- list()
@@ -209,7 +209,7 @@ optimize_var_scale_power <- function(container, max_ranks_test) {
       meta$donors <- NULL
 
       # limit rows of meta to those of donor_mat
-      meta <- meta[rownames(donor_mat),,drop=F]
+      meta <- meta[rownames(donor_mat),,drop=FALSE]
 
       # compute F statistic of association between donor scores and sex
       factor_fstats <- c()

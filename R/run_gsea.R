@@ -17,7 +17,7 @@
 #' significance threshold.
 #' @export
 run_fgsea <- function(container, factor_select, ctype,
-                      db_use="GO", num_iter=10000, print_res=T) {
+                      db_use="GO", num_iter=10000, print_res=TRUE) {
 
   # make sure Tucker has been run
   if (is.null(container$tucker_results)) {
@@ -84,7 +84,7 @@ run_fgsea <- function(container, factor_select, ctype,
   # }
   # fgsea_res <- fgsea_res[order(fgsea_res$NES, decreasing=T),]
 
-  fgsea_res <- fgsea_res[order(fgsea_res$padj, decreasing=F),]
+  fgsea_res <- fgsea_res[order(fgsea_res$padj, decreasing=FALSE),]
 
   if (print_res) {
     tmp <- fgsea_res
@@ -98,11 +98,11 @@ run_fgsea <- function(container, factor_select, ctype,
 
     print('Top enriched gene sets in positive loading genes')
     printout1 <- tmp[tmp$NES>0,c('pathway', 'padj', 'NES')]
-    print(printout1[order(printout1$padj,decreasing=F)[1:10],])
+    print(printout1[order(printout1$padj,decreasing=FALSE)[1:10],])
     print('')
     print('Top enriched in negative loading genes')
     printout2 <- tmp[tmp$NES<0,c('pathway', 'padj', 'NES')]
-    print(printout2[order(printout2$padj,decreasing=F)[1:10],])
+    print(printout2[order(printout2$padj,decreasing=FALSE)[1:10],])
   }
 
   return(fgsea_res)
@@ -156,7 +156,7 @@ run_hypergeometric_gsea <- function(container, factor_select, ctype, up_down,
   # limit to just the genes in tmp_casted_num
   sig_df <- sig_df[rownames(tmp_casted_num),colnames(tmp_casted_num)]
 
-  sig_df <- sig_df[,ctype,drop=F]
+  sig_df <- sig_df[,ctype,drop=FALSE]
 
   sig_genes <- rownames(sig_df)[sig_df<thresh]
   sig_genes <- convert_gn(container, sig_genes)
@@ -250,7 +250,7 @@ run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh
     if (method == 'fgsea') {
       fgsea_res <- run_fgsea(container, factor_select=factor_select, ctype=ct,
                              db_use=db_use, num_iter=num_iter,
-                             print_res=F)
+                             print_res=FALSE)
 
       # remove results where NES is na
       fgsea_res <- fgsea_res[!is.na(fgsea_res$NES),]
@@ -318,7 +318,7 @@ run_gsea_all_factors <- function(container, method="fgsea", thresh=0.05,
       if (method == 'fgsea') {
         fgsea_res <- run_fgsea(container, factor_select=i, ctype=ct,
                                thresh=thresh, db_use=db_use, num_iter=num_iter,
-                               print_res=F)
+                               print_res=FALSE)
 
         # keep separate track of positive/negative enriched sets
         up_sets <- fgsea_res$pathway[fgsea_res$NES > 0]
@@ -338,13 +338,13 @@ run_gsea_all_factors <- function(container, method="fgsea", thresh=0.05,
 
     # plot venn diagram
     if (check_for_all_null(up_sets_all)) {
-      up_plot <- venn::venn(x = up_sets_all, box=F, ggplot=T)
+      up_plot <- venn::venn(x = up_sets_all, box=FALSE, ggplot=TRUE)
     } else {
       up_plot <- NULL
     }
 
     if (check_for_all_null(down_sets_all)) {
-      down_plot <- venn::venn(x = down_sets_all, box=F, ggplot=T)
+      down_plot <- venn::venn(x = down_sets_all, box=FALSE, ggplot=TRUE)
     } else {
       down_plot <- NULL
     }
@@ -368,10 +368,10 @@ run_gsea_all_factors <- function(container, method="fgsea", thresh=0.05,
 #' @return TRUE if there exist non-NULL elements or FALSE if all are NULL
 #' @export
 check_for_all_null <- function(mylist) {
-  result <- F
+  result <- FALSE
   for (i in 1:length(mylist)) {
     if (length(mylist[[i]]) > 0) {
-      result <- T
+      result <- TRUE
     }
   }
   return(result)
@@ -463,7 +463,7 @@ plot_gsea_hmap <- function(up_down_sets,thresh) {
   })
 
   # ensure repeats given unique name
-  rownames(res_plot) <- make.names(tmp_names, unique = T)
+  rownames(res_plot) <- make.names(tmp_names, unique = TRUE)
 
   col_fun <- colorRamp2(c(.05, 0), c("white", "green"))
 
