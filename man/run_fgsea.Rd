@@ -10,7 +10,7 @@ run_fgsea(
   ctype,
   db_use = "GO",
   num_iter = 10000,
-  print_res = T
+  print_res = TRUE
 )
 }
 \arguments{

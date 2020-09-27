@@ -110,7 +110,7 @@ plot_donor_matrix <- function(container, meta_vars=NULL,
 #' TRUE the threshold is used as a cutoff for genes to include. If annot is "sig_genes"
 #' this value is used in the gene significance colormap as a minimum threshold. (default=0.05)
 #' @param display_genes logical If TRUE, displays the names of gene names (default=FALSE)
-#' @param show_xlab logical If TRUE, displays the xlabel 'genes' (default=FALSE)
+#' @param show_xlab logical If TRUE, displays the xlabel 'genes' (default=TRUE)
 #'
 #' @return container with the plot put in container$plots$single_lds_plot
 #' @export
@@ -213,8 +213,8 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, an
     hm_list <- hm_list +
       Heatmap(sig_df,
               name = "adj p-value", cluster_columns = FALSE,
-              col = col_fun, show_row_names = F,
-              show_heatmap_legend = T, show_column_dend = FALSE,
+              col = col_fun, show_row_names = FALSE,
+              show_heatmap_legend = TRUE, show_column_dend = FALSE,
               column_names_gp = gpar(fontsize = 20))
   }
 
@@ -288,7 +288,7 @@ get_significance_vectors <- function(container, factor_select, ctypes) {
   # parse the gene significance results to get only gene_ctype combos for factor of interest
   padj <- container$gene_score_associations
   padj_factors <- sapply(names(padj),function(x) {
-    strsplit(x,split = '.', fixed = T)[[1]][[3]]
+    strsplit(x,split = '.', fixed = TRUE)[[1]][[3]]
   })
   padj_use <- padj[which(padj_factors == as.character(factor_select))]
 
@@ -296,12 +296,12 @@ get_significance_vectors <- function(container, factor_select, ctypes) {
   padj_all_ctypes <- list()
   for (ct in ctypes) {
     padj_ct <- sapply(names(padj_use),function(x) {
-      strsplit(x,split = '.', fixed = T)[[1]][[2]]
+      strsplit(x,split = '.', fixed = TRUE)[[1]][[2]]
     })
     padj_ct <- padj_use[which(padj_ct == ct)]
 
     names(padj_ct) <- sapply(names(padj_ct),function(x) {
-      strsplit(x,split = '.',fixed = T)[[1]][[1]]
+      strsplit(x,split = '.',fixed = TRUE)[[1]][[1]]
     })
 
     padj_all_ctypes[[ct]] <- padj_ct

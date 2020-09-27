@@ -79,11 +79,6 @@ run_fgsea <- function(container, factor_select, ctype,
                           nperm=num_iter,
                           gseaParam=2)
 
-  # if (!is.null(thresh)) {
-  #   fgsea_res <- fgsea_res[fgsea_res$padj < thresh,]
-  # }
-  # fgsea_res <- fgsea_res[order(fgsea_res$NES, decreasing=T),]
-
   fgsea_res <- fgsea_res[order(fgsea_res$padj, decreasing=FALSE),]
 
   if (print_res) {
@@ -216,7 +211,7 @@ run_hypergeometric_gsea <- function(container, factor_select, ctype, up_down,
 
     # compute pvalue
     pval <- stats::phyper(num_in_sig-1, num_pth_in_df, total_num_genes - num_pth_in_df,
-           length(sig_genes), lower.tail = F)
+           length(sig_genes), lower.tail = FALSE)
     pvals[pth_name] <- pval
   }
   padj <- p.adjust(pvals,method='fdr')
@@ -471,7 +466,7 @@ plot_gsea_hmap <- function(up_down_sets,thresh) {
                     show_row_dend = FALSE, show_column_dend = FALSE,
                     column_names_gp = gpar(fontsize = 10),
                     col = col_fun, row_title = "Gene Sets",
-                    show_row_names = T,
+                    show_row_names = TRUE,
                     row_title_gp = gpar(fontsize = 14),
                     row_names_gp = gpar(fontsize = 6))
   return(myhmap)

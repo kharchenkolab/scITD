@@ -5,7 +5,7 @@
 \title{Get normalized variance for each gene. This takes into account the
 mean-variance relation. Based on a Pagoda2 method...}
 \usage{
-get_normalized_variance(scMinimal, use_counts = F)
+get_normalized_variance(scMinimal, use_counts = FALSE)
 }
 \arguments{
 \item{scMinimal}{environment A sub-container for the project typically
@@ -13,7 +13,7 @@ consisting of gene expression data in its raw and processed forms as well
 as metadata}
 
 \item{use_counts}{logical If TRUE, uses raw expression counts for computing
-the normalized variance. If FALSEd, uses the normalized, log-transformed
+the normalized variance. If FALSE, uses the normalized, log-transformed
 values. (default=FALSE)}
 }
 \value{

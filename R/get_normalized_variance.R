@@ -6,7 +6,7 @@
 #' consisting of gene expression data in its raw and processed forms as well
 #' as metadata
 #' @param use_counts logical If TRUE, uses raw expression counts for computing
-#' the normalized variance. If FALSEd, uses the normalized, log-transformed
+#' the normalized variance. If FALSE, uses the normalized, log-transformed
 #' values. (default=FALSE)
 #'
 #' @return a vector of the normalized variance for each gene

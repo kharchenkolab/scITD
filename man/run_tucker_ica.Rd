@@ -4,7 +4,7 @@
 \alias{run_tucker_ica}
 \title{Run Tucker decomposition and apply ICA transformation}
 \usage{
-run_tucker_ica(container, ranks = NULL, shuffle = F)
+run_tucker_ica(container, ranks = NULL, shuffle = FALSE)
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers

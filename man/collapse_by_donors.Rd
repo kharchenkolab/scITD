@@ -4,7 +4,7 @@
 \alias{collapse_by_donors}
 \title{Computes mean expression for each gene in each cell type per donor}
 \usage{
-collapse_by_donors(container, shuffle = F)
+collapse_by_donors(container, shuffle = FALSE)
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers

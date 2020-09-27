@@ -4,14 +4,14 @@
 \alias{get_ctype_data}
 \title{Create an environment for each cell type}
 \usage{
-get_ctype_data(container, make_clean = T)
+get_ctype_data(container, make_clean = TRUE)
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
 for each cell type as well as results and plots from all analyses}
 
 \item{make_clean}{logical TRUE to apply minimum thresholds for number of cells
-expressing a gene and number of cells per donor (default=T)}
+expressing a gene and number of cells per donor (default=TRUE)}
 }
 \value{
 the project container with the scMinimal environments added into

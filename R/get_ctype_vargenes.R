@@ -72,7 +72,7 @@ get_ctype_vargenes <- function(container, method="anova", thresh=0.01) {
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
 #' @param make_clean logical TRUE to apply minimum thresholds for number of cells
-#' expressing a gene and number of cells per donor (default=T)
+#' expressing a gene and number of cells per donor (default=TRUE)
 #'
 #' @return the project container with the scMinimal environments added into
 #' the container$scMinimal_ctypes slot
