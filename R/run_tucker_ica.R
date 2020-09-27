@@ -11,7 +11,7 @@
 #'
 #' @return container with results of the decomposition in container$tucker_results
 #' @export
-run_tucker_ica <- function(container, ranks=NULL, shuffle=F) {
+run_tucker_ica <- function(container, ranks=NULL, shuffle=FALSE) {
 
   # check that var_scale_power has been set if scale_var is TRUE
   if (container$experiment_params$scale_var && is.null(container$experiment_params$var_scale_power)) {
@@ -74,19 +74,19 @@ tucker_ica_helper <- function(tensor_data, ranks, rotate_modes) {
 
   if ('donors' %in% rotate_modes) {
     # rotate donors matrix by ICA
-    donor_mat <- ica::icafast(donor_mat,ranks[1],center=T,alg='def')$S
+    donor_mat <- ica::icafast(donor_mat,ranks[1],center=TRUE,alg='def')$S
   }
   if ('genes' %in% rotate_modes) {
     # rotate donors matrix by ICA
-    gene_by_factors <- ica::icafast(gene_by_factors,ranks[2],center=T,alg='def')$S
+    gene_by_factors <- ica::icafast(gene_by_factors,ranks[2],center=TRUE,alg='def')$S
   }
   if ('ctypes' %in% rotate_modes) {
     # rotate donors matrix by ICA
-    ctype_by_factors <- ica::icafast(ctype_by_factors,ranks[3],center=T,alg='def')$S
+    ctype_by_factors <- ica::icafast(ctype_by_factors,ranks[3],center=TRUE,alg='def')$S
   }
 
   # compute kronecker product
-  kron_prod <- kronecker(ctype_by_factors,gene_by_factors,make.dimnames = T)
+  kron_prod <- kronecker(ctype_by_factors,gene_by_factors,make.dimnames = TRUE)
 
   # generate rotated core tensor
   core_new <- t(as.matrix(donor_mat)) %*% rTensor::k_unfold(rTensor::as.tensor(tnsr),1)@data %*% kron_prod

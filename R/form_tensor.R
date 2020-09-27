@@ -45,7 +45,7 @@ form_tensor <- function(container, var_scale_power=NULL) {
     donor_means <- donor_means[donors_in_all,]
 
     # center with unit variance
-    donor_means <- scale(donor_means,center=T)
+    donor_means <- scale(donor_means,center=TRUE)
 
     # to change gene variance across donors by normalized variability
     if (scale_var) {

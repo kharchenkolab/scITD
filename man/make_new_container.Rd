@@ -8,7 +8,7 @@ make_new_container(
   scMinimal,
   ctypes_use = NULL,
   gn_convert = NULL,
-  scale_var = T,
+  scale_var = TRUE,
   var_scale_power = NULL,
   rotate_modes = "donors",
   ranks = NULL,

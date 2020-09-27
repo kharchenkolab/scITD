@@ -7,12 +7,12 @@
 plot_loadings_annot(
   container,
   factor_select,
-  use_sig_only = F,
+  use_sig_only = FALSE,
   annot = "none",
   pathways = NULL,
   sig_thresh = 0.05,
-  display_genes = F,
-  show_xlab = T
+  display_genes = FALSE,
+  show_xlab = TRUE
 )
 }
 \arguments{
@@ -39,7 +39,7 @@ this value is used in the gene significance colormap as a minimum threshold. (de
 
 \item{display_genes}{logical If TRUE, displays the names of gene names (default=FALSE)}
 
-\item{show_xlab}{logical If TRUE, displays the xlabel 'genes' (default=FALSE)}
+\item{show_xlab}{logical If TRUE, displays the xlabel 'genes' (default=TRUE)}
 }
 \value{
 container with the plot put in container$plots$single_lds_plot

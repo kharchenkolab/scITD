@@ -66,7 +66,7 @@ seurat_to_scMinimal <- function(s_obj) {
 #'
 #' @return a subsetted scMinimal object
 #' @export
-subset_scMinimal <- function(scMinimal, make_copy=T, ctypes_use=NULL,
+subset_scMinimal <- function(scMinimal, make_copy=TRUE, ctypes_use=NULL,
                              cells_use=NULL, donors_use=NULL, genes_use=NULL) {
   data_sparse <- scMinimal$data_sparse
   count_data_sparse <- scMinimal$count_data_sparse

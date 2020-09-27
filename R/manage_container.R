@@ -31,7 +31,7 @@
 #' @return project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
 #' @export
-make_new_container <- function(scMinimal, ctypes_use=NULL, gn_convert=NULL, scale_var=T,
+make_new_container <- function(scMinimal, ctypes_use=NULL, gn_convert=NULL, scale_var=TRUE,
                                var_scale_power=NULL, rotate_modes='donors',
                                ranks=NULL, ncores = 4, rand_seed=10) {
   container <- new.env()

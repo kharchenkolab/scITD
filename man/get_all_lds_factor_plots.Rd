@@ -6,11 +6,11 @@
 \usage{
 get_all_lds_factor_plots(
   container,
-  use_sig_only = F,
+  use_sig_only = FALSE,
   annot = "none",
   pathways_list = NULL,
   sig_thresh = 0.05,
-  display_genes = F
+  display_genes = FALSE
 )
 }
 \arguments{

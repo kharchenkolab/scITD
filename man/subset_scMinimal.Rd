@@ -6,7 +6,7 @@
 \usage{
 subset_scMinimal(
   scMinimal,
-  make_copy = T,
+  make_copy = TRUE,
   ctypes_use = NULL,
   cells_use = NULL,
   donors_use = NULL,

@@ -51,11 +51,11 @@ plot_donor_matrix <- function(container, meta_vars=NULL,
     }
 
     # limit rows of meta to those of donor_mat
-    meta <- meta[rownames(donor_mat),,drop=F]
+    meta <- meta[rownames(donor_mat),,drop=FALSE]
 
     # reorder meta rows by specified meta covariate
     if (!is.null(cluster_by_meta)) {
-      meta <- meta[order(meta[,cluster_by_meta]),,drop=F]
+      meta <- meta[order(meta[,cluster_by_meta]),,drop=FALSE]
 
       # order rows of main matrix by metadata ordering
       donor_mat <- donor_mat[rownames(meta),]
@@ -74,12 +74,12 @@ plot_donor_matrix <- function(container, meta_vars=NULL,
         mycol <- RColorBrewer::brewer.pal(n = 3, name = "Accent")
         names(mycol) <- c("M","F")
         myhmap <- myhmap +
-          Heatmap(meta[,j,drop=F], name = colnames(meta)[j], cluster_rows = FALSE,
+          Heatmap(meta[,j,drop=FALSE], name = colnames(meta)[j], cluster_rows = FALSE,
                   cluster_columns = FALSE, show_column_names = FALSE,
                   show_row_names = FALSE, col = mycol)
       } else {
         myhmap <- myhmap +
-          Heatmap(meta[,j,drop=F], name = colnames(meta)[j], cluster_rows = FALSE,
+          Heatmap(meta[,j,drop=FALSE], name = colnames(meta)[j], cluster_rows = FALSE,
                   cluster_columns = FALSE, show_column_names = FALSE,
                   show_row_names = FALSE)
       }
@@ -110,12 +110,12 @@ plot_donor_matrix <- function(container, meta_vars=NULL,
 #' TRUE the threshold is used as a cutoff for genes to include. If annot is "sig_genes"
 #' this value is used in the gene significance colormap as a minimum threshold. (default=0.05)
 #' @param display_genes logical If TRUE, displays the names of gene names (default=FALSE)
-#' @param show_xlab logical If TRUE, displays the xlabel 'genes' (default=FALSE)
+#' @param show_xlab logical If TRUE, displays the xlabel 'genes' (default=TRUE)
 #'
 #' @return container with the plot put in container$plots$single_lds_plot
 #' @export
-plot_loadings_annot <- function(container, factor_select, use_sig_only=F, annot='none',
-                                pathways=NULL, sig_thresh=0.05, display_genes=F, show_xlab=T) {
+plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, annot='none',
+                                pathways=NULL, sig_thresh=0.05, display_genes=FALSE, show_xlab=TRUE) {
   # check that Tucker has been run
   if (is.null(container$tucker_results)) {
     stop("Need to run run_tucker_ica() first.")
@@ -213,8 +213,8 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=F, annot=
     hm_list <- hm_list +
       Heatmap(sig_df,
               name = "adj p-value", cluster_columns = FALSE,
-              col = col_fun, show_row_names = F,
-              show_heatmap_legend = T, show_column_dend = FALSE,
+              col = col_fun, show_row_names = FALSE,
+              show_heatmap_legend = TRUE, show_column_dend = FALSE,
               column_names_gp = gpar(fontsize = 20))
   }
 
@@ -288,7 +288,7 @@ get_significance_vectors <- function(container, factor_select, ctypes) {
   # parse the gene significance results to get only gene_ctype combos for factor of interest
   padj <- container$gene_score_associations
   padj_factors <- sapply(names(padj),function(x) {
-    strsplit(x,split = '.', fixed = T)[[1]][[3]]
+    strsplit(x,split = '.', fixed = TRUE)[[1]][[3]]
   })
   padj_use <- padj[which(padj_factors == as.character(factor_select))]
 
@@ -296,12 +296,12 @@ get_significance_vectors <- function(container, factor_select, ctypes) {
   padj_all_ctypes <- list()
   for (ct in ctypes) {
     padj_ct <- sapply(names(padj_use),function(x) {
-      strsplit(x,split = '.', fixed = T)[[1]][[2]]
+      strsplit(x,split = '.', fixed = TRUE)[[1]][[2]]
     })
     padj_ct <- padj_use[which(padj_ct == ct)]
 
     names(padj_ct) <- sapply(names(padj_ct),function(x) {
-      strsplit(x,split = '.',fixed = T)[[1]][[1]]
+      strsplit(x,split = '.',fixed = TRUE)[[1]][[1]]
     })
 
     padj_all_ctypes[[ct]] <- padj_ct
@@ -329,8 +329,8 @@ get_significance_vectors <- function(container, factor_select, ctypes) {
 #'
 #' @return the project container with the list of plots placed in container$plots$all_lds_plots
 #' @export
-get_all_lds_factor_plots <- function(container, use_sig_only=F, annot='none',
-                                     pathways_list=NULL, sig_thresh=0.05, display_genes=F) {
+get_all_lds_factor_plots <- function(container, use_sig_only=FALSE, annot='none',
+                                     pathways_list=NULL, sig_thresh=0.05, display_genes=FALSE) {
 
   # save any plot previously in the single lds plot slot because will be overwrittern
   prev_lds_plot <- container$plots$single_lds_plot
