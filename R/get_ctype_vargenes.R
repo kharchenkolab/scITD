@@ -77,7 +77,7 @@ get_ctype_vargenes <- function(container, method="anova", thresh=0.01) {
 #' @return the project container with the scMinimal environments added into
 #' the container$scMinimal_ctypes slot
 #' @export
-get_ctype_data <- function(container,make_clean=TRUE) {
+get_ctype_data <- function(container, make_clean=TRUE) {
   for (ct in container$experiment_params$ctypes_use) {
     ctype_sub <- subset_scMinimal(container$scMinimal_full, ctypes_use=ct)
     if (make_clean) {

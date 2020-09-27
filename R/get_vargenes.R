@@ -8,7 +8,7 @@
 #'
 #' @return the raw pvalues for each gene
 #' @export
-vargenes_anova <- function(scMinimal,ncores) {
+vargenes_anova <- function(scMinimal, ncores) {
   # calculate anova for each gene
   dge_sparse <- methods::as(scMinimal$data_sparse,'sparseMatrix')
   dge_sparse <- Matrix::t(dge_sparse)
