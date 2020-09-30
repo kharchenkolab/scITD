@@ -9,15 +9,12 @@ library(scITD)
 
 ## -----------------------------------------------------------------------------
 # load raw counts matrix
-# load(file.path(find.package('scITD'),'data','pbmc_sub_counts.RData'))
 invisible(pbmc_sub_counts)
 
 # load the normalized, log-transformed counts matrix
-# load(file.path(find.package('scITD'),'data','pbmc_sub_transformed.RData'))
 invisible(pbmc_sub_transformed)
 
 # load the metadata
-# load(file.path(find.package('scITD'),'data','pbmc_sub_meta.RData'))
 invisible(pbmc_sub_meta)
 
 ## -----------------------------------------------------------------------------
@@ -27,6 +24,7 @@ feature.names = read.delim(file.path(find.package('scITD'),'data','genes.tsv'),
 
 ## -----------------------------------------------------------------------------
 pbmc_scMinimal <- instantiate_scMinimal(pbmc_sub_transformed, pbmc_sub_counts, pbmc_sub_meta)
+pbmc_scMinimal <- identify_sex_metadata(pbmc_scMinimal)
 pbmc_container <- make_new_container(pbmc_scMinimal,
                                      ctypes_use = c("CD4+ T", "cMonocyte", "CD56(dim) NK"),
                                      gn_convert = feature.names,

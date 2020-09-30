@@ -20,19 +20,16 @@ Load the package.
 library(scITD)
 ```
 
-Load a dataset to use. Here, we're going to analyze a subsetted dataset of PBMC's from 25 donors. We should have on hand the UMI count matrix, normalized log-transformed count matrix, and metadata corresponding to the cells. The metadata columns should include "donors", "sex", and "ctypes" as columns but may include others as well. The raw data used in this example can be found here: <https://genenetwork.nl/scrna-seq/>
+Load a dataset to use. Here, we're going to analyze a subsetted dataset of PBMC's from 25 donors. We should have on hand the UMI count matrix, normalized log-transformed count matrix, and metadata corresponding to the cells. The metadata columns should include "donors" and "ctypes" as columns and should include "sex" metadata if available. Other metadata variables may also be included. Preprocessing steps used to generate the processed input data can be found in the "data-raw" directory, and the raw data can be found here: <https://genenetwork.nl/scrna-seq/>
 
 ```{r}
 # load raw counts matrix
-# load(file.path(find.package('scITD'),'data','pbmc_sub_counts.RData'))
 invisible(pbmc_sub_counts)
 
 # load the normalized, log-transformed counts matrix
-# load(file.path(find.package('scITD'),'data','pbmc_sub_transformed.RData'))
 invisible(pbmc_sub_transformed)
 
 # load the metadata
-# load(file.path(find.package('scITD'),'data','pbmc_sub_meta.RData'))
 invisible(pbmc_sub_meta)
 ```
 
@@ -44,10 +41,11 @@ feature.names = read.delim(file.path(find.package('scITD'),'data','genes.tsv'),
                            stringsAsFactors = FALSE)
 ```
 
-Next, we need to set up a project container that will hold all of our raw data as well as results. The scMinimal object is a sub-container that holds gene expression counts and metadata. The container object holds sub-containers and results. When instantiating a new project container, it is necessary to specify the experiment parameters ctypes_use, scale_var, rotate_modes, ncores, and rand_seed. The gn_convert parameter contains the above dataframe with gene name conversions. The ctypes_use parameter should contain the names of the cell types to use in all of the analysis. The scale_var and rotate_modes parameters will be explained below.
+Next, we need to set up a project container that will hold all of our raw data as well as results. The scMinimal object is a sub-container that holds gene expression counts and metadata. The pbmc_container object holds sub-containers including the scMinimal objects as well as results. When instantiating a new project container, it is necessary to specify the experiment parameters ctypes_use, scale_var, rotate_modes, ncores, and rand_seed. We also call the identify_sex_metadata() function as the input dataset does not have a column for sex metadata, and this is needed in the downstream analysis. The gn_convert parameter contains the above dataframe with gene name conversions. The ctypes_use parameter should contain the names of the cell types to use in all of the analysis. The scale_var and rotate_modes parameters will be explained below.
 
 ```{r}
 pbmc_scMinimal <- instantiate_scMinimal(pbmc_sub_transformed, pbmc_sub_counts, pbmc_sub_meta)
+pbmc_scMinimal <- identify_sex_metadata(pbmc_scMinimal)
 pbmc_container <- make_new_container(pbmc_scMinimal,
                                      ctypes_use = c("CD4+ T", "cMonocyte", "CD56(dim) NK"),
                                      gn_convert = feature.names,

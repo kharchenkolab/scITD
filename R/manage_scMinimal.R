@@ -29,7 +29,7 @@ instantiate_scMinimal <- function(data_sparse,count_data,meta_data) {
 #'
 #' @param s_obj Seurat object that has been cleaned and includes the counts
 #' as well as normalized, log-transformed counts. The meta.data should include
-#' a column with the header 'sex' and values of 'M' or 'F'. The metadata should
+#' a column with the header 'sex' and values of 'M' or 'F' if available. The metadata should
 #' also have a column with the header 'ctypes' with the corresponding names of
 #' the cell types as well as a column with header 'donors' that contains
 #' identifiers for each donor.
@@ -107,7 +107,37 @@ subset_scMinimal <- function(scMinimal, make_copy=TRUE, ctypes_use=NULL,
 }
 
 
+#' Extract metadata for sex information if not provided already
+#'
+#' @param scMinimal environment A sub-container for the project typically
+#' consisting of gene expression data in its raw and processed forms as well
+#' as metadata
+#'
+#' @return the scMinimal object with sex metadata added to the metadata
+#' @export
+identify_sex_metadata <- function(scMinimal) {
+  scMinimal <- clean_data(scMinimal)
 
+  dge_sparse <- methods::as(scMinimal$data_sparse,'sparseMatrix')
+  dge_sparse <- Matrix::t(dge_sparse)
+  donor_meta <- as.factor(scMinimal$metadata$donors)
+  means_all <- get_means(dge_sparse,donor_meta,table(donor_meta))
+  means_all <- means_all[2:nrow(means_all),]
+  means_male <- means_all[,c('ENSG00000129824','ENSG00000198692')]
+  # plot(means_male)
+  scMinimal$metadata$sex <- NA
+  for (i in 1:nrow(scMinimal$metadata)) {
+    d <- scMinimal$metadata$donors[i]
+    if (means_male[d,'ENSG00000129824'] > 1) {
+      scMinimal$metadata$sex[i] <- 'M'
+    } else {
+      scMinimal$metadata$sex[i] <- 'F'
+    }
+  }
+
+  return(scMinimal)
+
+}
 
 
 

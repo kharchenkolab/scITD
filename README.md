@@ -27,10 +27,9 @@ diseases.
 
 ## Installation
 
-You can install scITD with:
+You can install scITD with the following function call:
 
 ``` r
-# install.packages("devtools")
 devtools::install_github("kharchenkolab/scITD")
 ```
 
