@@ -107,9 +107,9 @@ pbmc_sub_meta <- pbmc_sub@meta.data
 pbmc_sub_counts <- methods::as(as.matrix(pbmc_sub@assays$RNA@counts),'sparseMatrix')
 
 # # save pbmc_sub_transformed, pbmc_sub_meta, and pbmc_sub_counts in data as .RData files for vignette (compress = TRUE)
-# save(pbmc_sub_transformed,file='/home/jmitchel/scITD/data/pbmc_sub_transformed.RData',compress = TRUE)
-# save(pbmc_sub_meta,file='/home/jmitchel/scITD/data/pbmc_sub_meta.RData',compress = TRUE)
-# save(pbmc_sub_counts,file='/home/jmitchel/scITD/data/pbmc_sub_counts.RData',compress = TRUE)
+# save(pbmc_sub_transformed,file='/home/jmitchel/scITD/data/pbmc_sub_transformed.RData',compress = "xz")
+# save(pbmc_sub_meta,file='/home/jmitchel/scITD/data/pbmc_sub_meta.RData',compress = "xz")
+# save(pbmc_sub_counts,file='/home/jmitchel/scITD/data/pbmc_sub_counts.RData',compress = "xz")
 
 
 
