@@ -2,10 +2,19 @@ library(Seurat)
 library(Matrix)
 library(ggplot2)
 
+# The data can be downloaded here: https://genenetwork.nl/scrna-seq/
+# Download the folders under the headers "Gene expression counts",
+# "Demultiplexing", and "Cell type classification". Unzip each and
+# put these three directories in the same base directory. Change the
+# base_dir variable below to point to the directory containing the 3
+# downloaded subdirectories
+
+base_dir <- "/home/jmitchel/scITD/extdata/"
+
 # add rows/columns and concatenate all matrices
 full_mat <- NULL # to store full dataframe
 for (i in 1:8) {
-  matrix_dir <- paste0(file.path(find.package('scITD'),'extdata','count_matrices_per_lane'),
+  matrix_dir <- paste0(base_dir,'count_matrices_per_lane',
                        "/lane_", as.character(i))
 
   barcode.path <- paste0(matrix_dir, "/barcodes.tsv")
@@ -38,7 +47,7 @@ for (i in 1:8) {
 }
 
 # load the cell type annotations for cells that pass QC
-ctypes <- read.table(file = file.path(find.package('scITD'),'extdata','barcodes_to_cell_types','barcodes_to_cell_types.tsv'),
+ctypes <- read.table(file = paste0(base_dir,'barcodes_to_cell_types/barcodes_to_cell_types.tsv'),
            sep = '\t', header = TRUE, stringsAsFactors = F)
 
 # remove cells that were not annotated
@@ -49,7 +58,7 @@ qc_mat <- full_mat[,mask]
 pbmc <- CreateSeuratObject(counts = qc_mat)
 
 # load donor meta data and add it to seurat object
-donors <- read.table(file = file.path(find.package('scITD'),'extdata','cell_barcodes','pilot3_persons.tsv'),
+donors <- read.table(file = paste0(base_dir,'cell_barcodes/pilot3_persons.tsv'),
                      sep = '\t', header = FALSE, stringsAsFactors = F)
 pbmc@meta.data$donors <- donors$V2
 
@@ -65,6 +74,21 @@ pbmc@meta.data$ctypes <- as.factor(ctypes$cell_type)
 
 # normalize data
 pbmc <- NormalizeData(pbmc)
+
+###############
+# get variable genes
+pbmc <- FindVariableFeatures(pbmc, selection.method = "vst", nfeatures = 2000)
+
+# scale data
+all.genes <- rownames(pbmc)
+pbmc <- ScaleData(pbmc, features = all.genes)
+
+# run PCA
+pbmc <- RunPCA(pbmc, features = VariableFeatures(object = pbmc))
+
+# create UMAP and TSNE embeddings
+pbmc <- RunUMAP(pbmc, dims = 1:20)
+###################
 
 # remove two donors with only one cell
 Idents(pbmc) <- pbmc@meta.data$donors
@@ -105,12 +129,14 @@ pbmc_sub@meta.data$nFeature_RNA <- NULL
 pbmc_sub_transformed <- methods::as(as.matrix(Seurat::GetAssayData(pbmc_sub)),'sparseMatrix')
 pbmc_sub_meta <- pbmc_sub@meta.data
 pbmc_sub_counts <- methods::as(as.matrix(pbmc_sub@assays$RNA@counts),'sparseMatrix')
+pbmc_sub_umap <- pbmc@reductions[["umap"]]@cell.embeddings
 
 # # save pbmc_sub_transformed, pbmc_sub_meta, and pbmc_sub_counts in data as .RData files for vignette (compress = TRUE)
 # save(pbmc_sub_transformed,file='/home/jmitchel/scITD/data/pbmc_sub_transformed.RData',compress = "xz")
 # save(pbmc_sub_meta,file='/home/jmitchel/scITD/data/pbmc_sub_meta.RData',compress = "xz")
 # save(pbmc_sub_counts,file='/home/jmitchel/scITD/data/pbmc_sub_counts.RData',compress = "xz")
-
+# save(pbmc_sub_umap,file='/home/jmitchel/scITD/data/pbmc_sub_umap.RData',compress = "xz")
+# save(feature.names,file='/home/jmitchel/scITD/data/genes.RData',compress = "xz")
 
 
 
