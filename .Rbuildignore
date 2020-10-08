@@ -1,5 +1,9 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
+.travis.yml
+CHANGELOG.md
+^LICENSE\.md$
 ^doc$
 ^Meta$
-^README\.Rmd$
+scITD*.tar.gz
+data-raw
