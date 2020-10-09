@@ -36,7 +36,10 @@ Imports:
     Rmisc,
     RcppArmadillo,
     RcppProgress,
-    RColorBrewer
+    RColorBrewer,
+    umap,
+    coda.base,
+    gmodels
 RoxygenNote: 7.0.2
 LinkingTo: Rcpp, RcppArmadillo, RcppProgress
 NeedsCompilation: yes
