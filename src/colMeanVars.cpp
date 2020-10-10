@@ -1,6 +1,5 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::plugins(cpp11)]]
-// [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::depends(RcppProgress)]]
 #include <RcppArmadillo.h>
 
@@ -37,7 +36,9 @@ Rcpp::DataFrame colMeanVars(SEXP sY,  SEXP rowSel, int ncores=1) {
   }
   arma::vec meanV(ncols,arma::fill::zeros); arma::vec varV(ncols,arma::fill::zeros); arma::vec nobsV(ncols,arma::fill::zeros);
   // for each gene
+#ifdef _OPENMP
 #pragma omp parallel for num_threads(ncores) shared(meanV,varV,nobsV)
+#endif
   for(int g=0;g<ncols;g++) {
     int p0=p[g]; int p1=p[g+1];
     if(p1-p0 <1) { continue; }
