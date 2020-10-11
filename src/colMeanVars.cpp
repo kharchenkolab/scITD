@@ -61,7 +61,14 @@ Rcpp::DataFrame colMeanVars(SEXP sY,  SEXP rowSel, int ncores=1) {
 
     double m=sum(ly)/nrows;
     meanV[g]=m;
-    ly-=m; ly%=ly;
+    // warning here about 'explicitly assigning value of variable of type 'arma::colvec' (aka 'Col<double>') to itself [-Wself-assign-overloaded]'
+    // As far as I can tell, this warning simply checks whether assignment operation survives self-assignment.
+    // This warning can be suppressed
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wself-assign-overloaded"
+    ly-=m; 
+    ly%=ly;
+    #pragma GCC diagnostic pop
     varV[g]=(sum(ly)+(m*m*(nrows-ly.size())))/nrows;
   }
   return Rcpp::DataFrame::create(Named("m")=meanV,Named("v")=varV,Named("nobs",nobsV));

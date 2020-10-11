@@ -312,8 +312,7 @@ run_gsea_all_factors <- function(container, method="fgsea", thresh=0.05,
     for (ct in ctypes_use) {
       if (method == 'fgsea') {
         fgsea_res <- run_fgsea(container, factor_select=i, ctype=ct,
-                               thresh=thresh, db_use=db_use, num_iter=num_iter,
-                               print_res=FALSE)
+                               db_use=db_use, num_iter=num_iter, print_res=FALSE)
 
         # keep separate track of positive/negative enriched sets
         up_sets <- fgsea_res$pathway[fgsea_res$NES > 0]
