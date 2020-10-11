@@ -4,7 +4,7 @@
 # scITD
 
 <!-- badges: start -->
-
+[![Build Status](https://travis-ci.com/kharchenkolab/scITD.svg?branch=master)](https://travis-ci.com/github/kharchenkolab/scITD)
 <!-- badges: end -->
 
 Single-Cell Interpretable Tensor Decomposition (scITD) employs the
