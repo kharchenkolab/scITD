@@ -1,11 +1,11 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# scITD
-
 <!-- badges: start -->
 [![Build Status](https://travis-ci.com/kharchenkolab/scITD.svg?branch=master)](https://travis-ci.com/github/kharchenkolab/scITD)
 <!-- badges: end -->
+
+# scITD
 
 Single-Cell Interpretable Tensor Decomposition (scITD) employs the
 Tucker tensor decomposition to extract multi-cell type expression
