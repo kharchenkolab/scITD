@@ -1,11 +1,10 @@
 Package: scITD
-Type: Package
 Title: Single-Cell Interpretable Tucker Decomposition
 Version: 0.1.0
-Authors@R: c(person("Jonathan", "Mitchel", email="mitchel@mit.edu", role=c("aut","cre")),person("Evan", "Biederstedt", email="evan.biederstedt@gmail.com", role="aut"))
+Authors@R: c(person("Jonathan", "Mitchel", email="mitchel@mit.edu", role=c("aut","cre")), person("Evan", "Biederstedt", email="evan.biederstedt@gmail.com", role="aut"))
 Maintainer: Jonathan Mitchel <mitchel@mit.edu>
-Description: This package employs the Tucker tensor decomposition method
-    to extract multi cell type gene expression patterns that are variably
+Description: Employs the Tucker tensor decomposition method
+    to extract multicell-type gene expression patterns that are variably
     expressed across donors/individuals in a single-cell dataset of interest.
     Extracted factors consist of a) a multi cell type loadings matrix and b) a
     corresponding donor scores vector indicating the level at which the corresponding
@@ -16,7 +15,7 @@ Description: This package employs the Tucker tensor decomposition method
     significantly associated with a factor as well as gene set enrichment analysis
     to understand the biological processes taking place in each cell type. Further
     methods are implemented to evaluate associations between factors and
-    meta data variables as well as associations between factors and cell type/subtype
+    metadata variables as well as associations between factors and cell type/subtype
     proportions.
 License: GPL-3
 Encoding: UTF-8
@@ -35,7 +34,6 @@ Imports:
     reshape2,
     ComplexHeatmap,
     Seurat,
-    Rcpp,
     parallel,
     ggpubr,
     ggplot2,
@@ -45,8 +43,6 @@ Imports:
     utils,
     grid,
     Rmisc,
-    RcppArmadillo,
-    RcppProgress,
     RColorBrewer,
     umap,
     coda.base,
@@ -56,5 +52,6 @@ LinkingTo: Rcpp, RcppArmadillo, RcppProgress
 NeedsCompilation: yes
 Suggests: 
     knitr,
-    rmarkdown
+    rmarkdown, 
+    testthat
 VignetteBuilder: knitr
