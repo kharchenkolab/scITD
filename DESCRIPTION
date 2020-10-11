@@ -43,6 +43,7 @@ Imports:
     utils,
     grid,
     Rmisc,
+    Rcpp,
     RColorBrewer,
     umap,
     coda.base,
