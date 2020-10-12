@@ -101,7 +101,7 @@ reduce_to_vargenes <- function(container) {
   vargenes <- container$all_vargenes
   for (ct in container$experiment_params$ctypes_use) {
     scMinimal <- container$scMinimal_ctype[[ct]]
-    scMinimal <- subset_scMinimal(scMinimal, make_copy=FALSE, genes=vargenes)
+    scMinimal <- subset_scMinimal(scMinimal, make_copy=FALSE, genes_use=vargenes)
   }
   return(container)
 }
