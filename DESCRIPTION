@@ -48,7 +48,7 @@ Imports:
     umap,
     coda.base,
     gmodels
-RoxygenNote: 7.0.2
+RoxygenNote: 7.1.1
 LinkingTo: Rcpp, RcppArmadillo, RcppProgress
 NeedsCompilation: yes
 Suggests: 
