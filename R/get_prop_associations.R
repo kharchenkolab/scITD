@@ -1,4 +1,6 @@
 
+utils::globalVariables(c("dscore", "donor_proportion", "ctypes", "k", "fstat", "ctype"))
+
 #' Compute associations between donor factor scores and donor proportions of cell subtypes
 #'
 #' @param container environment Project container that stores sub-containers
@@ -208,7 +210,7 @@ plot_donor_props <- function(donor_props,donor_scores,significance,ctype_mapping
       })
     }
 
-    p <- ggplot2::ggplot(tmp2, aes(x=dscore,y=donor_proportion,color=ctypes)) +
+    p <- ggplot(tmp2, aes(x=dscore,y=donor_proportion,color=ctypes)) +
       geom_line() +
       ggtitle(paste0("Factor ",as.character(f))) +
       theme(plot.title = element_text(hjust = 0.5)) +

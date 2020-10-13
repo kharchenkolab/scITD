@@ -1,4 +1,6 @@
 
+utils::globalVariables(c("num_ranks", "rec_error", "num_iter", "run_type", "error_diff", "total_ranks"))
+
 #' Rank determination method
 #' @import ggplot2
 #' @importFrom parallel mclapply

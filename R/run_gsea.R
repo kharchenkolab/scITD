@@ -262,7 +262,7 @@ run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh
     } else if (method == 'hypergeometric') {
       gsea_res_up <- run_hypergeometric_gsea(container, factor_select=factor_select, ctype=ct,
                                              up_down='up', thresh=thresh, db_use=db_use)
-      gsea_res_down <- run_hypergeometric_gsea(container, factor_select=i, ctype=ct,
+      gsea_res_down <- run_hypergeometric_gsea(container, factor_select=factor_select, ctype=ct,
                                                up_down='down', thresh=thresh, db_use=db_use)
 
       up_sets_all[[ct]] <- gsea_res_up
