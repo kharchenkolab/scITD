@@ -7,10 +7,10 @@
 plot_subclust_associations(res)
 }
 \arguments{
-\item{res}{data.frame F-Statistics for each subcluster analysis}
+\item{res}{data.frame Regression statistics for each subcluster analysis}
 }
 \value{
-plots of F-Statistics for each subtypes at varying k values and
+plots of regression statistics for each subtypes at varying k values and
 for each factor
 }
 \description{

@@ -4,12 +4,15 @@
 \alias{compute_associations}
 \title{Compute associations between donor proportions}
 \usage{
-compute_associations(donor_balances, donor_scores)
+compute_associations(donor_balances, donor_scores, stat_type)
 }
 \arguments{
 \item{donor_balances}{matrx The balances computed from donor cell type proportions}
 
 \item{donor_scores}{data.frame The donor scores matrix from tucker results}
+
+\item{stat_type}{character Either "fstat" to get F-Statistics, "adj_rsq" to get adjusted
+R-squared values, or "adj_pval" to get adjusted pvalues.}
 }
 \value{
 a numeric vector of F-Statistics (one for each factor)

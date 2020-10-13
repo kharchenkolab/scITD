@@ -1,16 +1,19 @@
 
-utils::globalVariables(c("dscore", "donor_proportion", "ctypes", "k", "fstat", "ctype"))
+### PROBABLY WILL NEED TO FIX THIS AND CHECK CHECK() AGAIN AFTER
+utils::globalVariables(c("dscore", "donor_proportion", "ctypes"))
 
 #' Compute associations between donor factor scores and donor proportions of cell subtypes
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
 #' @param max_num_k numeric The largest number of subclusters to get for any cell type
+#' @param stat_type character Either "fstat" to get F-Statistics, "adj_rsq" to get adjusted
+#' R-squared values, or "adj_pval" to get adjusted pvalues.
 #'
 #' @return the project container with a plot of results in
 #' container$plots$subtype_prop_factor_associations
 #' @export
-get_subtype_prop_associations <- function(container,max_num_k) {
+get_subtype_prop_associations <- function(container,max_num_k,stat_type) {
   if (is.null(container$scMinimal_full$umap)) {
     umap_all <- reduce_dimensions(container$scMinimal_full)
   } else {
@@ -19,7 +22,7 @@ get_subtype_prop_associations <- function(container,max_num_k) {
 
   # create dataframe to store results
   res <- data.frame(matrix(ncol = 4, nrow = 0))
-  colnames(res) <- c('fstat','k','factor','ctype')
+  colnames(res) <- c(stat_type,'k','factor','ctype')
 
   # loop through cell types
   for (ct in container$experiment_params$ctypes_use) {
@@ -40,12 +43,12 @@ get_subtype_prop_associations <- function(container,max_num_k) {
       donor_balances <- coda.base::coordinates(donor_props)
       rownames(donor_balances) <- rownames(donor_props)
 
-      # compute f-statistics
-      fstats <- compute_associations(donor_balances,container$tucker_results[[1]])
+      # compute regression statistics
+      reg_stats <- compute_associations(donor_balances,container$tucker_results[[1]],stat_type)
 
       # store association results
-      for (i in 1:length(fstats)) {
-        new_row <- as.data.frame(list(fstats[i], k, paste0("Factor ", as.character(i)), ct),stringsAsFactors = F)
+      for (i in 1:length(reg_stats)) {
+        new_row <- as.data.frame(list(reg_stats[i], k, paste0("Factor ", as.character(i)), ct),stringsAsFactors = F)
         colnames(new_row) <- colnames(res)
         res <- rbind(res,new_row)
       }
@@ -53,10 +56,10 @@ get_subtype_prop_associations <- function(container,max_num_k) {
   }
 
   # generate plot
-  fstat_plots <- plot_subclust_associations(res)
+  reg_stat_plots <- plot_subclust_associations(res)
 
   # save results
-  container$plots$subtype_prop_factor_associations <- fstat_plots
+  container$plots$subtype_prop_factor_associations <- reg_stat_plots
 
   return(container)
 }
@@ -65,10 +68,12 @@ get_subtype_prop_associations <- function(container,max_num_k) {
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
+#' @param stat_type character Either "fstat" to get F-Statistics, "adj_rsq" to get adjusted
+#' R-squared values, or "adj_pval" to get adjusted pvalues.
 #'
 #' @return the project container with the results plot in container$plots$ctype_prop_factor_associations
 #' @export
-get_ctype_prop_associations <- function(container) {
+get_ctype_prop_associations <- function(container,stat_type) {
   scMinimal <- container$scMinimal_full
   donor_scores <- container$tucker_results[[1]]
   metadata <- scMinimal$metadata
@@ -89,10 +94,10 @@ get_ctype_prop_associations <- function(container) {
   rownames(donor_balances) <- rownames(donor_props)
 
   # compute associations
-  sig_res <- compute_associations(donor_balances,donor_scores)
+  sig_res <- compute_associations(donor_balances,donor_scores,stat_type)
 
   # plot results
-  prop_figure <- plot_donor_props(donor_props,donor_scores,sig_res,ctypes)
+  prop_figure <- plot_donor_props(donor_props,donor_scores,sig_res,ctypes,stat_type)
 
   # save results
   container$plots$ctype_prop_factor_associations <- prop_figure
@@ -153,12 +158,14 @@ compute_donor_props <- function(clusts,metadata) {
 #'
 #' @param donor_balances matrx The balances computed from donor cell type proportions
 #' @param donor_scores data.frame The donor scores matrix from tucker results
+#' @param stat_type character Either "fstat" to get F-Statistics, "adj_rsq" to get adjusted
+#' R-squared values, or "adj_pval" to get adjusted pvalues.
 #'
 #' @return a numeric vector of F-Statistics (one for each factor)
 #' @export
-compute_associations <- function(donor_balances, donor_scores) {
+compute_associations <- function(donor_balances, donor_scores, stat_type) {
 
-  all_fstats <- c()
+  all_reg_stats <- c()
   # loop through factors
   for (f in 1:ncol(donor_scores)) {
     # compute association between donor proportions and donor scores
@@ -176,11 +183,19 @@ compute_associations <- function(donor_balances, donor_scores) {
     # run lm (need to figure out how to specify multiple explanatory vars)
     lmres <- stats::lm(prop_model, data=tmp)
 
-    # extract f-statistic
-    fstat <- summary(lmres)$fstatistic[[1]]
-    all_fstats <- c(all_fstats,fstat)
+    # extract regression statistic
+    if (stat_type == 'fstat') {
+      reg_stat <- summary(lmres)$fstatistic[[1]]
+    } else if (stat_type == 'adj_rsq') {
+      reg_stat <- summary(lmres)$adj.r.squared
+    } else if (stat_type == 'adj_pval') {
+      x <- summary(lmres)
+      reg_stat <- stats::pf(x$fstatistic[1],x$fstatistic[2],x$fstatistic[3],lower.tail=FALSE)
+    }
+
+    all_reg_stats <- c(all_reg_stats,reg_stat)
   }
-  return(all_fstats)
+  return(all_reg_stats)
 }
 
 #' Plot donor proportions for each factor
@@ -189,10 +204,16 @@ compute_associations <- function(donor_balances, donor_scores) {
 #' @param donor_scores data.frame Donor scores from tucker results
 #' @param significance numeric F-Statistics as output from compute_associations()
 #' @param ctype_mapping character The cell types corresponding with columns of donor_props
+#' @param stat_type character Either "fstat" to get F-Statistics, "adj_rsq" to get adjusted
+#' R-squared values, or "adj_pval" to get adjusted pvalues.
 #'
 #' @return plots of donor proportions for each cell type vs donor factor scores for each factor
 #' @export
-plot_donor_props <- function(donor_props,donor_scores,significance,ctype_mapping=NULL) {
+plot_donor_props <- function(donor_props,donor_scores,significance,ctype_mapping=NULL,stat_type) {
+  if (stat_type == 'adj_pval') {
+    significance <- stats::p.adjust(significance)
+  }
+
   all_plots <- list()
   # loop through factors
   for (f in 1:ncol(donor_scores)) {
@@ -210,6 +231,14 @@ plot_donor_props <- function(donor_props,donor_scores,significance,ctype_mapping
       })
     }
 
+    if (stat_type=='fstat') {
+      plot_stat_name <- 'F-Statistic'
+    } else if (stat_type=='adj_rsq') {
+      plot_stat_name <- 'Adjusted R-Squared'
+    } else if (stat_type == 'adj_pval') {
+      plot_stat_name <- 'Adjusted P-Value'
+    }
+
     p <- ggplot(tmp2, aes(x=dscore,y=donor_proportion,color=ctypes)) +
       geom_line() +
       ggtitle(paste0("Factor ",as.character(f))) +
@@ -218,7 +247,7 @@ plot_donor_props <- function(donor_props,donor_scores,significance,ctype_mapping
       xlab("") +
       ylab("") +
       annotate(geom="text",  x=Inf, y=Inf, hjust=1,vjust=1, col="black",
-               label=paste0('F-Statistic: ',round(significance[f],digits=2)))
+               label=paste0(plot_stat_name,': ',round(significance[f],digits=2)))
 
     all_plots[[f]] <- p
   }
@@ -234,12 +263,20 @@ plot_donor_props <- function(donor_props,donor_scores,significance,ctype_mapping
 
 #' Title
 #'
-#' @param res data.frame F-Statistics for each subcluster analysis
+#' @param res data.frame Regression statistics for each subcluster analysis
 #'
-#' @return plots of F-Statistics for each subtypes at varying k values and
+#' @return plots of regression statistics for each subtypes at varying k values and
 #' for each factor
 #' @export
 plot_subclust_associations <- function(res) {
+
+  stat_type <- colnames(res)[1]
+
+  # if plotting pvalues, fdr adjust and transform to -log10(pval)
+  if (stat_type == 'adj_pval') {
+    res[,stat_type] <- stats::p.adjust(res[,stat_type], method = 'fdr')
+    res[,stat_type] <- -log10(res[,stat_type])
+  }
 
   num_factors <- length(unique(res$factor))
   ctypes <- unique(res$ctype)
@@ -249,7 +286,7 @@ plot_subclust_associations <- function(res) {
     factor_name <- paste0("Factor ",as.character(f))
     res_factor <- res[res$factor==factor_name,]
 
-    p <- ggplot(res_factor,aes(x=k,y=fstat,color=ctype)) +
+    p <- ggplot(res_factor,aes_string(x='k',y=stat_type,color='ctype')) +
       geom_line() +
       xlab("") +
       ylab("") +
@@ -257,15 +294,33 @@ plot_subclust_associations <- function(res) {
       ggtitle(factor_name) +
       theme(plot.title = element_text(hjust = 0.5))
 
+    # if plotting r-squared change y-limits to 0-1
+    if (stat_type == 'adj_rsq') {
+      p <- p + ylim(c(-.1,1))
+    }
+
+    # if plotting -log10 pvals draw significance line
+    if (stat_type == 'adj_pval') {
+      p <- p + geom_hline(yintercept=-log10(.05), linetype="dashed", color = "red")
+    }
+
     plot_list[[factor_name]] <- p
 
   }
   f_plots <- ggpubr::ggarrange(plotlist = plot_list, ncol=1,
                                common.legend = T, legend = 'right')
+  if (stat_type=='fstat') {
+    y_axis_name <- 'F-Statistic'
+  } else if (stat_type=='adj_rsq') {
+    y_axis_name <- 'Adjusted R-Squared'
+  } else if (stat_type == 'adj_pval') {
+    y_axis_name <- '-log10(Adjusted P-Value)'
+  }
+
   f_plots <- ggpubr::annotate_figure(f_plots,
                   bottom = ggpubr::text_grob("Number of Subclusters",
                                      size = 15, hjust = .7),
-                  left = ggpubr::text_grob("F-Statistic", rot = 90, size = 15, hjust = .375))
+                  left = ggpubr::text_grob(y_axis_name, rot = 90, size = 15, hjust = .375))
   return(f_plots)
 }
 

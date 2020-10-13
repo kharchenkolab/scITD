@@ -4,11 +4,14 @@
 \alias{get_ctype_prop_associations}
 \title{Compute associations between donor factor scores and donor proportions of major cell types}
 \usage{
-get_ctype_prop_associations(container)
+get_ctype_prop_associations(container, stat_type)
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
 for each cell type as well as results and plots from all analyses}
+
+\item{stat_type}{character Either "fstat" to get F-Statistics, "adj_rsq" to get adjusted
+R-squared values, or "adj_pval" to get adjusted pvalues.}
 }
 \value{
 the project container with the results plot in container$plots$ctype_prop_factor_associations

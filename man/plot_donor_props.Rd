@@ -4,7 +4,13 @@
 \alias{plot_donor_props}
 \title{Plot donor proportions for each factor}
 \usage{
-plot_donor_props(donor_props, donor_scores, significance, ctype_mapping = NULL)
+plot_donor_props(
+  donor_props,
+  donor_scores,
+  significance,
+  ctype_mapping = NULL,
+  stat_type
+)
 }
 \arguments{
 \item{donor_props}{data.frame Donor proportions as output from compute_donor_props()}
@@ -14,6 +20,9 @@ plot_donor_props(donor_props, donor_scores, significance, ctype_mapping = NULL)
 \item{significance}{numeric F-Statistics as output from compute_associations()}
 
 \item{ctype_mapping}{character The cell types corresponding with columns of donor_props}
+
+\item{stat_type}{character Either "fstat" to get F-Statistics, "adj_rsq" to get adjusted
+R-squared values, or "adj_pval" to get adjusted pvalues.}
 }
 \value{
 plots of donor proportions for each cell type vs donor factor scores for each factor

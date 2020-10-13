@@ -4,13 +4,16 @@
 \alias{get_subtype_prop_associations}
 \title{Compute associations between donor factor scores and donor proportions of cell subtypes}
 \usage{
-get_subtype_prop_associations(container, max_num_k)
+get_subtype_prop_associations(container, max_num_k, stat_type)
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
 for each cell type as well as results and plots from all analyses}
 
 \item{max_num_k}{numeric The largest number of subclusters to get for any cell type}
+
+\item{stat_type}{character Either "fstat" to get F-Statistics, "adj_rsq" to get adjusted
+R-squared values, or "adj_pval" to get adjusted pvalues.}
 }
 \value{
 the project container with a plot of results in
