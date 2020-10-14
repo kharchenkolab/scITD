@@ -1,6 +1,6 @@
 #' Ensemble to gene symbol mapping
 #'
-"genes"
+"feature.names"
 
 #' Gene expression UMI counts matrix for all cells and all genes
 #'
