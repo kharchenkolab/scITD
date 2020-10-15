@@ -63,7 +63,7 @@ Rcpp::DataFrame colMeanVars(SEXP sY,  SEXP rowSel, int ncores=1) {
     meanV[g]=m;
     ly -= m; 
     ly%=ly; // we need to avoid warning which checks whether assignment operation survives self-assignment.
-    varV[g]=(sum(result_ly)+(m*m*(nrows-result_ly.size())))/nrows;
+    varV[g]=(sum(ly)+(m*m*(nrows-ly.size())))/nrows;
   }
-  return Rcpp::DataFrame::create(Named("m")=meanV,Named("v")=varV,Named("nobs",nobsV));
+  return Rcpp::DataFrame::create(Named("m")=meanV, Named("v")=varV, Named("nobs", nobsV));
 }
