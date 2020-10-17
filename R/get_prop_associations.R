@@ -247,7 +247,7 @@ plot_donor_props <- function(donor_props,donor_scores,significance,ctype_mapping
       xlab("") +
       ylab("") +
       annotate(geom="text",  x=Inf, y=Inf, hjust=1,vjust=1, col="black",
-               label=paste0(plot_stat_name,': ',round(significance[f],digits=2)))
+               label=paste0(plot_stat_name,': ',round(significance[f],digits=3)))
 
     all_plots[[f]] <- p
   }

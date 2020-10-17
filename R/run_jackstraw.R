@@ -1,4 +1,6 @@
 
+utils::globalVariables(c("donor_rank", "min_sig"))
+
 #' Run tensor-based jackstraw to get gene_cell type combinations that are significantly
 #' associated with donor scores for factors extracted by Tucker decomposition
 #'
@@ -193,7 +195,64 @@ get_fstats_pvals <- function(fstats_real, fstats_shuffled) {
 
 
 
+#' Evaluate the minimum number for significant genes in any factor for a given number of
+#' donor factors extracted by tucker.
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses. Should have
+#' @param donor_rank_range numeric Range of possible number of donor factors to use.
+#' @param thresh numeric Pvalue threshold for significant genes in calculating the
+#' number of significant genes identified per factor. (default=0.05)
+#'
+#' @return the project container with a plot of the minimum significant genes for
+#' each decomposition with varying number of donor factors located in
+#' container$plots$min_sig_genes
+#' @export
+get_min_sig_genes <- function(container,donor_rank_range,thresh=0.05) {
+  ranks <- container$experiment_params$ranks
+  if (is.null(ranks)) {
+    stop("Need to set decomposition ranks first. Use set_experiment_params()")
+  }
+  gene_ranks <- ranks[2]
+  ctype_ranks <- ranks[3]
 
+  min_per_decomp <- data.frame(matrix(ncol=2,nrow=0))
+  colnames(min_per_decomp) <- c('donor_rank','min_sig')
+  for (i in donor_rank_range) {
+    container <- run_tucker_ica(container, c(i,gene_ranks,ctype_ranks), shuffle=F)
+    container <- set_experiment_params(container, ranks = c(i,gene_ranks,ctype_ranks))
+    container <- run_jackstraw(container,n_iter = 200)
+
+    padj <- container$gene_score_associations
+    padj_factors <- sapply(names(padj),function(x) {
+      strsplit(x,split = '.', fixed = TRUE)[[1]][[3]]
+    })
+
+    # loop through factors to get the min number of significant genes out of any factor
+    num_sig_genes <- c()
+    for (j in 1:i) {
+      padj_use <- padj[which(padj_factors == as.character(j))]
+      num_sig_genes <- c(num_sig_genes, sum(padj_use < thresh))
+    }
+    print(num_sig_genes)
+    tmp <- as.data.frame(t(c(i,min(num_sig_genes))))
+    colnames(tmp) <- colnames(min_per_decomp)
+    min_per_decomp <- rbind(min_per_decomp,tmp)
+  }
+
+  # reset ranks to original setting
+  container <- set_experiment_params(container, ranks = ranks)
+
+  # plot results
+  p <- ggplot(min_per_decomp, aes(x=donor_rank,y=min_sig)) +
+    geom_line() +
+    xlab("Number of Donor Factors") +
+    ylab("Minimum Significant Genes of Any Factor")
+
+  container$plots$min_sig_genes <- p
+
+  return(container)
+}
 
 
 
