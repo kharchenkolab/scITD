@@ -16,3 +16,9 @@ colMeanVars(sY, rowSel, ncores = 1L)
 \description{
 calculate column mean and variance, optionally taking a subset of rows to operate on
 }
+\examples{
+donor_by_gene <- rbind(c(9,2,1,5), c(3,3,1,2))
+donor_by_gene <- Matrix(donor_by_gene, sparse = TRUE)
+result <- colMeanVars(donor_by_gene, rowSel = NULL, ncores=1)
+
+}

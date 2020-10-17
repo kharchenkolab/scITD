@@ -58,11 +58,9 @@ NumericMatrix get_means(SEXP sY,  IntegerVector rowSel, IntegerVector numCells) 
     }
   }
 
-
   colnames(sumM) = geneNames;
   rownames(sumM) = expandedFactorLevels;
-
-
+  
   return sumM;
 
 }
