@@ -16,6 +16,7 @@ using namespace Rcpp;
 //' @param rowSel numeric The selected rows (genes)
 //' @param ncores numeric The number of cores
 //' @examples
+//' library(Matrix)
 //' donor_by_gene <- rbind(c(9,2,1,5), c(3,3,1,2))
 //' donor_by_gene <- Matrix(donor_by_gene, sparse = TRUE)
 //' result <- colMeanVars(donor_by_gene, rowSel = NULL, ncores=1)
