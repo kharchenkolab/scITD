@@ -48,8 +48,8 @@ al](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5905669/).
 If you find `scITD` useful for your publication, please cite:
 
 ```
-  Jonathan Mitchel and Evan Biederstedt (2020). scITD: Single-Cell
-  Interpretable Tucker Decomposition. R package version 0.1.0.
+Jonathan Mitchel and Evan Biederstedt (2020). scITD: Single-Cell
+Interpretable Tucker Decomposition. R package version 0.1.0.
 ```
 
 
