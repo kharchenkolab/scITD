@@ -1,3 +1,5 @@
+#' @import Matrix
+NULL
 
 #' Partition main gene by cell matrix into per cell type matrices with significantly
 #' variable genes only
