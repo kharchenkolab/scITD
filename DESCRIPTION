@@ -1,6 +1,7 @@
 Package: scITD
 Title: Single-Cell Interpretable Tucker Decomposition
 Version: 0.1.0
+Date: 2020-10-18
 Authors@R: c(person("Jonathan", "Mitchel", email="mitchel@mit.edu", role=c("aut","cre")), person("Evan", "Biederstedt", email="evan.biederstedt@gmail.com", role="aut"))
 Maintainer: Jonathan Mitchel <mitchel@mit.edu>
 Description: Employs the Tucker tensor decomposition method

@@ -41,3 +41,15 @@ to learn how to use scITD. The tutorial walks through the standard
 pipeline and applies it to a dataset of PBMC’s from 45 healthy donors.
 The dataset is originally from a paper by [van der Wijst et
 al](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5905669/).
+
+
+## Citation
+
+If you find `scITD` useful for your publication, please cite:
+
+```
+  Jonathan Mitchel and Evan Biederstedt (2020). scITD: Single-Cell
+  Interpretable Tucker Decomposition. R package version 0.1.0.
+```
+
+
