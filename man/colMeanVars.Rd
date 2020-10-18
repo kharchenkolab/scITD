@@ -2,7 +2,7 @@
 % Please edit documentation in R/RcppExports.R
 \name{colMeanVars}
 \alias{colMeanVars}
-\title{calculate column mean and variance, optionally taking a subset of rows to operate on}
+\title{calculates column mean and variance, optionally taking a subset of rows to operate on}
 \usage{
 colMeanVars(sY, rowSel, ncores = 1L)
 }
@@ -14,9 +14,10 @@ colMeanVars(sY, rowSel, ncores = 1L)
 \item{ncores}{numeric The number of cores}
 }
 \description{
-calculate column mean and variance, optionally taking a subset of rows to operate on
+calculates column mean and variance, optionally taking a subset of rows to operate on
 }
 \examples{
+library(Matrix)
 donor_by_gene <- rbind(c(9,2,1,5), c(3,3,1,2))
 donor_by_gene <- Matrix(donor_by_gene, sparse = TRUE)
 result <- colMeanVars(donor_by_gene, rowSel = NULL, ncores=1)

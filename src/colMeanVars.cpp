@@ -10,7 +10,7 @@
 using namespace std;
 using namespace Rcpp;
 
-//' calculate column mean and variance, optionally taking a subset of rows to operate on
+//' calculates column mean and variance, optionally taking a subset of rows to operate on
 //'
 //' @param sY sparse matrix Gene by cell matrix of counts
 //' @param rowSel numeric The selected rows (genes)
