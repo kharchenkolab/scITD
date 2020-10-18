@@ -22,10 +22,9 @@ Encoding: UTF-8
 LazyData: true
 biocViews:
 Depends:
-    R (>= 3.5.0)
+    R (>= 3.5.0), Matrix
 Imports: 
     rTensor,
-    Matrix,
     ica,
     venn,
     msigdbr,
