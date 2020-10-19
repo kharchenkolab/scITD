@@ -11,17 +11,17 @@ Single-Cell Interpretable Tensor Decomposition (scITD) employs the
 Tucker tensor decomposition to extract multi-cell type expression
 programs from single-cell RNA-sequencing data. This tool is most useful
 for scRNA-seq datasets derived from many source donors. By rearranging
-the factor matrices and core tensor traditionally extracted with Tucker
+the factor matrices and core tensor traditionally extracted with Tucker,
 we create a biologically meaningful result that can be interpreted with
 standard methods such as gene set enrichment analysis (GSEA). To further
-improve interpretability of the extracted factors we apply independent
+improve interpretability of the extracted factors, we apply independent
 component analysis (ICA) to rotate factors toward independence. We also
 implement several methods to determine the appropriate ranks to
-decompose the tensor to, as this can be one of the main challenges in
+decompose the tensor too, as this can be one of the main challenges in
 using such a method. Further, a jackstraw-like method has been
 implemented to identify genes that are significant in each of the
 extracted factors. Overall, this package provides the basic tools
-necessary to extracting multi-cell type processes from scRNA-seq
+necessary for extracting multi-cell type processes from scRNA-seq
 datasets that will be useful in understanding complex and heterogeneous
 diseases.
 
