@@ -12,10 +12,13 @@
 #' each multi-cell type process. donors_per_process * n_processes should not exceed
 #' donors_total.
 #' @param n_ctypes numeric The number of different cell types to be generated (default=2)
+#' @param n_genes numeric Number of genes to include in dataset. Should be considered alongside
+#' de_prob, as too few DE genes will make it hard to detect a signal. (default=2000)
 #' @param de_prob numeric The probability that each gene gets upregulated in each cell
 #' type in each process (default=.05)
 #' @param de_strength numeric This is roughly the average effect size for all differentially
 #' expressed genes used to generate the distinc processes (default=2)
+#' @param rseed numeric The random seed to use (default=10)
 #'
 #' @return normalized gene by cell count matrix, raw gene by cell count matrix,
 #' metadata data.frame, and matrix of differentially expressed genes
@@ -23,11 +26,13 @@
 #'
 #' @examples
 #' get_sim_data(donors_total=50, cells_per_donor=200, n_processes=2, donors_per_process=10,
-#' n_ctypes=2, de_prob=0.05, de_strength=2)
+#' n_ctypes=2, n_genes=2000, de_prob=0.05, de_strength=2, rseed=10)
 get_sim_data <- function(donors_total, cells_per_donor, n_processes, donors_per_process,
-                         n_ctypes=2, de_prob=0.05, de_strength=2){
+                         n_ctypes=2, n_genes=2000, de_prob=0.05, de_strength=2, rseed=10){
   params <- newSplatParams()
   params <- setParam(params, "batchCells", donors_total * cells_per_donor)
+  params <- setParam(params, "nGenes", n_genes)
+  params <- setParam(params, "seed", rseed)
 
   n_groups <- n_ctypes*n_processes
   group_fracs <- rep((donors_per_process/n_ctypes)/donors_total,n_groups)
@@ -42,7 +47,8 @@ get_sim_data <- function(donors_total, cells_per_donor, n_processes, donors_per_
   # assign cells to cell types
   cell_meta <- colData(scsim)
   cell_meta$ctypes <- NA
-  group_ctypes <- rep(1:n_ctypes,n_processes)
+  ctype_names <- sapply(1:n_ctypes,function(x){paste0('ct',as.character(x))})
+  group_ctypes <- rep(ctype_names,n_processes)
   for (i in 1:n_groups) {
     group_name <- paste0('Group',i)
     group_mask = cell_meta$Group==group_name
@@ -50,7 +56,7 @@ get_sim_data <- function(donors_total, cells_per_donor, n_processes, donors_per_
   }
   # randomly assign last group cells to cell types
   ncells_base <- sum(is.na(cell_meta$ctypes))
-  assigns <- sample(1:n_ctypes,ncells_base,replace=T)
+  assigns <- sample(ctype_names,ncells_base,replace=T)
   cell_meta$ctypes[is.na(cell_meta$ctypes)] <- assigns
 
 
@@ -71,7 +77,8 @@ get_sim_data <- function(donors_total, cells_per_donor, n_processes, donors_per_
     group_name <- paste0('Group',i)
     group_mask = cell_meta$Group==group_name
     ncells_group = sum(group_mask)
-    assigns <- sample(group_donors[[i]][1]:group_donors[[i]][2],ncells_group,replace=T)
+    d_range <- sapply(group_donors[[i]][1]:group_donors[[i]][2], function(x){paste0('s',as.character(x))})
+    assigns <- sample(d_range,ncells_group,replace=T)
     cell_meta$donors[group_mask] <- assigns
   }
 
