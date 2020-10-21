@@ -12,6 +12,9 @@
 #' @return scMinimal object
 #' @export
 instantiate_scMinimal <- function(data_sparse,count_data,meta_data) {
+  if (is.null(data_sparse)) {
+    data_sparse <- normalize_counts(count_data)
+  }
   scMinimal <- new.env()
   scMinimal$data_sparse <- as.matrix(data_sparse)
   scMinimal$count_data_sparse <- as.matrix(count_data)
@@ -139,8 +142,21 @@ identify_sex_metadata <- function(scMinimal) {
 
 }
 
+#' Normalize and log-transform count data
+#'
+#' @param count_data matrix or sparse matrix Gene by cell matrix of counts
+#'
+#' @return the normalized, log-transformed data
+#' @export
+normalize_counts <- function(count_data) {
+  # divide by lib size and multiply by scale factor
+  lib_sizes <- Matrix::colSums(count_data)
+  tmp <- sweep(count_data,MARGIN=2,lib_sizes,FUN='/') * 10000
 
-
+  # log transform result
+  tmp <- log1p(tmp)
+  return(tmp)
+}
 
 
 

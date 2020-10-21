@@ -1,5 +1,4 @@
 
-### PROBABLY WILL NEED TO FIX THIS AND CHECK CHECK() AGAIN AFTER
 utils::globalVariables(c("dscore", "donor_proportion", "ctypes"))
 
 #' Compute associations between donor factor scores and donor proportions of cell subtypes
