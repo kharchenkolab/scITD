@@ -10,8 +10,10 @@ get_sim_data(
   n_processes,
   donors_per_process,
   n_ctypes = 2,
+  n_genes = 2000,
   de_prob = 0.05,
-  de_strength = 2
+  de_strength = 2,
+  rseed = 10
 )
 }
 \arguments{
@@ -29,11 +31,16 @@ donors_total.}
 
 \item{n_ctypes}{numeric The number of different cell types to be generated (default=2)}
 
+\item{n_genes}{numeric Number of genes to include in dataset. Should be considered alongside
+de_prob, as too few DE genes will make it hard to detect a signal. (default=2000)}
+
 \item{de_prob}{numeric The probability that each gene gets upregulated in each cell
 type in each process (default=.05)}
 
 \item{de_strength}{numeric This is roughly the average effect size for all differentially
 expressed genes used to generate the distinc processes (default=2)}
+
+\item{rseed}{numeric The random seed to use (default=10)}
 }
 \value{
 normalized gene by cell count matrix, raw gene by cell count matrix,
@@ -44,5 +51,5 @@ Generate simulated data with subgroups of donors expressing multi-cell type proc
 }
 \examples{
 get_sim_data(donors_total=50, cells_per_donor=200, n_processes=2, donors_per_process=10,
-n_ctypes=2, de_prob=0.05, de_strength=2)
+n_ctypes=2, n_genes=2000, de_prob=0.05, de_strength=2, rseed=10)
 }

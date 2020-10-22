@@ -49,7 +49,8 @@ Imports:
     coda.base,
     gmodels,
     splatter,
-    SingleCellExperiment
+    SingleCellExperiment,
+    GPArotation
 RoxygenNote: 7.1.1
 LinkingTo: Rcpp, RcppArmadillo, RcppProgress
 NeedsCompilation: yes

@@ -29,8 +29,18 @@ plot_donor_matrix <- function(container, meta_vars=NULL,
     paste0("Factor ", x)
   })
 
+  # # make colormap for hmap
+  # col_fun = colorRamp2(c(-2, 0, 2), c("blue", "white", "red"))
+
   # make colormap for hmap
-  col_fun = colorRamp2(c(-2, 0, 2), c("blue", "white", "red"))
+  color_lim <- max(abs(donor_mat))
+  col_fun = colorRamp2(c(-color_lim, 0, color_lim), c("blue", "white", "red"))
+  # nintieth_per <- stats::quantile(as.matrix(abs(donor_mat)), c(.9))
+  # if (color_lim > (2*nintieth_per)) {
+  #   col_fun = colorRamp2(c(-nintieth_per, 0, nintieth_per), c("blue", "white", "red"))
+  # } else {
+  #   col_fun = colorRamp2(c(-color_lim, 0, color_lim), c("blue", "white", "red"))
+  # }
 
   if (is.null(meta_vars)) {
     myhmap <- Heatmap(donor_mat, name = "score",
@@ -162,14 +172,28 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, an
   }
 
   # make main part of heatmap (loadings)
-  col_fun <- colorRamp2(c(min(tmp_casted_num), 0, max(tmp_casted_num)),
-                        c("blue", "white", "red"))
+  # col_fun <- colorRamp2(c(min(tmp_casted_num), 0, max(tmp_casted_num)),
+  #                       c("blue", "white", "red"))
+
+  # # make main part of heatmap (loadings)
+  # col_fun <- colorRamp2(c(-7, 0, 7.5),
+  #                       c("blue", "white", "red"))
+
+  # make colormap for hmap
+  color_lim <- max(abs(tmp_casted_num))
+  col_fun <- colorRamp2(c(-color_lim, 0, color_lim),c("blue", "white", "red"))
+  # nintieth_per <- stats::quantile(as.matrix(abs(tmp_casted_num)), c(.9))
+  # if (color_lim > (2*nintieth_per)) {
+  #   col_fun = colorRamp2(c(-nintieth_per, 0, nintieth_per), c("blue", "white", "red"))
+  # } else {
+  #   col_fun = colorRamp2(c(-color_lim, 0, color_lim), c("blue", "white", "red"))
+  # }
 
   hm_list <- Heatmap(tmp_casted_num, show_row_dend = FALSE, show_column_dend = FALSE,
                      name = "loadings", show_row_names = display_genes,
                      column_names_gp = gpar(fontsize = 20), cluster_columns = FALSE,
                      clustering_method_rows = "ward.D",
-                     row_names_side = "left", col = col_fun,
+                     row_names_side = "left", col=col_fun,
                      column_title = paste0('Factor ', factor_select),
                      column_title_gp = gpar(fontsize = 20, fontface = "bold"),
                      row_title = rt, row_title_gp = gpar(fontsize = 14))
