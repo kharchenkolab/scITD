@@ -11,7 +11,6 @@
 #'@return a list containing the results
 #'@export
 tucker_sparse <- function(tnsr,ranks=NULL,max_iter=25,tol=1e-5){
-  stopifnot(is(tnsr,"Tensor"))
   if(is.null(ranks)) stop("ranks must be specified")
   if (sum(ranks>tnsr@modes)!=0) stop("ranks must be smaller than the corresponding mode")
   if (sum(ranks<=0)!=0) stop("ranks must be positive")
@@ -38,11 +37,9 @@ tucker_sparse <- function(tnsr,ranks=NULL,max_iter=25,tol=1e-5){
     if (abs(curr_resid-fnorm_resid[curr_iter-1])/tnsr_norm < tol) return(TRUE)
     else{return(FALSE)}
   }
-  #progress bar
-  pb <- txtProgressBar(min=0,max=max_iter,style=3)
+
   #main loop (until convergence or max_iter)
   while((curr_iter < max_iter) && (!converged)){
-    setTxtProgressBar(pb,curr_iter)
     modes <- tnsr@modes
     modes_seq <- 1:num_modes
     for(m in modes_seq){
@@ -57,12 +54,10 @@ tucker_sparse <- function(tnsr,ranks=NULL,max_iter=25,tol=1e-5){
     #checks convergence
     if(CHECK_CONV(Z, U_list)){
       converged <- TRUE
-      setTxtProgressBar(pb,max_iter)
     }else{
       curr_iter <- curr_iter + 1
     }
   }
-  close(pb)
   #end of main loop
   #put together return list, and returns
   fnorm_resid <- fnorm_resid[fnorm_resid!=0]

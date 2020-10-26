@@ -150,7 +150,7 @@ get_sim_data <- function(data_for_p_est=NULL, prev_params=NULL, donors_total, ce
 #' @param meta DataFrame The colData of the simulation
 #' @param de_strength numeric An average foldchange for the DE genes
 #'
-#' @return
+#' @return normalized counts matrix of DE genes for the specified groups
 sim_helper <- function(groups,g_frac,n_de_genes_per_group,params,meta,de_strength) {
   scsim_de <- splatSimulateGroups(params,
                                   group.prob = c(g_frac,1-g_frac),

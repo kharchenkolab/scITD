@@ -19,7 +19,8 @@ instantiate_scMinimal <- function(data_sparse=NULL,count_data=NULL,meta_data) {
     data_sparse <- normalize_counts(count_data)
   }
   scMinimal <- new.env()
-  scMinimal$data_sparse <- as.matrix(data_sparse)
+  # scMinimal$data_sparse <- as.matrix(data_sparse)
+  scMinimal$data_sparse <- Matrix(data_sparse, sparse = TRUE)
   scMinimal$data_residuals <- NULL
   scMinimal$data_means <- NULL
   scMinimal$metadata <- meta_data

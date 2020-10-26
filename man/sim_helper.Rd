@@ -20,7 +20,7 @@ sim_helper(groups, g_frac, n_de_genes_per_group, params, meta, de_strength)
 \item{de_strength}{numeric An average foldchange for the DE genes}
 }
 \value{
-
+normalized counts matrix of DE genes for the specified groups
 }
 \description{
 Get data for DE genes that will correspond with the main simulation
