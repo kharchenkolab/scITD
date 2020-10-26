@@ -286,91 +286,6 @@ run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh
 }
 
 
-#' Run gsea for all cell types and all factors and generate venn diagrams to
-#' visualize overlap between enriched genes sets between different cell types
-#'
-#' @param container environment Project container that stores sub-containers
-#' for each cell type as well as results and plots from all analyses
-#' @param method character The method of gsea to use. Can either be "fgsea" or
-#' "hypergeometric". (default="fgsea")
-#' @param thresh numeric Pvalue significance threshold (default=0.05)
-#' @param db_use character The database of gene sets to use. Database
-#' options include "GO", "Reactome", "KEGG", and "BioCarta". More than
-#' one database can be used. (default="GO")
-#' @param num_iter numeric The number of random shufflings to perform. Only
-#' applies if using fgsea method (default=10000)
-#'
-#' @return project container with venn diagrams for each factor added in
-#' container$plots slots and gsea results added in container$gsea_results
-#' @export
-run_gsea_all_factors <- function(container, method="fgsea", thresh=0.05,
-                                 db_use="GO", num_iter=10000) {
-  for (i in 1:ncol(container$tucker_results[[1]])) {
-    up_sets_all <- list()
-    down_sets_all <- list()
-    ctypes_use <- container$experiment_params$ctypes_use
-    for (ct in ctypes_use) {
-      if (method == 'fgsea') {
-        fgsea_res <- run_fgsea(container, factor_select=i, ctype=ct,
-                               db_use=db_use, num_iter=num_iter, print_res=FALSE)
-
-        # keep separate track of positive/negative enriched sets
-        up_sets <- fgsea_res$pathway[fgsea_res$NES > 0]
-        down_sets <- fgsea_res$pathway[fgsea_res$NES < 0]
-        up_sets_all[[ct]] <- up_sets
-        down_sets_all[[ct]] <- down_sets
-      } else if (method == 'hypergeometric') {
-        gsea_res_up <- run_hypergeometric_gsea(container, factor_select=i, ctype=ct,
-                                            up_down='up', thresh=thresh, db_use=db_use)
-        gsea_res_down <- run_hypergeometric_gsea(container, factor_select=i, ctype=ct,
-                                               up_down='down', thresh=thresh, db_use=db_use)
-
-        up_sets_all[[ct]] <- names(gsea_res_up)
-        down_sets_all[[ct]] <- names(gsea_res_down)
-      }
-    }
-
-    # plot venn diagram
-    if (check_for_all_null(up_sets_all)) {
-      up_plot <- venn::venn(x = up_sets_all, box=FALSE, ggplot=TRUE)
-    } else {
-      up_plot <- NULL
-    }
-
-    if (check_for_all_null(down_sets_all)) {
-      down_plot <- venn::venn(x = down_sets_all, box=FALSE, ggplot=TRUE)
-    } else {
-      down_plot <- NULL
-    }
-
-    # add results and venn diagram to container
-    factor_name <- paste0('Factor', as.character(i))
-    container$gsea_results[[factor_name]] <- list('up'=up_sets_all,
-                                                  'down'=down_sets_all)
-    container$plots$gsea[[factor_name]] <- list('up'=up_plot,
-                                                'down'=down_plot)
-
-  }
-
-  return(container)
-}
-
-#' Checks if there are any non-NULL elements in a list
-#'
-#' @param mylist list The list to check
-#'
-#' @return TRUE if there exist non-NULL elements or FALSE if all are NULL
-#' @export
-check_for_all_null <- function(mylist) {
-  result <- FALSE
-  for (i in 1:length(mylist)) {
-    if (length(mylist[[i]]) > 0) {
-      result <- TRUE
-    }
-  }
-  return(result)
-}
-
 #' Extract gene sets that are enriched selectively in one or more cell types for a given factor
 #'
 #' @param container environment Project container that stores sub-containers
@@ -380,16 +295,20 @@ check_for_all_null <- function(mylist) {
 #' enriched in all of these and not in any other cell types
 #' @param up_down character Set to "up" to get the gene sets for the positive loading genes. Set
 #' to "down" to get the gene sets for the negative loadings genes.
+#' @param thresh numeric Pvalue significance threshold for selecting enriched sets (default=0.05)
 #'
 #' @return a vector of pathways selectively enriched in the listed cell types
 #' @export
-get_intersecting_pathways <- function(container, factor_select, these_ctypes_only, up_down) {
+get_intersecting_pathways <- function(container, factor_select, these_ctypes_only, up_down, thresh=0.05) {
   factor_select <- paste0('Factor',factor_select)
-  intersect_pathways <- container$gsea_results[[factor_select]][[up_down]][[these_ctypes_only[1]]]
+  ct_1_paths <- container$gsea_results[[factor_select]][[up_down]][[these_ctypes_only[1]]]
+  intersect_pathways <- names(ct_1_paths)[ct_1_paths<thresh]
   if (length(these_ctypes_only) > 1) {
     for (i in 2:length(these_ctypes_only)) {
+      cur_paths <- container$gsea_results[[factor_select]][[up_down]][[these_ctypes_only[i]]]
+      sig_cur_paths <- names(cur_paths)[cur_paths<thresh]
       intersect_pathways <- intersect(intersect_pathways,
-                                      container$gsea_results[[factor_select]][[up_down]][[these_ctypes_only[i]]])
+                                      sig_cur_paths)
     }
   }
 

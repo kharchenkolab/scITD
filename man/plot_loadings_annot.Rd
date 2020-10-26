@@ -10,6 +10,7 @@ plot_loadings_annot(
   use_sig_only = FALSE,
   annot = "none",
   pathways = NULL,
+  sim_de_donor_group = NULL,
   sig_thresh = 0.05,
   display_genes = FALSE,
   show_xlab = TRUE
@@ -32,6 +33,10 @@ set to "none" no adjacent heatmap is plotted. (default="none")}
 
 \item{pathways}{character Gene sets to plot if annot is set to "pathways"
 (default=NULL)}
+
+\item{sim_de_donor_group}{numeric To plot the ground truth significant genes from a
+simulation next to the heatmap, put the number of the donor group that corresponds to
+the factor being plotted (default=NULL).}
 
 \item{sig_thresh}{numeric Pvalue significance threshold to use. If use_sig_only is
 TRUE the threshold is used as a cutoff for genes to include. If annot is "sig_genes"
