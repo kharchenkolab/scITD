@@ -32,7 +32,7 @@ devtools::install_github("kharchenkolab/scITD")
 
 ## Walkthrough
 
-Follow the [guided tutorial](https://htmlpreview.github.io/?https://raw.githubusercontent.com/kharchenkolab/scITD//master/doc/walkthrough.html) to learn how to use scITD. The tutorial walks through the standard pipeline and applies it to a dataset of PBMC's from 45 healthy donors. The dataset is originally from a paper by [van der Wijst et al](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5905669/).
+Follow the [guided tutorial](http://pklab.med.harvard.edu/jonathan/) to learn how to use scITD. The tutorial walks through the standard pipeline and applies it to a dataset of PBMC's from 45 healthy donors. The dataset is originally from a paper by [van der Wijst et al](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5905669/).
 
 
 
