@@ -7,9 +7,9 @@
 seurat_to_scMinimal(s_obj)
 }
 \arguments{
-\item{s_obj}{Seurat object that has been cleaned and includes the counts
-as well as normalized, log-transformed counts. The meta.data should include
-a column with the header 'sex' and values of 'M' or 'F' if available. The metadata should
+\item{s_obj}{Seurat object that has been cleaned and includes the normalized,
+log-transformed counts. The meta.data should include a column with the header
+'sex' and values of 'M' or 'F' if available. The metadata should
 also have a column with the header 'ctypes' with the corresponding names of
 the cell types as well as a column with header 'donors' that contains
 identifiers for each donor.}

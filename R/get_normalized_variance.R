@@ -5,20 +5,13 @@
 #' @param scMinimal environment A sub-container for the project typically
 #' consisting of gene expression data in its raw and processed forms as well
 #' as metadata
-#' @param use_counts logical If TRUE, uses raw expression counts for computing
-#' the normalized variance. If FALSE, uses the normalized, log-transformed
-#' values. (default=FALSE)
 #'
 #' @return a vector of the normalized variance for each gene
 #' @export
-get_normalized_variance <- function(scMinimal, use_counts=FALSE) {
-  if (use_counts) {
-    dge_sparse <- methods::as(scMinimal$count_data_sparse,'sparseMatrix')
-    dge_sparse <- Matrix::t(dge_sparse)
-  } else {
-    dge_sparse <- methods::as(scMinimal$data_sparse,'sparseMatrix')
-    dge_sparse <- Matrix::t(dge_sparse)
-  }
+get_normalized_variance <- function(scMinimal) {
+
+  dge_sparse <- methods::as(scMinimal$data_sparse,'sparseMatrix')
+  dge_sparse <- Matrix::t(dge_sparse)
 
   donor_meta <- as.factor(scMinimal$metadata$donors)
   donor_sum_counts <- get_sums(dge_sparse,donor_meta)

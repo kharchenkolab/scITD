@@ -2,22 +2,24 @@
 #' Create an scMinimal object
 #'
 #' @param data_sparse sparseMatrix Matrix of normalized, log-transformed
-#' counts with genes as rows and cells as columns
+#' counts with genes as rows and cells as columns (default=NULL)
 #' @param count_data sparseMatrix Matrix of raw counts with genes as rows
-#' and cells as columns
+#' and cells as columns (default=NULL)
 #' @param meta_data data.frame Metadata with cells as rows and variables
 #' as columns. Number of rows in metadata should equal number of columns
 #' in data_sparse
 #'
 #' @return scMinimal object
 #' @export
-instantiate_scMinimal <- function(data_sparse,count_data,meta_data) {
+instantiate_scMinimal <- function(data_sparse=NULL,count_data=NULL,meta_data) {
   if (is.null(data_sparse)) {
+    if (is.null(count_data)) {
+      stop("Need to provide either data_sparse or count_data parameters")
+    }
     data_sparse <- normalize_counts(count_data)
   }
   scMinimal <- new.env()
   scMinimal$data_sparse <- as.matrix(data_sparse)
-  scMinimal$count_data_sparse <- as.matrix(count_data)
   scMinimal$data_residuals <- NULL
   scMinimal$data_means <- NULL
   scMinimal$metadata <- meta_data
@@ -30,9 +32,9 @@ instantiate_scMinimal <- function(data_sparse,count_data,meta_data) {
 
 #' Convert Seurat object to scMinimal object
 #'
-#' @param s_obj Seurat object that has been cleaned and includes the counts
-#' as well as normalized, log-transformed counts. The meta.data should include
-#' a column with the header 'sex' and values of 'M' or 'F' if available. The metadata should
+#' @param s_obj Seurat object that has been cleaned and includes the normalized,
+#' log-transformed counts. The meta.data should include a column with the header
+#' 'sex' and values of 'M' or 'F' if available. The metadata should
 #' also have a column with the header 'ctypes' with the corresponding names of
 #' the cell types as well as a column with header 'donors' that contains
 #' identifiers for each donor.
@@ -72,19 +74,15 @@ seurat_to_scMinimal <- function(s_obj) {
 subset_scMinimal <- function(scMinimal, make_copy=TRUE, ctypes_use=NULL,
                              cells_use=NULL, donors_use=NULL, genes_use=NULL) {
   data_sparse <- scMinimal$data_sparse
-  count_data_sparse <- scMinimal$count_data_sparse
   metadata <- scMinimal$metadata
   if (!is.null(ctypes_use)) {
     data_sparse <- data_sparse[,which(metadata$ctypes %in% ctypes_use)]
-    count_data_sparse <- count_data_sparse[,which(metadata$ctypes %in% ctypes_use)]
     metadata <- metadata[which(metadata$ctypes %in% ctypes_use),]
   } else if (!is.null(cells_use)) {
     data_sparse <- data_sparse[,cells_use]
-    count_data_sparse <- count_data_sparse[,cells_use]
     metadata <- metadata[cells_use,]
   } else if (!is.null(donors_use)) {
     data_sparse <- data_sparse[,which(metadata$donors %in% donors_use)]
-    count_data_sparse <- count_data_sparse[,which(metadata$donors %in% donors_use)]
     metadata <- metadata[which(metadata$donors %in% donors_use),]
   }
 
@@ -92,18 +90,16 @@ subset_scMinimal <- function(scMinimal, make_copy=TRUE, ctypes_use=NULL,
     # only use specified genes that are in the df
     genes_use <- genes_use[genes_use %in% rownames(data_sparse)]
     data_sparse <- data_sparse[genes_use,]
-    count_data_sparse <- count_data_sparse[genes_use,]
   }
 
   metadata$donors <- factor(metadata$donors,levels=as.character(unique(metadata$donors)))
   metadata$ctypes <- factor(metadata$ctypes,levels=as.character(unique(metadata$ctypes)))
 
   if (make_copy) {
-    scMinimal_sub <- instantiate_scMinimal(data_sparse,count_data_sparse,metadata)
+    scMinimal_sub <- instantiate_scMinimal(data_sparse=data_sparse,meta_data=metadata)
   } else {
     scMinimal$metadata <- metadata
     scMinimal$data_sparse <- data_sparse
-    scMinimal$count_data_sparse <- count_data_sparse
     scMinimal_sub <- scMinimal
   }
   return(scMinimal_sub)
