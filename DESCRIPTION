@@ -27,7 +27,6 @@ Depends:
 Imports: 
     rTensor,
     ica,
-    venn,
     msigdbr,
     fgsea,
     circlize,
