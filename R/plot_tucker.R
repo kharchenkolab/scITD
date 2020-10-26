@@ -116,6 +116,9 @@ plot_donor_matrix <- function(container, meta_vars=NULL,
 #' set to "none" no adjacent heatmap is plotted. (default="none")
 #' @param pathways character Gene sets to plot if annot is set to "pathways"
 #' (default=NULL)
+#' @param sim_de_donor_group numeric To plot the ground truth significant genes from a
+#' simulation next to the heatmap, put the number of the donor group that corresponds to
+#' the factor being plotted (default=NULL).
 #' @param sig_thresh numeric Pvalue significance threshold to use. If use_sig_only is
 #' TRUE the threshold is used as a cutoff for genes to include. If annot is "sig_genes"
 #' this value is used in the gene significance colormap as a minimum threshold. (default=0.05)
@@ -125,7 +128,7 @@ plot_donor_matrix <- function(container, meta_vars=NULL,
 #' @return container with the plot put in container$plots$single_lds_plot
 #' @export
 plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, annot='none',
-                                pathways=NULL, sig_thresh=0.05, display_genes=FALSE, show_xlab=TRUE) {
+                                pathways=NULL, sim_de_donor_group=NULL, sig_thresh=0.05, display_genes=FALSE, show_xlab=TRUE) {
   # check that Tucker has been run
   if (is.null(container$tucker_results)) {
     stop("Need to run run_tucker_ica() first.")
@@ -237,6 +240,40 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, an
     hm_list <- hm_list +
       Heatmap(sig_df,
               name = "adj p-value", cluster_columns = FALSE,
+              col = col_fun, show_row_names = FALSE,
+              show_heatmap_legend = TRUE, show_column_dend = FALSE,
+              column_names_gp = gpar(fontsize = 20))
+  }
+
+  if (!is.null(sim_de_donor_group)) {
+    genes_df <- tmp_casted_num
+    genes <- rownames(tmp_casted_num)
+    for (j in 1:ncol(genes_df)) {
+      for (g in genes) {
+        groups <- strsplit(g,split = '_')
+        cur_group <- paste0('Group',(ncol(genes_df)*(sim_de_donor_group-1))+j)
+        if (cur_group %in% groups[[1]]) {
+          genes_df[g,j] <- 1
+        } else {
+          genes_df[g,j] <- 0
+        }
+      }
+    }
+
+
+    # add gene significance heatmap to total hmap
+    # col_fun = colorRamp2(c(0, 1), c("white", "cyan"))
+    col_fun <- structure(c("white", "cyan"), names = c("0", "1"))
+    # col_fun <- function(mycol) {
+    #   if (mycol==1) {
+    #     return('cyan\n')
+    #   } else {
+    #     return('white\n')
+    #   }
+    # }
+    hm_list <- hm_list +
+      Heatmap(genes_df,
+              name = "True DE Genes", cluster_columns = FALSE,
               col = col_fun, show_row_names = FALSE,
               show_heatmap_legend = TRUE, show_column_dend = FALSE,
               column_names_gp = gpar(fontsize = 20))

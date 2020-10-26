@@ -4,9 +4,9 @@
 #'@importFrom sparsepca rspca
 #'
 #'@param tnsr Tensor with K modes.
-#'@param ranks a vector of the modes of the output core Tensor
-#'@param max_iter maximum number of iterations if error stays above tol
-#'@param tol relative Frobenius norm error tolerance
+#'@param ranks numeric Vector of the modes of the output core Tensor
+#'@param max_iter numeric Maximum number of iterations if error stays above tol
+#'@param tol numeric Relative Frobenius norm error tolerance
 #'
 #'@return a list containing the results
 #'@export
@@ -21,8 +21,9 @@ tucker_sparse <- function(tnsr,ranks=NULL,max_iter=25,tol=1e-5){
   U_list <- vector("list",num_modes)
   for(m in 1:num_modes){
     temp_mat <- rs_unfold(tnsr,m=m)@data
-    # U_list[[m]] <- svd(temp_mat,nu=ranks[m])$u
-    U_list[[m]] <- rspca(t(temp_mat),ranks[m],center=FALSE,beta = .01)$loadings
+    # using sparse truncated svd
+    U_list[[m]] <- rspca(t(temp_mat),ranks[m],center=FALSE,alpha=.0001)$loadings
+
   }
   tnsr_norm <- fnorm(tnsr)
   curr_iter <- 1
@@ -48,8 +49,7 @@ tucker_sparse <- function(tnsr,ranks=NULL,max_iter=25,tol=1e-5){
       #core Z minus mode m
       X <- ttl(tnsr,lapply(U_list[-m],t),ms=modes_seq[-m])
       #sparse truncated SVD of X
-      U_list[[m]] <- rspca(t(rs_unfold(X,m=m)@data),ranks[m],center=FALSE,beta = .01)$loadings
-
+      U_list[[m]] <- rspca(t(rs_unfold(X,m=m)@data),ranks[m],center=FALSE,alpha=.0001)$loadings
     }
     #compute core tensor Z
     Z <- ttm(X,mat=t(U_list[[num_modes]]),m=num_modes)

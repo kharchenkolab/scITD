@@ -67,6 +67,12 @@ tucker_ica_helper <- function(tensor_data, ranks, rotate_modes) {
   #   tucker_decomp <- rTensor::tucker(rTensor::as.tensor(tnsr), ranks=ranks)
   # ))
 
+  # # trying nonnegative tucker
+  # tnsr <- tnsr + min(tnsr)
+  # invisible(utils::capture.output(
+  #   tucker_decomp <- rTensor::tucker.nonneg(rTensor::as.tensor(tnsr), ranks=ranks)
+  # ))
+
   # run sparse tucker
   invisible(utils::capture.output(
     tucker_decomp <- tucker_sparse(rTensor::as.tensor(tnsr), ranks=ranks)
@@ -81,17 +87,17 @@ tucker_ica_helper <- function(tensor_data, ranks, rotate_modes) {
   if ('donors' %in% rotate_modes) {
     # rotate donors matrix by ICA
     # donor_mat <- ica::icafast(donor_mat,ranks[1],center=TRUE,alg='def')$S
-    donor_mat <- GPForth(donor_mat, method = 'varimax')[[1]]
+    donor_mat <- GPForth(donor_mat, method = 'quartimax')[[1]]
   }
   if ('genes' %in% rotate_modes) {
     # rotate donors matrix by ICA
     # gene_by_factors <- ica::icafast(gene_by_factors,ranks[2],center=TRUE,alg='def')$S
-    gene_by_factors <- GPForth(gene_by_factors, method = 'varimax')[[1]]
+    gene_by_factors <- GPForth(gene_by_factors, method = 'quartimax')[[1]]
   }
   if ('ctypes' %in% rotate_modes) {
     # rotate donors matrix by ICA
     # ctype_by_factors <- ica::icafast(ctype_by_factors,ranks[3],center=TRUE,alg='def')$S
-    ctype_by_factors <- GPForth(ctype_by_factors, method = 'varimax')[[1]]
+    ctype_by_factors <- GPForth(ctype_by_factors, method = 'quartimax')[[1]]
   }
 
   # compute kronecker product
