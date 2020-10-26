@@ -10,8 +10,7 @@
 #' @export
 get_normalized_variance <- function(scMinimal) {
 
-  dge_sparse <- methods::as(scMinimal$data_sparse,'sparseMatrix')
-  dge_sparse <- Matrix::t(dge_sparse)
+  dge_sparse <- t(scMinimal$data_sparse)
 
   donor_meta <- as.factor(scMinimal$metadata$donors)
   donor_sum_counts <- get_sums(dge_sparse,donor_meta)

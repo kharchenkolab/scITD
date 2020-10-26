@@ -1,8 +1,7 @@
-#' @import Matrix
-NULL
 
 #' Partition main gene by cell matrix into per cell type matrices with significantly
 #' variable genes only
+#' @import Matrix
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses

@@ -10,8 +10,7 @@
 #' @export
 vargenes_anova <- function(scMinimal, ncores) {
   # calculate anova for each gene
-  dge_sparse <- methods::as(scMinimal$data_sparse,'sparseMatrix')
-  dge_sparse <- Matrix::t(dge_sparse)
+  dge_sparse <- t(scMinimal$data_sparse)
   pvals <- mclapply(as.data.frame(dge_sparse),function(x) {
     tmp <- as.data.frame(cbind(x,scMinimal$metadata$donors))
     colnames(tmp) <- c('expres','donors')
@@ -37,9 +36,6 @@ vargenes_anova <- function(scMinimal, ncores) {
 #' @return the raw pvalues for each gene
 #' @export
 vargenes_shuffle <- function(scMinimal,num_iter,ncores) {
-
-  # dge_sparse <- methods::as(scMinimal$data_sparse,'sparseMatrix')
-  # dge_sparse <- Matrix::t(dge_sparse)
 
   dge_sparse <- t(scMinimal$data_sparse)
 
