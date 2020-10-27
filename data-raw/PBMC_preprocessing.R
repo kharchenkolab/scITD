@@ -9,7 +9,7 @@ library(ggplot2)
 # base_dir variable below to point to the directory containing the 3
 # downloaded subdirectories
 
-base_dir <- "/home/jmitchel/scITD/extdata/"
+base_dir <- "/home/jmitchel/data/raw/"
 
 # add rows/columns and concatenate all matrices
 full_mat <- NULL # to store full dataframe
@@ -113,6 +113,24 @@ pbmc <- subset(pbmc,idents = c("CD56(bright) NK", "mDC",
 
 # make donor metadata a factor
 pbmc@meta.data$donors <- factor(pbmc@meta.data$donors,levels=as.character(unique(pbmc@meta.data$donors)))
+
+# save full dataset for processing for publication
+pbmc@meta.data$orig.ident <- NULL
+pbmc@meta.data$nCount_RNA <- NULL
+pbmc@meta.data$nFeature_RNA <- NULL
+pbmc_transformed <- methods::as(as.matrix(Seurat::GetAssayData(pbmc)),'sparseMatrix')
+pbmc_meta <- pbmc@meta.data
+pbmc_counts <- methods::as(as.matrix(pbmc@assays$RNA@counts),'sparseMatrix')
+pbmc_umap <- pbmc@reductions[["umap"]]@cell.embeddings
+
+# saveRDS(pbmc_transformed,file='/home/jmitchel/data/tutorial/pbmc_transformed.rds',compress = "xz")
+# saveRDS(pbmc_meta,file='/home/jmitchel/data/tutorial/pbmc_meta.rds',compress = "xz")
+# saveRDS(pbmc_counts,file='/home/jmitchel/data/tutorial/pbmc_counts.rds',compress = "xz")
+# saveRDS(pbmc_umap,file='/home/jmitchel/data/tutorial/pbmc_umap.rds',compress = "xz")
+# saveRDS(feature.names,file='/home/jmitchel/data/tutorial/genes.rds',compress = "xz")
+
+
+
 
 # reduce dataset size for vignette
 gene_counts <- rowSums(as.matrix(GetAssayData(pbmc)))
