@@ -157,7 +157,54 @@ set_experiment_params <- function(container, ctypes_use=NULL, scale_var=NULL,
 }
 
 
+#' Extract metadata for sex information if not provided already
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#'
+#' @return the scMinimal object with sex metadata added to the metadata
+#' @export
+identify_sex_metadata <- function(container) {
+  scMinimal <- container$scMinimal_full
 
+  dge_sparse <- t(scMinimal$data_sparse)
+
+  # get donor means for each gene in the dataset
+  donor_meta <- as.factor(scMinimal$metadata$donors)
+  means_all <- get_means(dge_sparse,donor_meta,table(donor_meta))
+  means_all <- means_all[2:nrow(means_all),]
+
+  # convert rownames to gene symbols using provided mapping
+  gn_names <- convert_gn(container, colnames(means_all))
+
+  y_ndx <- which(gn_names == 'RPS4Y1')
+  x_ndx <- which(gn_names == 'XIST')
+  y_mean <- mean(means_all[,y_ndx])
+  x_mean <- mean(means_all[,x_ndx])
+
+  make_note <- FALSE
+  scMinimal$metadata$sex <- NA
+  for (i in 1:nrow(scMinimal$metadata)) {
+    d <- scMinimal$metadata$donors[i]
+    if (means_all[d,y_ndx] > y_mean && means_all[d,x_ndx] < x_mean) {
+      scMinimal$metadata$sex[i] <- 'M'
+    } else if (means_all[d,y_ndx] < y_mean && means_all[d,x_ndx] > x_mean) {
+      scMinimal$metadata$sex[i] <- 'F'
+    } else {
+      scMinimal$metadata$sex[i] <- 'A'
+      make_note <- TRUE
+    }
+  }
+
+  if (make_note) {
+    print('Some assignments are ambiguous and are labeled A in the metadata.
+          We recommend correcting these manually or providing the sex metadata when
+          instantiating scMinimal.')
+  }
+
+  return(scMinimal)
+
+}
 
 
 
