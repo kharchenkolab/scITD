@@ -44,7 +44,7 @@ instantiate_scMinimal <- function(data_sparse=NULL,count_data=NULL,meta_data) {
 #' @export
 seurat_to_scMinimal <- function(s_obj) {
   # check if metadata has minimum required columns
-  if (sum(c("sex", "donors", "ctypes") %in% colnames(s_obj@meta.data)) != 3) {
+  if (sum(c("donors", "ctypes") %in% colnames(s_obj@meta.data)) != 2) {
     stop("Metadata does not have columns labeled sex, donors, and ctypes")
   }
   scMinimal <- new.env()

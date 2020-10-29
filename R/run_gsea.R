@@ -275,7 +275,7 @@ run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh
   plot_up <- plot_gsea_hmap(up_sets_all,thresh)
   plot_down <- plot_gsea_hmap(down_sets_all,thresh)
 
-  # add results and venn diagram to container
+  # add results to container
   factor_name <- paste0('Factor', as.character(factor_select))
   container$gsea_results[[factor_name]] <- list('up'=up_sets_all,
                                                 'down'=down_sets_all)

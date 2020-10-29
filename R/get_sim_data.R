@@ -155,7 +155,7 @@ sim_helper <- function(groups,g_frac,n_de_genes_per_group,params,meta,de_strengt
   scsim_de <- splatSimulateGroups(params,
                                   group.prob = c(g_frac,1-g_frac),
                                   de.prob = c(.1,0),
-                                  de.downProb = c(0,0),
+                                  de.downProb = c(.5,0),
                                   de.facLoc = de_strength,
                                   verbose = FALSE)
 

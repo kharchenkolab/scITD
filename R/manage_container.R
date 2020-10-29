@@ -202,7 +202,9 @@ identify_sex_metadata <- function(container) {
           instantiating scMinimal.')
   }
 
-  return(scMinimal)
+  container$scMinimal_full <- scMinimal
+
+  return(container)
 
 }
 

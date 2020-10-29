@@ -43,7 +43,7 @@ run_tucker_ica <- function(container, ranks=NULL, shuffle=FALSE) {
 }
 
 #' Tucker helper function that actually does the decomposition
-#' @importFrom GPArotation GPForth
+#' @importFrom GPArotation GPForth GPFoblq
 #'
 #' @param tensor_data list The tensor data including donor, gene, and cell type labels
 #' as well as the tensor array itself
@@ -62,10 +62,10 @@ tucker_ica_helper <- function(tensor_data, ranks, rotate_modes) {
   ctype_nm  <- tensor_data[[3]]
   tnsr <- tensor_data[[4]]
 
-  # # run tucker
-  # invisible(utils::capture.output(
-  #   tucker_decomp <- rTensor::tucker(rTensor::as.tensor(tnsr), ranks=ranks)
-  # ))
+  # run tucker
+  invisible(utils::capture.output(
+    tucker_decomp <- rTensor::tucker(rTensor::as.tensor(tnsr), ranks=ranks)
+  ))
 
   # # trying nonnegative tucker
   # tnsr <- tnsr + min(tnsr)
@@ -73,10 +73,10 @@ tucker_ica_helper <- function(tensor_data, ranks, rotate_modes) {
   #   tucker_decomp <- rTensor::tucker.nonneg(rTensor::as.tensor(tnsr), ranks=ranks)
   # ))
 
-  # run sparse tucker
-  invisible(utils::capture.output(
-    tucker_decomp <- tucker_sparse(rTensor::as.tensor(tnsr), ranks=ranks)
-  ))
+  # # run sparse tucker
+  # invisible(utils::capture.output(
+  #   tucker_decomp <- tucker_sparse(rTensor::as.tensor(tnsr), ranks=ranks)
+  # ))
   gene_by_factors <- tucker_decomp$U[[2]]
   rownames(gene_by_factors) <- gene_nm
   ctype_by_factors <- tucker_decomp$U[[3]]
@@ -84,20 +84,23 @@ tucker_ica_helper <- function(tensor_data, ranks, rotate_modes) {
   donor_mat <- tucker_decomp$U[[1]]
   rownames(donor_mat) <- donor_nm
 
-  if ('donors' %in% rotate_modes) {
-    # rotate donors matrix by ICA
-    # donor_mat <- ica::icafast(donor_mat,ranks[1],center=TRUE,alg='def')$S
-    donor_mat <- GPForth(donor_mat, method = 'quartimax')[[1]]
-  }
-  if ('genes' %in% rotate_modes) {
-    # rotate donors matrix by ICA
-    # gene_by_factors <- ica::icafast(gene_by_factors,ranks[2],center=TRUE,alg='def')$S
-    gene_by_factors <- GPForth(gene_by_factors, method = 'quartimax')[[1]]
-  }
-  if ('ctypes' %in% rotate_modes) {
-    # rotate donors matrix by ICA
-    # ctype_by_factors <- ica::icafast(ctype_by_factors,ranks[3],center=TRUE,alg='def')$S
-    ctype_by_factors <- GPForth(ctype_by_factors, method = 'quartimax')[[1]]
+  if (ranks[1]>1) {
+    if ('donors' %in% rotate_modes) {
+      # rotate donors matrix by ICA
+      # donor_mat <- ica::icafast(donor_mat,ranks[1],center=TRUE,alg='def')$S
+      donor_mat <- GPForth(donor_mat, method = 'varimax')[[1]]
+      # donor_mat <- GPFoblq(donor_mat)[[1]]
+    }
+    if ('genes' %in% rotate_modes) {
+      # rotate donors matrix by ICA
+      # gene_by_factors <- ica::icafast(gene_by_factors,ranks[2],center=TRUE,alg='def')$S
+      gene_by_factors <- GPForth(gene_by_factors, method = 'quartimax')[[1]]
+    }
+    if ('ctypes' %in% rotate_modes) {
+      # rotate donors matrix by ICA
+      # ctype_by_factors <- ica::icafast(ctype_by_factors,ranks[3],center=TRUE,alg='def')$S
+      ctype_by_factors <- GPForth(ctype_by_factors, method = 'quartimax')[[1]]
+    }
   }
 
   # compute kronecker product
