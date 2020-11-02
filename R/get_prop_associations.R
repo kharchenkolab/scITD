@@ -364,11 +364,14 @@ compute_associations <- function(donor_balances, donor_scores, stat_type) {
 #' @param ctype character The cell type for which subtypes are to be investigated
 #' @param resolution numeric The clustering resolution that was used to generate
 #' the clustering
+#' @param plot_subclusters logical TRUE to generate an embedding plot colored by
+#' clusters and subclusters for the specified ctype (default=FALSE)
 #'
 #' @return the project container with the DE results in 
-#' container$subcluster_de$<ctype>$<resolution>
+#' container$subcluster_de$<ctype>$<resolution> and plot results located in
+#' container$plots$subclusters$<ctype>$<resolution>
 #' @export
-run_subcluster_de <- function(container,ctype,resolution) {
+run_subcluster_de <- function(container,ctype,resolution,plot_subclusters=FALSE) {
   ncores <- container$experiment_params$ncores
   
   con <- container[["embedding"]]
@@ -385,6 +388,11 @@ run_subcluster_de <- function(container,ctype,resolution) {
   # convert gene names in de results dataframe
   for (de_ctype in names(de.info)) {
     de.info[[de_ctype]]$Gene <- convert_gn(container,de.info[[de_ctype]]$Gene)
+  }
+  
+  if (plot_subclusters) {
+    subc_plot <- con$plotGraph()
+    container$plots$subclusters[[ctype]][[resolution_name]] <- subc_plot
   }
   
   con$clusters$leiden$groups <- orig_groups
@@ -418,8 +426,6 @@ replace_groups_with_subclusts <- function(con,subclusts,sub_ctype) {
   
   return(groups)
 }
-
-
 
 
 #' Plot donor proportions for each factor
