@@ -59,4 +59,5 @@ Suggests:
     splatter,
     pagoda2,
     conos,
-    MASS
+    MASS,
+    sfsmisc
