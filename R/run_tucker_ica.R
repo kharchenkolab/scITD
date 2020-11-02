@@ -62,10 +62,10 @@ tucker_ica_helper <- function(tensor_data, ranks, rotate_modes) {
   ctype_nm  <- tensor_data[[3]]
   tnsr <- tensor_data[[4]]
 
-  # run tucker
-  invisible(utils::capture.output(
-    tucker_decomp <- rTensor::tucker(rTensor::as.tensor(tnsr), ranks=ranks)
-  ))
+  # # run tucker
+  # invisible(utils::capture.output(
+  #   tucker_decomp <- rTensor::tucker(rTensor::as.tensor(tnsr), ranks=ranks)
+  # ))
 
   # # trying nonnegative tucker
   # tnsr <- tnsr + min(tnsr)
@@ -73,10 +73,12 @@ tucker_ica_helper <- function(tensor_data, ranks, rotate_modes) {
   #   tucker_decomp <- rTensor::tucker.nonneg(rTensor::as.tensor(tnsr), ranks=ranks)
   # ))
 
-  # # run sparse tucker
-  # invisible(utils::capture.output(
-  #   tucker_decomp <- tucker_sparse(rTensor::as.tensor(tnsr), ranks=ranks)
-  # ))
+  # run sparse tucker
+  invisible(utils::capture.output(
+    tucker_decomp <- tucker_sparse(rTensor::as.tensor(tnsr), ranks=ranks)
+  ))
+  print('yup')
+  
   gene_by_factors <- tucker_decomp$U[[2]]
   rownames(gene_by_factors) <- gene_nm
   ctype_by_factors <- tucker_decomp$U[[3]]

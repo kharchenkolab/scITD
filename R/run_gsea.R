@@ -49,6 +49,10 @@ run_fgsea <- function(container, factor_select, ctype,
   duplicates <- names(ctype_lds)[duplicated(names(ctype_lds))]
   genes_remove <- names(ctype_lds) %in% duplicates
   ctype_lds <- ctype_lds[!genes_remove]
+  
+  # trying throwing out 0 value genes...
+  ctype_lds <- ctype_lds[ctype_lds!=0]
+  
 
   m_df <- data.frame()
   for (db in db_use) {
@@ -71,13 +75,13 @@ run_fgsea <- function(container, factor_select, ctype,
     }
   }
 
-  my_pathways = split(m_df$gene_symbol, f = m_df$gs_name)
+  my_pathways <- split(m_df$gene_symbol, f = m_df$gs_name)
   fgsea_res <- fgsea::fgsea(pathways = my_pathways,
                           stats = ctype_lds,
                           minSize=15,
                           maxSize=500,
                           nperm=num_iter,
-                          gseaParam=2)
+                          gseaParam=.50)
 
   fgsea_res <- fgsea_res[order(fgsea_res$padj, decreasing=FALSE),]
 

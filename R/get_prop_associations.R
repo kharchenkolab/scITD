@@ -2,52 +2,68 @@
 utils::globalVariables(c("dscore", "donor_proportion", "ctypes"))
 
 #' Compute associations between donor factor scores and donor proportions of cell subtypes
+#' @import conos
+#' @importFrom pagoda2 basicP2proc
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
-#' @param max_num_k numeric The largest number of subclusters to get for any cell type
+#' @param max_res numeric The maximum clustering resolution to use
 #' @param stat_type character Either "fstat" to get F-Statistics, "adj_rsq" to get adjusted
 #' R-squared values, or "adj_pval" to get adjusted pvalues.
+#' @param integration_var character The meta data variable to use for creating
+#' the joint embedding with Conos if not already provided in container$embedding
 #'
 #' @return the project container with a plot of results in
 #' container$plots$subtype_prop_factor_associations
 #' @export
-get_subtype_prop_associations <- function(container,max_num_k,stat_type) {
-  if (is.null(container$scMinimal_full$umap)) {
-    umap_all <- reduce_dimensions(container$scMinimal_full)
-  } else {
-    umap_all <- container$scMinimal_full$umap
+get_subtype_prop_associations <- function(container,max_res,stat_type,integration_var) {
+  if (!(stat_type %in% c("fstat","adj_rsq","adj_pval"))) {
+    stop("stat_type parameter is not one of the three options")
+  }
+  
+  if (is.null(container$embedding)) {
+    container <- reduce_dimensions(container,integration_var)
   }
 
   # create dataframe to store results
   res <- data.frame(matrix(ncol = 4, nrow = 0))
-  colnames(res) <- c(stat_type,'k','factor','ctype')
-
+  colnames(res) <- c(stat_type,'resolution','factor','ctype')
+  
   # loop through cell types
   for (ct in container$experiment_params$ctypes_use) {
     scMinimal <- container[["scMinimal_ctype"]][[ct]]
 
-    # get umap coordinates for all cells of current cell type
-    umap_ctype <- umap_all[colnames(scMinimal$data_sparse),]
-
-    # loop through increasing k values
-    for (k in 2:max_num_k) {
-      # run kmeans
-      cell_clusters <- stats::kmeans(umap_ctype,k,nstart=20,iter.max=100,
-                                     algorithm = "MacQueen")$cluster
-      # get donor proportions of subclusters
-      donor_props <- compute_donor_props(cell_clusters,scMinimal$metadata)
-
-      # transform from proportions to balances
-      donor_balances <- coda.base::coordinates(donor_props)
-      rownames(donor_balances) <- rownames(donor_props)
-
-      # compute regression statistics
-      reg_stats <- compute_associations(donor_balances,container$tucker_results[[1]],stat_type)
-
+    # loop through increasing clustering resolutions
+    cluster_res <- seq(.5,max_res,by=.25)
+    for (r in cluster_res) {
+      # run clustering
+      subclusts <- get_subclusters(container,ct,r,min_cells_group=50,small_clust_action='merge')
+      
+      # CHECK THAT THERE IS MORE THAN ONE SUBCLUSTER!! OTHERWISE RETURN 0 FSTAT, 1 PVAL, 0 ADJRSQ, ETC
+      num_subclusts <- length(unique(subclusts))
+      if (num_subclusts > 1) {
+        sub_meta_tmp <- scMinimal$metadata[names(subclusts),]
+        
+        # get donor proportions of subclusters
+        donor_props <- compute_donor_props(subclusts,sub_meta_tmp)
+        
+        # transform from proportions to balances
+        donor_balances <- coda.base::coordinates(donor_props)
+        rownames(donor_balances) <- rownames(donor_props)
+        
+        # compute regression statistics
+        reg_stats <- compute_associations(donor_balances,container$tucker_results[[1]],stat_type)
+      } else {
+        if (stat_type=='fstat' || stat_type=='adj_rsq') {
+          reg_stats <- rep(0,ncol(container$tucker_results[[1]]))
+        } else if (stat_type=='adj_pval') {
+          reg_stats <- rep(1,ncol(container$tucker_results[[1]]))
+        }
+      }
+      
       # store association results
       for (i in 1:length(reg_stats)) {
-        new_row <- as.data.frame(list(reg_stats[i], k, paste0("Factor ", as.character(i)), ct),stringsAsFactors = F)
+        new_row <- as.data.frame(list(reg_stats[i], r, paste0("Factor ", as.character(i)), ct),stringsAsFactors = F)
         colnames(new_row) <- colnames(res)
         res <- rbind(res,new_row)
       }
@@ -61,6 +77,103 @@ get_subtype_prop_associations <- function(container,max_num_k,stat_type) {
   container$plots$subtype_prop_factor_associations <- reg_stat_plots
 
   return(container)
+}
+
+#' Do leiden subclustering to get cell subtypes
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param ctype character The cell type to do subclustering for
+#' @param resolution numeric The leiden resolution to use
+#' @param min_cells_group numeric The minimum allowable cluster size (default=50)
+#' @param small_clust_action character Either 'remove' to remove subclusters or
+#' 'merge' to merge clusters below min_cells_group threshold to the nearest cluster
+#' above the size threshold (default='merge')
+#'
+#' @return
+#' @export
+get_subclusters <- function(container,ctype,resolution,min_cells_group=50,small_clust_action='merge') {
+  con <- container$embedding
+  
+  # using leiden community detection
+  clusts <- findSubcommunities(con,method=leiden.community, resolution=resolution, target.clusters=ctype)
+  
+  # limit clusts to just cells of the cell type
+  ctype_bcodes <- rownames(container$scMinimal_ctype[[ctype]]$metadata)
+  clusts <- clusts[names(clusts) %in% ctype_bcodes]
+  
+  if (small_clust_action=='remove') {
+    # remove subclusters with less than n cells
+    clust_sizes <- table(clusts)
+    clusts_keep <- names(clust_sizes)[clust_sizes > min_cells_group]
+    large_clusts <- clusts[clusts %in% clusts_keep]
+  } else if (small_clust_action=='merge') {
+    large_clusts <- merge_small_clusts(con,clusts,min_cells_group)
+  }
+
+  # change cluster names to numbers
+  large_clusts <- sapply(large_clusts,function(x) {
+    return(as.numeric(strsplit(x,split='_')[[1]][2]))
+  })
+  
+  return(large_clusts)
+}
+
+#' Merge small subclusters into larger ones
+#'
+#' @param con conos Object for the dataset with umap projection and groups as cell types
+#' @param clusts character The initially assigned subclusters by leiden clustering
+#' @param min_cells_group numeric The minimum allowable cluster size
+#'
+#' @return
+merge_small_clusts <- function(con,clusts,min_cells_group) {
+  # get names of large cluster
+  clust_sizes <- table(clusts)
+  clusts_keep <- names(clust_sizes)[clust_sizes > min_cells_group]
+  clusts_merge <- names(clust_sizes)[clust_sizes <= min_cells_group]
+  
+  coords <- con[["embedding"]]
+  
+  # get centroids of large clusters
+  get_centroid <- function(clust_name) {
+    ndx <- names(clusts)[clusts==clust_name]
+    x_y <- coords[ndx,]
+    if (length(ndx)>1) {
+      # x_mean <- mean(x_y[,1])
+      # y_mean <- mean(x_y[,2])
+      x_mean <- median(x_y[,1])
+      y_mean <- median(x_y[,2])
+      return(c(x_mean,y_mean))
+    } else {
+      return(x_y)
+    }
+  }
+  
+  main_centroids <- lapply(clusts_keep,get_centroid)
+  names(main_centroids) <- clusts_keep
+  small_centroids <- lapply(clusts_merge,get_centroid)
+  names(small_centroids) <- clusts_merge
+  
+  # for each small cluster, find its nearest large cluster and assigns it's subtypes accordingly
+  get_nearest_large_clust <- function(clust_name) {
+    cent <- small_centroids[[clust_name]]
+    c_distances <- c()
+    # calculate euclidean distance to each big cluster's centroid
+    for (big_clust in names(main_centroids)) {
+      clust_dist <- sqrt(sum((main_centroids[[big_clust]] - cent)**2))
+      c_distances[big_clust] <- clust_dist
+    }
+    nearest_big_clust <- names(main_centroids)[which(c_distances == min(c_distances))]
+    return(nearest_big_clust)
+  }
+  
+  
+  for (cmerge in clusts_merge) {
+    merge_partner <- get_nearest_large_clust(cmerge)
+    clusts[clusts==cmerge] <- merge_partner 
+  }
+  
+  return(clusts)
 }
 
 #' Compute associations between donor factor scores and donor proportions of major cell types
@@ -106,19 +219,48 @@ get_ctype_prop_associations <- function(container,stat_type) {
 
 #' Gets umap coordinates if not already provided in container$scMinimal_full$umap
 #'
-#' @param scMinimal environment A sub-container for the project typically
-#' consisting of gene expression data in its raw and processed forms as well
-#' as metadata
-#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param integration_var character The meta data variable to use for creating
+#' the joint embedding with Conos.
 #' @return a dataframe with umap coordinates of each cell in the dataset
 #' @export
-reduce_dimensions <- function(scMinimal) {
-  data_use <- t(scMinimal$data_sparse)
-  data_use <- scale(data_use, center = TRUE)
-  data_reduced <- gmodels::fast.prcomp(data_use, scale. = FALSE, center = FALSE)
-  data_reduced <- umap::umap(data_reduced$x[,1:20])$layout
-  return(data_reduced)
+reduce_dimensions <- function(container, integration_var) {
+  ncores <- container$experiment_params$ncores
+  
+  # create a list of subsetted data matrices (one per var value)
+  panel <- list()
+  meta <- as.character(container$scMinimal_full$metadata[,integration_var])
+  var_vals <- unique(meta)
+  for (v in var_vals) {
+    cell_ndx <- which(meta == v)
+    panel[[v]] <- container$scMinimal_full$data_sparse[,cell_ndx]
+  }
+  
+  # turn the list of matrices to list of pagoda2 objects
+  panel.preprocessed <- lapply(panel, basicP2proc, n.cores=ncores,
+                               min.cells.per.gene=0, n.odgenes=2e3,
+                               get.largevis=FALSE, make.geneknn=FALSE)
+  
+  con <- Conos$new(panel.preprocessed, n.cores=ncores)
+  
+  # build graph
+  con$buildGraph()
+  
+  # make umap embedding
+  con$embedGraph(method="UMAP", min.dist=0.01, spread=15, n.cores=ncores, min.prob.lower=1e-3)
+  
+  # assign ctype names to the cells
+  con$findCommunities(method=leiden.community, resolution=1)
+  cell_assigns <- container$scMinimal_full$metadata[,"ctypes"]
+  names(cell_assigns) <- rownames(container$scMinimal_full$metadata)
+  con$clusters$leiden$groups <- cell_assigns[names(con$clusters$leiden$groups)]
+  
+  container$embedding <- con
+  
+  return(container)
 }
+
 
 #' Get donor proportions of each cell type or subtype
 #'
@@ -177,20 +319,34 @@ compute_associations <- function(donor_balances, donor_scores, stat_type) {
     }
 
     # construct the model
-    prop_model <- paste0("dscore ~ ", paste(colnames(donor_balances),collapse=" + "))
+    prop_model <- stats::as.formula(paste0("dscore ~ ",
+                                    paste(colnames(donor_balances),collapse=" + ")))
 
-    # run lm (need to figure out how to specify multiple explanatory vars)
-    lmres <- stats::lm(prop_model, data=tmp)
-
+    # # run lm
+    # lmres <- stats::lm(prop_model, data=tmp)
+    # 
+    # # extract regression statistic
+    # if (stat_type == 'fstat') {
+    #   reg_stat <- summary(lmres)$fstatistic[[1]]
+    # } else if (stat_type == 'adj_rsq') {
+    #   reg_stat <- summary(lmres)$adj.r.squared
+    # } else if (stat_type == 'adj_pval') {
+    #   x <- summary(lmres)
+    #   reg_stat <- stats::pf(x$fstatistic[1],x$fstatistic[2],x$fstatistic[3],lower.tail=FALSE)
+    # }
+    
+    # run robust regression 
+    lmres <- MASS::rlm(prop_model, data=tmp, maxit = 100)
+    lmres <- sfsmisc::f.robftest(lmres)
+    
     # extract regression statistic
     if (stat_type == 'fstat') {
-      reg_stat <- summary(lmres)$fstatistic[[1]]
-    } else if (stat_type == 'adj_rsq') {
-      reg_stat <- summary(lmres)$adj.r.squared
+      reg_stat <- lmres$statistic
     } else if (stat_type == 'adj_pval') {
-      x <- summary(lmres)
-      reg_stat <- stats::pf(x$fstatistic[1],x$fstatistic[2],x$fstatistic[3],lower.tail=FALSE)
+      reg_stat <- lmres$p.value
     }
+    
+    
 
     all_reg_stats <- c(all_reg_stats,reg_stat)
   }
@@ -268,7 +424,7 @@ plot_donor_props <- function(donor_props,donor_scores,significance,ctype_mapping
 #' for each factor
 #' @export
 plot_subclust_associations <- function(res) {
-
+  
   stat_type <- colnames(res)[1]
 
   # if plotting pvalues, fdr adjust and transform to -log10(pval)
@@ -285,7 +441,7 @@ plot_subclust_associations <- function(res) {
     factor_name <- paste0("Factor ",as.character(f))
     res_factor <- res[res$factor==factor_name,]
 
-    p <- ggplot(res_factor,aes_string(x='k',y=stat_type,color='ctype')) +
+    p <- ggplot(res_factor,aes_string(x='resolution',y=stat_type,color='ctype')) +
       geom_line() +
       xlab("") +
       ylab("") +
@@ -317,7 +473,7 @@ plot_subclust_associations <- function(res) {
   }
 
   f_plots <- ggpubr::annotate_figure(f_plots,
-                  bottom = ggpubr::text_grob("Number of Subclusters",
+                  bottom = ggpubr::text_grob("Leiden Resolution",
                                      size = 15, hjust = .7),
                   left = ggpubr::text_grob(y_axis_name, rot = 90, size = 15, hjust = .375))
   return(f_plots)

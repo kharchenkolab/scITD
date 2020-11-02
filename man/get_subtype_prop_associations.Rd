@@ -4,16 +4,19 @@
 \alias{get_subtype_prop_associations}
 \title{Compute associations between donor factor scores and donor proportions of cell subtypes}
 \usage{
-get_subtype_prop_associations(container, max_num_k, stat_type)
+get_subtype_prop_associations(container, max_res, stat_type, integration_var)
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
 for each cell type as well as results and plots from all analyses}
 
-\item{max_num_k}{numeric The largest number of subclusters to get for any cell type}
+\item{max_res}{numeric The maximum clustering resolution to use}
 
 \item{stat_type}{character Either "fstat" to get F-Statistics, "adj_rsq" to get adjusted
 R-squared values, or "adj_pval" to get adjusted pvalues.}
+
+\item{integration_var}{character The meta data variable to use for creating
+the joint embedding with Conos if not already provided in container$embedding}
 }
 \value{
 the project container with a plot of results in
