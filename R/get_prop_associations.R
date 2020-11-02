@@ -25,9 +25,12 @@ get_subtype_prop_associations <- function(container,max_res,stat_type,integratio
     container <- reduce_dimensions(container,integration_var)
   }
 
-  # create dataframe to store results
+  # create dataframe to store association results
   res <- data.frame(matrix(ncol = 4, nrow = 0))
   colnames(res) <- c(stat_type,'resolution','factor','ctype')
+  
+  # make list to store subclustering results
+  subc_all <- list()
   
   # loop through cell types
   for (ct in container$experiment_params$ctypes_use) {
@@ -38,8 +41,8 @@ get_subtype_prop_associations <- function(container,max_res,stat_type,integratio
     for (r in cluster_res) {
       # run clustering
       subclusts <- get_subclusters(container,ct,r,min_cells_group=50,small_clust_action='merge')
+      subc_all[[ct]][[paste0('res:',as.character(r))]] <- subclusts
       
-      # CHECK THAT THERE IS MORE THAN ONE SUBCLUSTER!! OTHERWISE RETURN 0 FSTAT, 1 PVAL, 0 ADJRSQ, ETC
       num_subclusts <- length(unique(subclusts))
       if (num_subclusts > 1) {
         sub_meta_tmp <- scMinimal$metadata[names(subclusts),]
@@ -75,6 +78,7 @@ get_subtype_prop_associations <- function(container,max_res,stat_type,integratio
 
   # save results
   container$plots$subtype_prop_factor_associations <- reg_stat_plots
+  container$subclusters <- subc_all
 
   return(container)
 }
@@ -352,6 +356,71 @@ compute_associations <- function(donor_balances, donor_scores, stat_type) {
   }
   return(all_reg_stats)
 }
+
+#' Run differential expression with cell subtypes included
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param ctype character The cell type for which subtypes are to be investigated
+#' @param resolution numeric The clustering resolution that was used to generate
+#' the clustering
+#'
+#' @return the project container with the DE results in 
+#' container$subcluster_de$<ctype>$<resolution>
+#' @export
+run_subcluster_de <- function(container,ctype,resolution) {
+  ncores <- container$experiment_params$ncores
+  
+  con <- container[["embedding"]]
+  resolution_name <- paste0('res:',as.character(resolution))
+  subclusts <- container$subclusters[[ctype]][[resolution_name]]
+  
+  orig_groups <- con$clusters$leiden$groups
+  new_groups <- replace_groups_with_subclusts(con,subclusts,ctype)
+  
+  con$clusters$leiden$groups <- new_groups
+  
+  de.info <- con$getDifferentialGenes(n.cores=ncores, append.auc=FALSE)
+  
+  # convert gene names in de results dataframe
+  for (de_ctype in names(de.info)) {
+    de.info[[de_ctype]]$Gene <- convert_gn(container,de.info[[de_ctype]]$Gene)
+  }
+  
+  con$clusters$leiden$groups <- orig_groups
+  
+  container$subcluster_de[[ctype]][[resolution_name]] <- de.info
+  return(container)
+}
+
+#' Replace leiden groups in con object with subclusters identified for one cell type
+#'
+#' @param con conos Object for the dataset with umap projection and groups as cell types
+#' @param subclusts numeric Named vector of subcluster assignments for one major cell type
+#' only. Names should be the cell barcodes.
+#' @param sub_ctype character The name of the major cell type that subclusts belong to
+#'
+#' @return a factor of the new groups with subclusters included
+replace_groups_with_subclusts <- function(con,subclusts,sub_ctype) {
+  
+  # add back the large group lable to subtype numbers
+  subclusts <- sapply(subclusts,function(x) {
+    return(paste0(sub_ctype,'_',as.character(x)))
+  })
+  
+  # convert groups to char so can replace by name
+  groups <- as.character(con$clusters$leiden$groups)
+  names(groups) <- names(con$clusters$leiden$groups)
+  groups[names(subclusts)] <- subclusts
+  
+  # convert back to factor for con
+  groups <- as.factor(groups)
+  
+  return(groups)
+}
+
+
+
 
 #' Plot donor proportions for each factor
 #'
