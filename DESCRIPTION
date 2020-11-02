@@ -44,11 +44,8 @@ Imports:
     Rmisc,
     Rcpp,
     RColorBrewer,
-    umap,
     coda.base,
     gmodels,
-    splatter,
-    SingleCellExperiment,
     GPArotation, 
     sparsepca
 RoxygenNote: 7.1.1
@@ -58,6 +55,8 @@ Suggests:
     knitr,
     rmarkdown, 
     testthat,
+    SingleCellExperiment,
+    splatter,
     pagoda2,
     conos,
     MASS
