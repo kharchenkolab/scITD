@@ -21,8 +21,8 @@ tucker_sparse <- function(tnsr,ranks=NULL,max_iter=25,tol=1e-5){
   for(m in 1:num_modes){
     temp_mat <- rs_unfold(tnsr,m=m)@data
     # using sparse truncated svd
-    U_list[[m]] <- rspca(t(temp_mat),ranks[m],center=FALSE,alpha=.0001)$loadings
-
+    # U_list[[m]] <- rspca(t(temp_mat),ranks[m],center=FALSE,alpha=.0001)$loadings
+    U_list[[m]] <- svd(temp_mat,nu=ranks[m])$u
   }
   tnsr_norm <- fnorm(tnsr)
   curr_iter <- 1
@@ -46,7 +46,8 @@ tucker_sparse <- function(tnsr,ranks=NULL,max_iter=25,tol=1e-5){
       #core Z minus mode m
       X <- ttl(tnsr,lapply(U_list[-m],t),ms=modes_seq[-m])
       #sparse truncated SVD of X
-      U_list[[m]] <- rspca(t(rs_unfold(X,m=m)@data),ranks[m],center=FALSE,alpha=.0001)$loadings
+      # U_list[[m]] <- rspca(t(rs_unfold(X,m=m)@data),ranks[m],center=FALSE,alpha=.0001)$loadings
+      U_list[[m]] <- svd(rs_unfold(X,m=m)@data,nu=ranks[m])$u
     }
     #compute core tensor Z
     Z <- ttm(X,mat=t(U_list[[num_modes]]),m=num_modes)
@@ -54,6 +55,17 @@ tucker_sparse <- function(tnsr,ranks=NULL,max_iter=25,tol=1e-5){
     #checks convergence
     if(CHECK_CONV(Z, U_list)){
       converged <- TRUE
+      
+      ## trying out adding sparse pca as a last iteration...
+      for(m in modes_seq){
+        #core Z minus mode m
+        X <- ttl(tnsr,lapply(U_list[-m],t),ms=modes_seq[-m])
+        #sparse truncated SVD of X
+        U_list[[m]] <- rspca(t(rs_unfold(X,m=m)@data),ranks[m],center=FALSE,alpha=.0001)$loadings
+      }
+      #compute core tensor Z
+      Z <- ttm(X,mat=t(U_list[[num_modes]]),m=num_modes)
+      
     }else{
       curr_iter <- curr_iter + 1
     }

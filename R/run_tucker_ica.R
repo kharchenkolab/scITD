@@ -77,8 +77,7 @@ tucker_ica_helper <- function(tensor_data, ranks, rotate_modes) {
   invisible(utils::capture.output(
     tucker_decomp <- tucker_sparse(rTensor::as.tensor(tnsr), ranks=ranks)
   ))
-  print('yup')
-  
+
   gene_by_factors <- tucker_decomp$U[[2]]
   rownames(gene_by_factors) <- gene_nm
   ctype_by_factors <- tucker_decomp$U[[3]]
