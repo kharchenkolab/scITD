@@ -22,8 +22,10 @@
 #' @export
 get_ctype_vargenes <- function(container, method="anova", thresh=0.01) {
 
-  # get ctype matrices
-  container <- get_ctype_data(container)
+  # check that ctypes_use param has been set
+  if (is.null(container$experiment_params$ctypes_use)) {
+    stop("ctypes_use parameter from container$experiment_params is NULL. Use set_experiment_params()")
+  }
 
   # set random seed to work with mclapply
   RNGkind("L'Ecuyer-CMRG")
@@ -32,11 +34,6 @@ get_ctype_vargenes <- function(container, method="anova", thresh=0.01) {
   ncores <- container$experiment_params$ncores
 
   var_res <- data.frame(matrix(ncol=3, nrow=0))
-
-  # check that ctypes_use param has been set
-  if (is.null(container$experiment_params$ctypes_use)) {
-    stop("ctypes_use parameter from container$experiment_params is NULL. Use set_experiment_params()")
-  }
 
   for (ct in container$experiment_params$ctypes_use) {
     print(ct)
@@ -74,11 +71,15 @@ get_ctype_vargenes <- function(container, method="anova", thresh=0.01) {
 #' for each cell type as well as results and plots from all analyses
 #' @param make_clean logical TRUE to apply minimum thresholds for number of cells
 #' expressing a gene and number of cells per donor (default=TRUE)
+#' @param donor_min_cells numeric Minimum threshold for number of cells per
+#' donor. Only used if make_clean = TRUE. (default=5)
+#' @param gene_min_cells numeric Minimum threshold for number of cells
+#' with nonzero expression of a gene. Only used if make_clean = TRUE. (default=5)
 #'
 #' @return the project container with the scMinimal environments added into
 #' the container$scMinimal_ctypes slot
 #' @export
-get_ctype_data <- function(container, make_clean=TRUE) {
+get_ctype_data <- function(container, make_clean=TRUE, donor_min_cells=5, gene_min_cells=5) {
   for (ct in container$experiment_params$ctypes_use) {
     ctype_sub <- subset_scMinimal(container$scMinimal_full, ctypes_use=ct)
     if (make_clean) {

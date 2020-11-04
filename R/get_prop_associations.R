@@ -11,19 +11,25 @@ utils::globalVariables(c("dscore", "donor_proportion", "ctypes"))
 #' @param stat_type character Either "fstat" to get F-Statistics, "adj_rsq" to get adjusted
 #' R-squared values, or "adj_pval" to get adjusted pvalues.
 #' @param integration_var character The meta data variable to use for creating
-#' the joint embedding with Conos if not already provided in container$embedding
+#' the joint embedding with Conos if not already provided in container$embedding (default=NULL)
 #'
-#' @return the project container with a plot of results in
-#' container$plots$subtype_prop_factor_associations
+#' @return the project container with a plot of association results in
+#' container$plots$subtype_prop_factor_associations and proportion plots in
+#' container$plots$prop_plots_all
 #' @export
-get_subtype_prop_associations <- function(container,max_res,stat_type,integration_var) {
+get_subtype_prop_associations <- function(container,max_res,stat_type,integration_var=NULL) {
   if (!(stat_type %in% c("fstat","adj_rsq","adj_pval"))) {
     stop("stat_type parameter is not one of the three options")
   }
   
   if (is.null(container$embedding)) {
+    if (is.null(integration_var)) {
+      stop("need to set integration_var parameter to get an embedding")
+    }
     container <- reduce_dimensions(container,integration_var)
   }
+  
+  donor_scores <- container$tucker_results[[1]]
 
   # create dataframe to store association results
   res <- data.frame(matrix(ncol = 4, nrow = 0))
@@ -32,15 +38,19 @@ get_subtype_prop_associations <- function(container,max_res,stat_type,integratio
   # make list to store subclustering results
   subc_all <- list()
   
+  # store proportion plots
+  prop_plots_all <- list()
+  
   # loop through cell types
   for (ct in container$experiment_params$ctypes_use) {
     scMinimal <- container[["scMinimal_ctype"]][[ct]]
 
     # loop through increasing clustering resolutions
-    cluster_res <- seq(.5,max_res,by=.25)
+    cluster_res <- seq(.5,max_res,by=.1)
     for (r in cluster_res) {
       # run clustering
       subclusts <- get_subclusters(container,ct,r,min_cells_group=50,small_clust_action='merge')
+      subclusts <- subclusts + 1 # moves subcluster index from 0 to 1
       subc_all[[ct]][[paste0('res:',as.character(r))]] <- subclusts
       
       num_subclusts <- length(unique(subclusts))
@@ -55,7 +65,13 @@ get_subtype_prop_associations <- function(container,max_res,stat_type,integratio
         rownames(donor_balances) <- rownames(donor_props)
         
         # compute regression statistics
-        reg_stats <- compute_associations(donor_balances,container$tucker_results[[1]],stat_type)
+        reg_stats <- compute_associations(donor_balances,donor_scores,stat_type)
+        
+        # generate plot of donor proportions and scores
+        colnames(donor_props) <- sapply(1:ncol(donor_props),function(x){paste0(ct,'_',x)})
+        prop_plot <- plot_donor_props(donor_props,donor_scores,reg_stats,ctype_mapping=NULL,stat_type)
+        prop_plots_all[[ct]][[paste0('res:',as.character(r))]] <- prop_plot
+        
       } else {
         if (stat_type=='fstat' || stat_type=='adj_rsq') {
           reg_stats <- rep(0,ncol(container$tucker_results[[1]]))
@@ -73,13 +89,14 @@ get_subtype_prop_associations <- function(container,max_res,stat_type,integratio
     }
   }
 
-  # generate plot
+  # generate plot of associations
   reg_stat_plots <- plot_subclust_associations(res)
 
   # save results
   container$plots$subtype_prop_factor_associations <- reg_stat_plots
+  container$plots$prop_plots_all <- prop_plots_all
   container$subclusters <- subc_all
-
+  
   return(container)
 }
 
@@ -365,13 +382,13 @@ compute_associations <- function(donor_balances, donor_scores, stat_type) {
 #' @param resolution numeric The clustering resolution that was used to generate
 #' the clustering
 #' @param plot_subclusters logical TRUE to generate an embedding plot colored by
-#' clusters and subclusters for the specified ctype (default=FALSE)
+#' clusters and subclusters for the specified ctype (default=TRUE)
 #'
 #' @return the project container with the DE results in 
 #' container$subcluster_de$<ctype>$<resolution> and plot results located in
 #' container$plots$subclusters$<ctype>$<resolution>
 #' @export
-run_subcluster_de <- function(container,ctype,resolution,plot_subclusters=FALSE) {
+run_subcluster_de <- function(container,ctype,resolution,plot_subclusters=TRUE) {
   ncores <- container$experiment_params$ncores
   
   con <- container[["embedding"]]
@@ -463,10 +480,13 @@ plot_donor_props <- function(donor_props,donor_scores,significance,ctype_mapping
 
     if (stat_type=='fstat') {
       plot_stat_name <- 'F-Statistic'
+      round_digits <- 3
     } else if (stat_type=='adj_rsq') {
       plot_stat_name <- 'Adjusted R-Squared'
+      round_digits <- 3
     } else if (stat_type == 'adj_pval') {
       plot_stat_name <- 'Adjusted P-Value'
+      round_digits <- 5
     }
 
     p <- ggplot(tmp2, aes(x=dscore,y=donor_proportion,color=ctypes)) +
@@ -477,7 +497,7 @@ plot_donor_props <- function(donor_props,donor_scores,significance,ctype_mapping
       xlab("") +
       ylab("") +
       annotate(geom="text",  x=Inf, y=Inf, hjust=1,vjust=1, col="black",
-               label=paste0(plot_stat_name,': ',round(significance[f],digits=3)))
+               label=paste0(plot_stat_name,': ',round(significance[f],digits=round_digits)))
 
     all_plots[[f]] <- p
   }

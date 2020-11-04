@@ -4,7 +4,12 @@
 \alias{get_subtype_prop_associations}
 \title{Compute associations between donor factor scores and donor proportions of cell subtypes}
 \usage{
-get_subtype_prop_associations(container, max_res, stat_type, integration_var)
+get_subtype_prop_associations(
+  container,
+  max_res,
+  stat_type,
+  integration_var = NULL
+)
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
@@ -16,11 +21,12 @@ for each cell type as well as results and plots from all analyses}
 R-squared values, or "adj_pval" to get adjusted pvalues.}
 
 \item{integration_var}{character The meta data variable to use for creating
-the joint embedding with Conos if not already provided in container$embedding}
+the joint embedding with Conos if not already provided in container$embedding (default=NULL)}
 }
 \value{
-the project container with a plot of results in
-container$plots$subtype_prop_factor_associations
+the project container with a plot of association results in
+container$plots$subtype_prop_factor_associations and proportion plots in
+container$plots$prop_plots_all
 }
 \description{
 Compute associations between donor factor scores and donor proportions of cell subtypes

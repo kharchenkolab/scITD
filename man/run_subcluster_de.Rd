@@ -4,7 +4,7 @@
 \alias{run_subcluster_de}
 \title{Run differential expression with cell subtypes included}
 \usage{
-run_subcluster_de(container, ctype, resolution, plot_subclusters = FALSE)
+run_subcluster_de(container, ctype, resolution, plot_subclusters = TRUE)
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
@@ -16,7 +16,7 @@ for each cell type as well as results and plots from all analyses}
 the clustering}
 
 \item{plot_subclusters}{logical TRUE to generate an embedding plot colored by
-clusters and subclusters for the specified ctype (default=FALSE)}
+clusters and subclusters for the specified ctype (default=TRUE)}
 }
 \value{
 the project container with the DE results in 
