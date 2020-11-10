@@ -48,6 +48,7 @@ make_new_container <- function(scMinimal, ctypes_use=NULL, gn_convert=NULL, scal
                                       rotate_modes=rotate_modes,
                                       ranks=ranks, ncores=ncores,
                                       rand_seed=rand_seed)
+  container$experiment_params$run_check <- FALSE
   container$all_vargenes <- c()
   container$scMinimal_ctype <- list()
   container$tensor_data <- NULL

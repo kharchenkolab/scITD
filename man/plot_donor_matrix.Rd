@@ -4,7 +4,12 @@
 \alias{plot_donor_matrix}
 \title{Plot matrix of donor scores extracted from Tucker decomposition}
 \usage{
-plot_donor_matrix(container, meta_vars = NULL, cluster_by_meta = NULL)
+plot_donor_matrix(
+  container,
+  meta_vars = NULL,
+  cluster_by_meta = NULL,
+  show_donor_ids = FALSE
+)
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
@@ -15,6 +20,9 @@ the donor scores. Can include more than one variable. (default=NULL)}
 
 \item{cluster_by_meta}{character One metadata variable to cluster the heatmap
 by. If NULL, donor clustering is done using donor scores. (default=NULL)}
+
+\item{show_donor_ids}{logical Set to TRUE to show donor id as row name on the
+heamap (default=FALSE)}
 }
 \value{
 the project container with the plot in container$plots$donor_matrix

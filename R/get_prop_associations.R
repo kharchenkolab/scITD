@@ -22,10 +22,11 @@ get_subtype_prop_associations <- function(container,max_res,stat_type,integratio
     stop("stat_type parameter is not one of the three options")
   }
   
-  if (is.null(container$embedding)) {
-    if (is.null(integration_var)) {
+  if (is.null(integration_var)) {
+    if (is.null(container$embedding)) {
       stop("need to set integration_var parameter to get an embedding")
     }
+  } else {
     container <- reduce_dimensions(container,integration_var)
   }
   
@@ -249,6 +250,23 @@ get_ctype_prop_associations <- function(container,stat_type) {
 reduce_dimensions <- function(container, integration_var) {
   ncores <- container$experiment_params$ncores
   
+  # some cells have been removed because donors had too few cells per ctype
+  # need to make sure the full data is limited to the cells used in analysis
+  all_cells <- c()
+  for (ct in container$experiment_params$ctypes_use) {
+    cells_in_ctype <- rownames(container$scMinimal_ctype[[ct]]$metadata)
+    all_cells <- c(all_cells,cells_in_ctype)
+  }
+  # ### for testing only
+  # metadata_copy <- container$scMinimal_full$metadata
+  # data_copy <- container$scMinimal_full$data_sparse
+  # metadata_copy <- metadata_copy[all_cells,]
+  # data_copy <- data_copy[,all_cells]
+  # ###
+  
+  container$scMinimal_full$metadata <- container$scMinimal_full$metadata[all_cells,]
+  container$scMinimal_full$data_sparse <- container$scMinimal_full$data_sparse[,all_cells]
+  
   # create a list of subsetted data matrices (one per var value)
   panel <- list()
   meta <- as.character(container$scMinimal_full$metadata[,integration_var])
@@ -399,7 +417,6 @@ run_subcluster_de <- function(container,ctype,resolution,plot_subclusters=TRUE) 
   new_groups <- replace_groups_with_subclusts(con,subclusts,ctype)
   
   con$clusters$leiden$groups <- new_groups
-  
   de.info <- con$getDifferentialGenes(n.cores=ncores, append.auc=FALSE)
   
   # convert gene names in de results dataframe
@@ -540,7 +557,7 @@ plot_subclust_associations <- function(res) {
       geom_line() +
       xlab("") +
       ylab("") +
-      labs(color = "Broad Cell Type") +
+      labs(color = "Cell Type") +
       ggtitle(factor_name) +
       theme(plot.title = element_text(hjust = 0.5))
 
@@ -573,6 +590,130 @@ plot_subclust_associations <- function(res) {
                   left = ggpubr::text_grob(y_axis_name, rot = 90, size = 15, hjust = .375))
   return(f_plots)
 }
+
+
+plot_subclust_de_hmap <- function(container,ctypes,resolutions) {
+  ncores <- container$experiment_params$ncores
+  
+  con <- container[["embedding"]]
+  orig_groups <- con$clusters$leiden$groups
+  
+  for (i in 1:length(ctypes)) {
+    ctype <- ctypes[i]
+    res <- resolutions[i]
+    resolution_name <- paste0('res:',as.character(res))
+    subclusts <- container$subclusters[[ctype]][[resolution_name]]
+    new_groups <- replace_groups_with_subclusts(con,subclusts,ctype)
+    con$clusters$leiden$groups <- new_groups
+  }
+  
+  de.info <- con$getDifferentialGenes(n.cores=ncores, append.auc=TRUE,
+                                      z.threshold=0, upregulated.only=TRUE)
+
+  myhmap <- plotDEheatmap_conos(con, groups=con$clusters$leiden$groups, de=de.info, n.genes.per.cluster = 5,
+                row.label.font.size = 7)
+  
+
+  con$clusters$leiden$groups <- orig_groups
+
+  container$subcluster_de_heatmap <- myhmap
+  return(container)
+}
+
+
+
+plotDEheatmap_conos <- function(con, groups, de=NULL, n.genes.per.cluster=5,
+                                expression.quantile=0.99,pal=colorRampPalette(c('dodgerblue1','grey95','indianred1'))(1024),
+                                ordering='-AUC',column.metadata=NULL, remove.duplicates=TRUE, show.cluster.legend=TRUE,
+                                show_heatmap_legend=FALSE, row.label.font.size=10, ...) {
+  
+  groups <- as.factor(groups)
+  
+  if(is.null(de)) { # run DE
+    de <- con$getDifferentialGenes(groups=groups,append.auc=TRUE,z.threshold=0,upregulated.only=TRUE)
+  }
+  
+  # drop empty results
+  de <- de[unlist(lapply(de,nrow))>0]
+  
+  # drop results that are not in the factor levels
+  de <- de[names(de) %in% levels(groups)]
+  
+  # order de list to match groups order
+  de <- de[order(match(names(de),levels(groups)))]
+  
+  de <- lapply(de,function(x) x%>%dplyr::arrange(!!rlang::parse_expr(ordering))%>%head(n.genes.per.cluster))
+  de <- de[unlist(lapply(de, nrow))>0]
+  
+  gns <- lapply(de,function(x) as.character(x$Gene)) %>% unlist
+  sn <- function(x) setNames(x,x)
+  expl <- lapply(de,function(d) do.call(rbind,lapply(sn(as.character(d$Gene)),function(gene) conos:::getGeneExpression(con,gene))))
+  
+  
+  exp <- do.call(rbind,expl)
+  # limit to cells that were participating in the de
+  exp <- na.omit(exp[,colnames(exp) %in% names(na.omit(groups))])
+  
+  # transform expression values
+  x <- t(apply(as.matrix(exp), 1, function(xp) {
+    if(expression.quantile<1) {
+      qs <- quantile(xp,c(1-expression.quantile,expression.quantile))
+      if(diff(qs)==0) { # too much, set to adjacent values
+        xps <- unique(xp)
+        if(length(xps)<3) { qs <- range(xp) } # only two values, just take the extremes
+        xpm <- median(xp)
+        if(sum(xp<xpm) > sum(xp>xpm)) { # more common to have values below the median
+          qs[1] <- max(xp[xp<xpm])
+        } else { # more common to have values above the median
+          qs[2] <- min(xps[xps>xpm]) # take the next one higher
+        }
+      }
+      xp[xp<qs[1]] <- qs[1]
+      xp[xp>qs[2]] <- qs[2]
+    }
+    xp <- xp-min(xp);
+    if(max(xp)>0) xp <- xp/max(xp);
+    xp
+  }))
+  
+  o <- order(groups[colnames(x)])
+  x=x[,o]
+  
+  rownames(x) <- convert_gn(container,rownames(x))
+  
+  annot <- data.frame(clusters=groups[colnames(x)],row.names = colnames(x))
+  
+  if(!is.null(column.metadata)) {
+    if(is.data.frame(column.metadata)) { # data frame
+      annot <- cbind(annot,column.metadata[colnames(x),])
+    } else if(is.list(column.metadata)) { # a list of factors
+      annot <- cbind(annot,data.frame(do.call(cbind.data.frame,lapply(column.metadata,'[',rownames(annot)))))
+    } else {
+      warning('column.metadata must be either a data.frame or a list of cell-named factors')
+    }
+  }
+  annot <- annot[,rev(1:ncol(annot)),drop=FALSE]
+  
+  
+  column.metadata.colors <- list();
+  
+  # make sure cluster colors are defined
+  if(is.null(column.metadata.colors[['clusters']])) {
+    uc <- unique(annot$clusters);
+    column.metadata.colors$clusters <- setNames(rainbow(length(uc)),uc)
+  }
+
+  if(remove.duplicates) { x <- x[!duplicated(rownames(x)),] }
+  
+  # draw heatmap
+  ha <- ComplexHeatmap::HeatmapAnnotation(df=annot,col=column.metadata.colors,show_legend=show.cluster.legend)
+  
+  ha <- ComplexHeatmap::Heatmap(x, name='expression', col=pal, cluster_rows=FALSE, cluster_columns=FALSE, show_column_names=FALSE, top_annotation=ha, row_names_gp = grid::gpar(fontsize = row.label.font.size));
+
+  return(ha)
+}
+
+
 
 
 

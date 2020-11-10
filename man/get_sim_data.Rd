@@ -44,7 +44,8 @@ donors_total.}
 de_prob, as too few DE genes will make it hard to detect a signal. (default=2000)}
 
 \item{de_prob}{numeric The probability that each gene gets upregulated in each cell
-type in each process (default=.05)}
+type in each process. Not recommended to set over 0.1 as it will cause unexpected results. 
+(default=0.05)}
 
 \item{de_strength}{numeric This is roughly the average effect size for all differentially
 expressed genes used to generate the distinc processes (default=2)}

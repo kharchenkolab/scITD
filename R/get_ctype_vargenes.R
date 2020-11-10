@@ -6,9 +6,12 @@
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
 #' @param method character The method used to select significantly variable
-#' genes across donors within a cell type (default="anova")
-#' @param thresh numeric Pvalue threshold to use for gene significance
-#' (default=0.01)
+#' genes across donors within a cell type. Can be either "anova" to use basic
+#' anova with cells grouped by donor, "empir" to use a shuffling approach, or
+#' "norm_var" to get the top overdispersed genes by normalized variance.
+#' @param thresh numeric A pvalue threshold to use for gene significance when
+#' method is set to "anova" or "empir". For the method "norm_var" thresh is the
+#' number of top overdispersed genes from each cell type to include.
 #'
 #' @return the project container with scMinimal environments added for each
 #' cell type. The scMinimal environments contain expression count matrices
@@ -20,11 +23,12 @@
 #' in these sub-containers for the corresponding included cells and is in the
 #' "metadata" slot.
 #' @export
-get_ctype_vargenes <- function(container, method="anova", thresh=0.01) {
+get_ctype_vargenes <- function(container, method, thresh) {
 
-  # check that ctypes_use param has been set
-  if (is.null(container$experiment_params$ctypes_use)) {
-    stop("ctypes_use parameter from container$experiment_params is NULL. Use set_experiment_params()")
+  if (container$experiment_params$run_check) {
+    stop("run get_ctype_data() first")
+  } else {
+    container$experiment_params$run_check <- TRUE
   }
 
   # set random seed to work with mclapply
@@ -33,31 +37,56 @@ get_ctype_vargenes <- function(container, method="anova", thresh=0.01) {
 
   ncores <- container$experiment_params$ncores
 
-  var_res <- data.frame(matrix(ncol=3, nrow=0))
-
-  for (ct in container$experiment_params$ctypes_use) {
-    print(ct)
-    if (method == "anova") {
-      pvals <- vargenes_anova(container$scMinimal_ctype[[ct]], ncores)
-    } else if (method == "empir") {
-      pvals <- vargenes_shuffle(container$scMinimal_ctype[[ct]], 10000, ncores)
+  if (method == "norm_var") {
+    all_vargenes <- c()
+    for (ct in container$experiment_params$ctypes_use) {
+      print(ct)
+      norm_variances <- get_normalized_variance(container$scMinimal_ctype[[ct]])
+      norm_variances <- norm_variances[order(norm_variances,decreasing=TRUE)]
+      
+      # limit to overdispersed genes
+      norm_variances <- norm_variances[norm_variances > 1]
+      
+      # limit to the top overdispersed genes
+      if (thresh < length(norm_variances)) {
+        norm_variances <- norm_variances[1:thresh]
+      }
+      all_vargenes <- c(all_vargenes,names(norm_variances))
+      
+      container$scMinimal_ctype[[ct]]$vargenes <- names(norm_variances)
     }
-    var_res <- rbind(var_res,cbind(names(pvals), pvals, rep(ct,length(pvals))))
+    
+    # ensure union of variable genes is present in all cell types
+    container <- set_vargenes_container(container, all_vargenes)
+    
+  } else {
+    var_res <- data.frame(matrix(ncol=3, nrow=0))
+    for (ct in container$experiment_params$ctypes_use) {
+      print(ct)
+      if (method == "anova") {
+        pvals <- vargenes_anova(container$scMinimal_ctype[[ct]], ncores)
+      } else if (method == "empir") {
+        pvals <- vargenes_shuffle(container$scMinimal_ctype[[ct]], 10000, ncores)
+      }
+      var_res <- rbind(var_res,cbind(names(pvals), pvals, rep(ct,length(pvals))))
+    }
+    colnames(var_res) <- c('genes', 'pvalues', 'ctypes')
+    var_res <- as.data.frame(var_res)
+    var_res$pvalues <- as.numeric(as.character(var_res$pvalues))
+    var_res$genes <- as.character(var_res$genes)
+    var_res$ctypes <- as.character(var_res$ctypes)
+    var_res$padj <- p.adjust(var_res$pvalues, "fdr")
+    vargenes_all <- var_res$genes[var_res$padj < thresh]
+    container <- set_vargenes_container(container, vargenes_all)
+    
+    # put cell type specific vargenes in slots in case want to access them later
+    for (ct in container$experiment_params$ctypes_use) {
+      ctype_res <- var_res[var_res$ctypes == ct,]
+      ctype_vargenes <- ctype_res[ctype_res$padj < thresh, 'genes']
+      container$scMinimal_ctype[[ct]]$vargenes <- ctype_vargenes
+    }
   }
-  colnames(var_res) <- c('genes', 'pvalues', 'ctypes')
-  var_res <- as.data.frame(var_res)
-  var_res$pvalues <- as.numeric(as.character(var_res$pvalues))
-  var_res$genes <- as.character(var_res$genes)
-  var_res$ctypes <- as.character(var_res$ctypes)
-  var_res$padj <- p.adjust(var_res$pvalues, "fdr")
-  vargenes_all <- var_res$genes[var_res$padj < thresh]
-  container <- set_vargenes_container(container, vargenes_all)
-
-  for (ct in container$experiment_params$ctypes_use) {
-    ctype_res <- var_res[var_res$ctypes == ct,]
-    ctype_vargenes <- ctype_res[ctype_res$padj < thresh, 'genes']
-    container$scMinimal_ctype[[ct]]$vargenes <- ctype_vargenes
-  }
+  
 
   # reduce ctype data to only significantly variable genes
   container <- reduce_to_vargenes(container)
@@ -80,10 +109,19 @@ get_ctype_vargenes <- function(container, method="anova", thresh=0.01) {
 #' the container$scMinimal_ctypes slot
 #' @export
 get_ctype_data <- function(container, make_clean=TRUE, donor_min_cells=5, gene_min_cells=5) {
+  
+  # change param to allow running of get_ctype_vargenes()
+  container$experiment_params$run_check <- FALSE
+  
+  # check that ctypes_use param has been set
+  if (is.null(container$experiment_params$ctypes_use)) {
+    stop("ctypes_use parameter from container$experiment_params is NULL. Use set_experiment_params()")
+  }
+  
   for (ct in container$experiment_params$ctypes_use) {
     ctype_sub <- subset_scMinimal(container$scMinimal_full, ctypes_use=ct)
     if (make_clean) {
-      ctype_sub <- clean_data(ctype_sub)
+      ctype_sub <- clean_data(ctype_sub,donor_min_cells=donor_min_cells,gene_min_cells=gene_min_cells)
     }
     container <- add_ctype_data_to_container(container, ctype_sub)
   }

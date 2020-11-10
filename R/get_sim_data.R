@@ -19,7 +19,8 @@
 #' @param n_genes numeric Number of genes to include in dataset. Should be considered alongside
 #' de_prob, as too few DE genes will make it hard to detect a signal. (default=2000)
 #' @param de_prob numeric The probability that each gene gets upregulated in each cell
-#' type in each process (default=.05)
+#' type in each process. Not recommended to set over 0.1 as it will cause unexpected results. 
+#' (default=0.05)
 #' @param de_strength numeric This is roughly the average effect size for all differentially
 #' expressed genes used to generate the distinc processes (default=2)
 #' @param factor_overlap logical Set to TRUE to have ~20% of the DE genes be found across
@@ -62,6 +63,8 @@ get_sim_data <- function(data_for_p_est=NULL, prev_params=NULL, donors_total, ce
   if (factor_overlap) {
     n_overlap_de_genes_per_group <- round(n_de_genes_per_group*.4)
     n_de_genes_per_group <- round(n_de_genes_per_group*.8)
+    # n_overlap_de_genes_per_group <- round(n_de_genes_per_group*.05)
+    # n_de_genes_per_group <- round(n_de_genes_per_group*.95)
   }
 
   n_groups <- (n_ctypes*n_processes) + 1
@@ -84,16 +87,41 @@ get_sim_data <- function(data_for_p_est=NULL, prev_params=NULL, donors_total, ce
     # store the de data
     de_groups <- rbind(de_groups,de_df)
   }
-  for (ct in 1:(n_ctypes)) {
-    ct_groups <- seq(ct,n_groups-1,n_ctypes)
+  if (factor_overlap) {
+    for (ct in 1:(n_ctypes)) {
+      ct_groups <- seq(ct,n_groups-1,n_ctypes)
 
-    # get the fractional counts for de genes found in same cell type but multiple processes
-    de_df <- sim_helper(ct_groups,n_processes*group_fracs[1],
-                        n_overlap_de_genes_per_group,params,meta,de_strength)
+      # get the fractional counts for de genes found in same cell type but multiple processes
+      de_df <- sim_helper(ct_groups,n_processes*group_fracs[1],
+                          n_overlap_de_genes_per_group,params,meta,de_strength)
 
-    # store the de data
-    de_groups <- rbind(de_groups,de_df)
+      # store the de data
+      de_groups <- rbind(de_groups,de_df)
+    }
   }
+  
+  # ## ADD IF STATEMENT, FOR IF USE CTYPE_OVERLAP
+  # for (proc in 1:(n_processes)) {
+  #   proc_groups <- seq(((proc-1)*n_ctypes) + 1,proc*n_ctypes,1)
+  # 
+  #   # get the fractional counts for de genes found in same cell type but multiple processes
+  #   de_df <- sim_helper(proc_groups,n_ctypes*group_fracs[1],
+  #                       n_overlap_de_genes_per_group,params,meta,de_strength)
+  # 
+  #   # store the de data
+  #   de_groups <- rbind(de_groups,de_df)
+  # }
+  
+  # #### ADDING SOME DE FOR ALL GROUPS
+  # my_groups <- c(1:(n_groups-1))
+  # 
+  # # get the fractional counts for de genes found in same cell type but multiple processes
+  # de_df <- sim_helper(my_groups,(n_groups-1)*group_fracs[1],
+  #                     n_overlap_de_genes_per_group,params,meta,de_strength)
+  # 
+  # # store the de data
+  # de_groups <- rbind(de_groups,de_df)
+  # ####
 
   # replace part of old sim data with de data
   n_replace <- nrow(de_groups)

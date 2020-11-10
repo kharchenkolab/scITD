@@ -13,12 +13,15 @@ utils::globalVariables(c("num_ranks", "rec_error", "num_iter", "run_type", "erro
 #' reconstruction errors are computed using svd on the unfolded tensor along each
 #' mode. For 'tucker', reconstruction errors are computed using tucker decomposition
 #' (default='svd')
+#' @param shuffle_level character Either "cells" to shuffle cell-donor linkages or 
+#' "tensor" to shuffle values within the tensor. Currently "tensor" only works with
+#' the svd method (default="cells")
 #' @param num_iter numeric Number of null iterations (default=100)
 #'
 #' @return the project container with rank determination plot and results
 #' added into slots
 #' @export
-determine_ranks_tucker <- function(container, max_ranks_test, method='svd', num_iter=100) {
+determine_ranks_tucker <- function(container, max_ranks_test, method='svd', shuffle_level='cells', num_iter=100) {
 
   # check that var_scale_power has been set if scale_var is TRUE
   if (container$experiment_params$scale_var && is.null(container$experiment_params$var_scale_power)) {
@@ -36,7 +39,11 @@ determine_ranks_tucker <- function(container, max_ranks_test, method='svd', num_
   null_res <- lapply(1:num_iter, function(x) {
 
     # first get donor means shuffled
-    container <- collapse_by_donors(container, shuffle=TRUE)
+    if (shuffle_level == "cells") {
+      container <- collapse_by_donors(container, shuffle=TRUE)
+    } else {
+      container <- collapse_by_donors(container, shuffle=FALSE)
+    }
 
     # form a tensor
     container <- form_tensor(container)
@@ -44,7 +51,11 @@ determine_ranks_tucker <- function(container, max_ranks_test, method='svd', num_
 
     # get and store reconstruction errors
     if (method == 'svd') {
-      rec_errors <- get_reconstruct_errors_svd(tmp_tnsr,max_ranks_test)
+      if (shuffle_level == "cells") {
+        rec_errors <- get_reconstruct_errors_svd(tmp_tnsr,max_ranks_test,shuffle_tensor=FALSE)
+      } else {
+        rec_errors <- get_reconstruct_errors_svd(tmp_tnsr,max_ranks_test,shuffle_tensor=TRUE)
+      }
     } else if (method == 'tucker') {
       rec_errors <- get_reconstruct_errors_tucker(tmp_tnsr,max_ranks_test,ncores)
     }
@@ -60,7 +71,7 @@ determine_ranks_tucker <- function(container, max_ranks_test, method='svd', num_
 
   # get and store reconstruction errors
   if (method == 'svd') {
-    rec_errors_real <- get_reconstruct_errors_svd(tmp_tnsr,max_ranks_test)
+    rec_errors_real <- get_reconstruct_errors_svd(tmp_tnsr,max_ranks_test,shuffle_tensor=FALSE)
   } else if (method == 'tucker') {
     rec_errors_real <- get_reconstruct_errors_tucker(tmp_tnsr,max_ranks_test,ncores)
     print(rec_errors_real)
@@ -100,14 +111,25 @@ determine_ranks_tucker <- function(container, max_ranks_test, method='svd', num_
 #' donors, genes, and cell types in that order
 #' @param max_ranks_test numeric Vector of length 3 with maximum number of
 #' ranks to test for donor, gene, and cell type modes in that order
+#' @param shuffle_tensor logical Set to TRUE to shuffle values within the tensor
+#' 
 #' @return reconstruction errors
 #' @export
-get_reconstruct_errors_svd <- function(tnsr, max_ranks_test) {
+get_reconstruct_errors_svd <- function(tnsr, max_ranks_test, shuffle_tensor) {
   # do svd to rnk ranks
   mode_rank_errors <- list()
   for (m in 1:length(max_ranks_test)) {
     rnk_errors <- c()
     d_unfold <- rTensor::k_unfold(rTensor::as.tensor(tnsr),m)@data
+    
+    if (shuffle_tensor) {
+      unfolded_rows <- nrow(d_unfold)
+      unfolded_cols <- ncol(d_unfold)
+      d_unfold_linear <- c(d_unfold)
+      d_unfold_linear_shuffled <- sample(d_unfold_linear)
+      d_unfold <- matrix(d_unfold_linear_shuffled,nrow = unfolded_rows,ncol = unfolded_cols)
+    }
+    
     svd_res <- svd(d_unfold)
     d <- diag(svd_res$d)
     for (rnk in 1:max_ranks_test[m]) {
@@ -161,12 +183,17 @@ get_reconstruct_errors_tucker <- function(tnsr,max_ranks_test,ncores) {
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
+#' @param min_ranks_test numeric Vector of length 3 with minimum number of
+#' ranks to test for donor, gene, and cell type modes in that order
 #' @param max_ranks_test numeric Vector of length 3 with maximum number of
 #' ranks to test for donor, gene, and cell type modes in that order
+#' @param min_power_test numeric The minimum exponent parameter value to test
+#' @param max_power_test numeric The maximum parameter value to test
 #'
 #' @return the experiment container with added plot and results
 #' @export
-optimize_var_scale_power <- function(container, max_ranks_test) {
+optimize_var_scale_power <- function(container, min_ranks_test, max_ranks_test, 
+                                     min_power_test, max_power_test) {
   # check that scale_var parameter is true
   if (!container$experiment_params$scale_var) {
     stop("scale_var parameter from container$experiment_params is NULL. This
@@ -186,10 +213,14 @@ optimize_var_scale_power <- function(container, max_ranks_test) {
   # only test those combos with max ctype factors
   mycombos <- mycombos[mycombos[,3]==max_ranks_test[3],]
 
+  # only test combos above min ranks to test
+  mycombos <- mycombos[mycombos[,1]>=min_ranks_test[1],]
+  mycombos <- mycombos[mycombos[,2]>=min_ranks_test[2],]
+  
   # get donor means
   container <- collapse_by_donors(container, shuffle=FALSE)
 
-  powers_test <- seq(.5,2,by=.25)
+  powers_test <- seq(min_power_test,max_power_test,by=.25)
   power_results <- list()
   # iterate through different scaling powers
   for (scale_power in powers_test) {

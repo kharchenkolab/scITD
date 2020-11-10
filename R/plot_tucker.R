@@ -10,11 +10,12 @@
 #' the donor scores. Can include more than one variable. (default=NULL)
 #' @param cluster_by_meta character One metadata variable to cluster the heatmap
 #' by. If NULL, donor clustering is done using donor scores. (default=NULL)
+#' @param show_donor_ids logical Set to TRUE to show donor id as row name on the
+#' heamap (default=FALSE)
 #'
 #' @return the project container with the plot in container$plots$donor_matrix
 #' @export
-plot_donor_matrix <- function(container, meta_vars=NULL,
-                              cluster_by_meta=NULL) {
+plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL, show_donor_ids=FALSE) {
 
   # check that Tucker has been run
   if (is.null(container$tucker_results)) {
@@ -48,7 +49,8 @@ plot_donor_matrix <- function(container, meta_vars=NULL,
                       cluster_rows = FALSE,
                       column_names_gp = gpar(fontsize = 10),
                       col = col_fun, row_title = "Donors",
-                      row_title_gp = gpar(fontsize = 14))
+                      row_title_gp = gpar(fontsize = 14),
+                      show_row_names = show_donor_ids)
   } else {
     meta <- container$scMinimal_full$metadata[,c('donors',meta_vars)]
     meta <- unique(meta)
@@ -77,16 +79,19 @@ plot_donor_matrix <- function(container, meta_vars=NULL,
                       cluster_rows = FALSE,
                       column_names_gp = gpar(fontsize = 10),
                       col = col_fun, row_title = "Donors",
-                      row_title_gp = gpar(fontsize = 14))
+                      row_title_gp = gpar(fontsize = 14),
+                      show_row_names = show_donor_ids)
 
     for (j in 1:ncol(meta)) {
       if (colnames(meta)[j]=='sex') {
         mycol <- RColorBrewer::brewer.pal(n = 3, name = "Accent")
-        names(mycol) <- c("M","F")
+        names(mycol) <- unique(meta[,j])
+        
         myhmap <- myhmap +
           Heatmap(meta[,j,drop=FALSE], name = colnames(meta)[j], cluster_rows = FALSE,
                   cluster_columns = FALSE, show_column_names = FALSE,
                   show_row_names = FALSE, col = mycol)
+        
       } else {
         myhmap <- myhmap +
           Heatmap(meta[,j,drop=FALSE], name = colnames(meta)[j], cluster_rows = FALSE,
@@ -435,7 +440,118 @@ render_all_lds_plots <- function(hm_list) {
 
 
 
+#' Generate heatmap showing top genes in each cell type significantly associated
+#' with a given factor
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param factor_select numeric The factor to query
+#' @param top_n_per_ctype numeric The number of top genes from each cell type
+#' to plot (default=5)
+#'
+#' @return the project container with the plot in the slot
+#' container$plots$donor_sig_genes$Factor#
+#' @export
+plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype=5) {
+  ## add catch in case they havent run jackstraw yet...
+  
+  # temporarily remove variance scaling
+  orig_scale_decision <- container$experiment_params$scale_var
+  container <- set_experiment_params(container, scale_var = FALSE)
+  
+  # form the tensor for specified cell types
+  container <- collapse_by_donors(container, shuffle=FALSE)
+  container <- form_tensor(container)
+  
+  # extract tensor information
+  tensor_data <- container$tensor_data
+  donor_nm <- tensor_data[[1]]
+  gene_nm  <- tensor_data[[2]]
+  ctype_nm  <- tensor_data[[3]]
+  tnsr <- tensor_data[[4]]
+  
+  # get the loadings matrix
+  ldngs <- container$tucker_results[[2]]
+  
+  # break down a factor from the loadings matrix
+  genes <- sapply(colnames(ldngs),function(x){strsplit(x,split=":")[[1]][2]})
+  ctypes <- sapply(colnames(ldngs),function(x){strsplit(x,split=":")[[1]][1]})
+  
+  sr_col <- ldngs[factor_select,]
+  
+  tmp_casted_num <- reshape_loadings(sr_col,genes,ctypes)
+  
+  # extract the genes to show
+  ctypes <- container$experiment_params$ctypes_use
+  sig_vecs <- get_significance_vectors(container,factor_select,ctypes)
+  genes_plot <- c()
+  ct_in_hmap <- c()
+  for (ct in ctypes) {
+    # get significant genes for the ctype
+    ct_sig_genes <- sig_vecs[[ct]]
+    ct_sig_genes <- ct_sig_genes[ct_sig_genes<0.05]
+    
+    # get top loading genes of the significant ones
+    ct_sig_loadings <- tmp_casted_num[names(ct_sig_genes),ct]
+    
+    ct_sig_loadings <- ct_sig_loadings[order(abs(ct_sig_loadings),decreasing=TRUE)]
+    ct_top_genes <- names(ct_sig_loadings)[1:top_n_per_ctype]
+    ct_top_genes <- sapply(ct_top_genes,function(x) {paste0(x,"_",ct)})
+    genes_plot <- c(genes_plot,ct_top_genes)
+    ct_in_hmap <- c(ct_in_hmap, rep(ct,top_n_per_ctype))
+  }
 
+  ct_in_hmap <- factor(ct_in_hmap)
+  
+  # unfold tensor along donor mode
+  donor_unfold <- rTensor::k_unfold(rTensor::as.tensor(tnsr),1)@data
+  
+  gn_ctype_cnames <- c()
+  for (ct in ctype_nm) {
+    for (gn in gene_nm) {
+      gn_ctype_cnames <- c(gn_ctype_cnames,paste0(gn,"_",ct))
+    }
+  }
+  
+  colnames(donor_unfold) <- gn_ctype_cnames
+  rownames(donor_unfold) <- donor_nm
+  
+  # subset data to just genes to plot
+  donor_unfold_sub <- donor_unfold[,genes_plot]
+  donor_unfold_sub <- t(donor_unfold_sub)
+  
+  # reorder donors by their score for the factor
+  donor_scores <- container$tucker_results[[1]]
+  donor_scores <- donor_scores[,factor_select]
+  donor_unfold_sub <- donor_unfold_sub[,order(donor_scores)]
+  donor_scores <- donor_scores[order(donor_scores)]
+  
+  ha <- ComplexHeatmap::HeatmapAnnotation(df=as.data.frame(donor_scores))
+  
+  # rename genes
+  rownames(donor_unfold_sub) <- sapply(rownames(donor_unfold_sub),function(x) {
+    gn <- strsplit(x,split="_")[[1]][1]
+    ct <- strsplit(x,split="_")[[1]][2]
+    gn <- convert_gn(container,gn)
+    return(paste0(gn,"_",ct))
+  })
+  
+  # create the hmap
+  col_fun = colorRamp2(c(min(donor_unfold_sub), 0, max(donor_unfold_sub)), c("blue", "white", "red"))
+  
+  myhmap <- Heatmap(donor_unfold_sub, name = "Factor 1",
+                    cluster_columns = FALSE,
+                    cluster_rows = FALSE,
+                    column_names_gp = gpar(fontsize = 10),
+                    row_names_gp = gpar(fontsize = 10),
+                    col = col_fun, top_annotation=ha)
+  
+  # reset scale variance decision
+  container <- set_experiment_params(container, scale_var = orig_scale_decision)
+  
+  container$plots$donor_sig_genes[[paste0('Factor',as.character(factor_select))]] <- myhmap
+  return(container)
+}
 
 
 

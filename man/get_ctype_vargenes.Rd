@@ -5,17 +5,20 @@
 \title{Partition main gene by cell matrix into per cell type matrices with significantly
 variable genes only}
 \usage{
-get_ctype_vargenes(container, method = "anova", thresh = 0.01)
+get_ctype_vargenes(container, method, thresh)
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
 for each cell type as well as results and plots from all analyses}
 
 \item{method}{character The method used to select significantly variable
-genes across donors within a cell type (default="anova")}
+genes across donors within a cell type. Can be either "anova" to use basic
+anova with cells grouped by donor, "empir" to use a shuffling approach, or
+"norm_var" to get the top overdispersed genes by normalized variance.}
 
-\item{thresh}{numeric Pvalue threshold to use for gene significance
-(default=0.01)}
+\item{thresh}{numeric A pvalue threshold to use for gene significance when
+method is set to "anova" or "empir". For the method "norm_var" thresh is the
+number of top overdispersed genes from each cell type to include.}
 }
 \value{
 the project container with scMinimal environments added for each

@@ -8,6 +8,7 @@ determine_ranks_tucker(
   container,
   max_ranks_test,
   method = "svd",
+  shuffle_level = "cells",
   num_iter = 100
 )
 }
@@ -22,6 +23,10 @@ ranks to test for donor, gene, and cell type modes in that order}
 reconstruction errors are computed using svd on the unfolded tensor along each
 mode. For 'tucker', reconstruction errors are computed using tucker decomposition
 (default='svd')}
+
+\item{shuffle_level}{character Either "cells" to shuffle cell-donor linkages or 
+"tensor" to shuffle values within the tensor. Currently "tensor" only works with
+the svd method (default="cells")}
 
 \item{num_iter}{numeric Number of null iterations (default=100)}
 }
