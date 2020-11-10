@@ -32,20 +32,14 @@ Imports:
     circlize,
     reshape2,
     ComplexHeatmap,
-    Seurat,
     parallel,
-    ggpubr,
     ggplot2,
     mgcv,
     methods,
     stats,
     utils,
-    grid,
-    Rmisc,
     Rcpp,
     RColorBrewer,
-    coda.base,
-    gmodels,
     GPArotation, 
     sparsepca
 Suggests: 
@@ -54,15 +48,21 @@ Suggests:
     testthat,
     SingleCellExperiment,
     splatter,
+    coda.base,
     pagoda2,
     conos,
+    Seurat,
     MASS,
+    grid,
+    Rmisc,
+    ggpubr,
     sfsmisc
 RoxygenNote: 7.1.1
 LinkingTo: Rcpp, RcppArmadillo, RcppProgress
 NeedsCompilation: yes
 Remotes:
     kharchenkolab/pagoda2,
-    kharchenkolab/conos
+    kharchenkolab/conos,
+    jokergoo/ComplexHeatmap
 Author: Jonathan Mitchel [cre, aut], Evan Biederstedt [aut]
 Maintainer: Jonathan Mitchel <mitchel@mit.edu>
