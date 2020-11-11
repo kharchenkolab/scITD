@@ -8,6 +8,7 @@ plot_loadings_annot(
   container,
   factor_select,
   use_sig_only = FALSE,
+  nonsig_to_zero = FALSE,
   annot = "none",
   pathways = NULL,
   sim_de_donor_group = NULL,
@@ -25,6 +26,9 @@ for each cell type as well as results and plots from all analyses}
 \item{use_sig_only}{logical If TRUE, includes only significant genes
 from jackstraw in the heatmap. If FALSE, includes all the variable genes.
 (default = FALSE)}
+
+\item{nonsig_to_zero}{logical If TRUE, makes the loadings of all nonsignificant genes 0
+(default=FALSE)}
 
 \item{annot}{character If set to "pathways" then creates an adjacent heatmap
 showing which genes are in which pathways. If set to "sig_genes" then creates

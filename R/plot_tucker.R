@@ -117,6 +117,8 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL, s
 #' @param use_sig_only logical If TRUE, includes only significant genes
 #' from jackstraw in the heatmap. If FALSE, includes all the variable genes.
 #' (default = FALSE)
+#' @param nonsig_to_zero logical If TRUE, makes the loadings of all nonsignificant genes 0
+#' (default=FALSE)
 #' @param annot character If set to "pathways" then creates an adjacent heatmap
 #' showing which genes are in which pathways. If set to "sig_genes" then creates
 #' an adjacent heatmap showing which genes were significant from jackstraw. If
@@ -134,7 +136,7 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL, s
 #'
 #' @return container with the plot put in container$plots$single_lds_plot
 #' @export
-plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, annot='none',
+plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, nonsig_to_zero=FALSE, annot='none',
                                 pathways=NULL, sim_de_donor_group=NULL, sig_thresh=0.05, display_genes=FALSE, show_xlab=TRUE) {
   # check that Tucker has been run
   if (is.null(container$tucker_results)) {
@@ -168,6 +170,10 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, an
 
     # reduce tmp_casted_num to genes significant in at least one cell type
     tmp_casted_num <- tmp_casted_num[rowSums(sig_df < sig_thresh) > 0,]
+    
+    if (nonsig_to_zero) {
+      tmp_casted_num[sig_df[rownames(tmp_casted_num),colnames(tmp_casted_num)] > sig_thresh] <- 0
+    }
   }
 
   if (display_genes) {
@@ -206,7 +212,7 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, an
                      row_names_side = "left", col=col_fun,
                      column_title = paste0('Factor ', factor_select),
                      column_title_gp = gpar(fontsize = 20, fontface = "bold"),
-                     row_title = rt, row_title_gp = gpar(fontsize = 14))
+                     row_title = rt, row_title_gp = gpar(fontsize = 14), border = TRUE)
 
   if (display_genes) {
     rownames(tmp_casted_num) <- old_names
@@ -226,7 +232,7 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, an
         Heatmap(g_vec + 0, name = pathways[i],
                 col = c("0" = "white", "1" = "black"),
                 show_heatmap_legend = FALSE, width = unit(5, "mm"),
-                column_names_gp = gpar(fontsize = 7))
+                column_names_gp = gpar(fontsize = 7), border = TRUE)
     }
   } else if (annot == 'sig_genes') {
     # make sure jackstraw has been run
@@ -249,7 +255,7 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, an
               name = "adj p-value", cluster_columns = FALSE,
               col = col_fun, show_row_names = FALSE,
               show_heatmap_legend = TRUE, show_column_dend = FALSE,
-              column_names_gp = gpar(fontsize = 20))
+              column_names_gp = gpar(fontsize = 20), border = TRUE)
   }
 
   if (!is.null(sim_de_donor_group)) {
@@ -275,7 +281,7 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, an
               name = "True DE Genes", cluster_columns = FALSE,
               col = col_fun, show_row_names = FALSE,
               show_heatmap_legend = TRUE, show_column_dend = FALSE,
-              column_names_gp = gpar(fontsize = 20))
+              column_names_gp = gpar(fontsize = 20), border = TRUE)
   }
 
   # save plot in the container
