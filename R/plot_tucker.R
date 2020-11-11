@@ -100,7 +100,10 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL, s
                   show_row_names = FALSE, border = TRUE)
       }
     }
-    myhmap <- myhmap + rowAnnotation(rn = anno_text(rownames(donor_mat)))
+    
+    if (show_donor_ids) {
+      myhmap <- myhmap + rowAnnotation(rn = anno_text(rownames(donor_mat)))
+    }
   }
 
   # save plot
@@ -137,7 +140,8 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL, s
 #' @return container with the plot put in container$plots$single_lds_plot
 #' @export
 plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, nonsig_to_zero=FALSE, annot='none',
-                                pathways=NULL, sim_de_donor_group=NULL, sig_thresh=0.05, display_genes=FALSE, show_xlab=TRUE) {
+                                pathways=NULL, sim_de_donor_group=NULL, sig_thresh=0.05, display_genes=FALSE, 
+                                gene_callouts=FALSE, callout_n_gene_per_ctype=5, callout_ctypes=NULL, show_xlab=TRUE) {
   # check that Tucker has been run
   if (is.null(container$tucker_results)) {
     stop("Need to run run_tucker_ica() first.")
@@ -176,15 +180,17 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
     }
   }
 
-  if (display_genes) {
-    old_names <- rownames(tmp_casted_num)
-    rownames(tmp_casted_num) <- convert_gn(container,rownames(tmp_casted_num))
-  }
-
   if (show_xlab) {
     rt <- "Genes"
   } else {
     rt <- ""
+  }
+  
+  if (gene_callouts) {
+    gene_callouts <- get_callouts_annot(container, tmp_casted_num, factor_select, sig_thresh, 
+                       top_n_per_ctype=callout_n_gene_per_ctype, ctypes=callout_ctypes)
+  } else {
+    gene_callouts <- NULL
   }
 
   # make main part of heatmap (loadings)
@@ -212,12 +218,13 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
                      row_names_side = "left", col=col_fun,
                      column_title = paste0('Factor ', factor_select),
                      column_title_gp = gpar(fontsize = 20, fontface = "bold"),
-                     row_title = rt, row_title_gp = gpar(fontsize = 14), border = TRUE)
-
-  if (display_genes) {
-    rownames(tmp_casted_num) <- old_names
-  }
-
+                     row_title = rt, row_title_gp = gpar(fontsize = 14), border = TRUE,
+                     row_labels = convert_gn(container,rownames(tmp_casted_num)),
+                     right_annotation = gene_callouts)
+  
+  # turn off heatmap message saying callouts require pdf view or zoom view
+  ht_opt$message = FALSE
+  
   if (annot == 'pathways') {
     if (is.null(container$gn_convert)) {
       stop('Gene symbols are not present in your data and no gene name conversion was provided')
@@ -452,6 +459,38 @@ render_all_lds_plots <- function(hm_list,n_rows) {
   
 }
 
+get_callouts_annot <- function(container, tmp_casted_num, factor_select, sig_thresh, top_n_per_ctype=5, ctypes=NULL) {
+  
+  # extract the genes to show
+  if (is.null(ctypes)) {
+    ctypes <- container$experiment_params$ctypes_use
+  }
+  sig_vecs <- get_significance_vectors(container,factor_select,ctypes)
+  genes_plot <- c()
+  for (ct in ctypes) {
+    # get significant genes for the ctype
+    ct_sig_genes <- sig_vecs[[ct]]
+    ct_sig_genes <- ct_sig_genes[ct_sig_genes < sig_thresh]
+    
+    # get top loading genes of the significant ones
+    ct_sig_loadings <- tmp_casted_num[names(ct_sig_genes),ct]
+    
+    ct_sig_loadings <- ct_sig_loadings[order(abs(ct_sig_loadings),decreasing=TRUE)]
+    ct_top_genes <- names(ct_sig_loadings)[1:top_n_per_ctype]
+    genes_plot <- c(genes_plot,ct_top_genes)
+  }
+  
+  gene_callouts <- unique(genes_plot)
+  
+  ndx <- match(gene_callouts,rownames(tmp_casted_num))
+  callouts <- list()
+  callouts[[1]] <- ndx
+  callouts[[2]] <- convert_gn(container, gene_callouts)
+
+  myannot <- rowAnnotation(callouts = anno_mark(at = callouts[[1]], which='row',
+                                           labels = callouts[[2]]))
+  return(myannot)
+}
 
 
 #' Generate heatmap showing top genes in each cell type significantly associated
