@@ -4,10 +4,12 @@
 \alias{render_all_lds_plots}
 \title{Creates a figure of all loadings plots side by side}
 \usage{
-render_all_lds_plots(hm_list)
+render_all_lds_plots(hm_list, n_rows)
 }
 \arguments{
 \item{hm_list}{list A list of loadings heatmaps for all plots}
+
+\item{n_rows}{numeric The number of rows to fit the plots onto}
 }
 \description{
 Creates a figure of all loadings plots side by side

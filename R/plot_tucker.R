@@ -44,13 +44,14 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL, s
   # }
 
   if (is.null(meta_vars)) {
-    myhmap <- Heatmap(donor_mat, name = "score",
+    myhmap <- Heatmap(as.matrix(donor_mat), name = "score",
                       cluster_columns = FALSE,
                       cluster_rows = FALSE,
                       column_names_gp = gpar(fontsize = 10),
                       col = col_fun, row_title = "Donors",
                       row_title_gp = gpar(fontsize = 14),
-                      show_row_names = show_donor_ids)
+                      show_row_names = show_donor_ids,
+                      border = TRUE)
   } else {
     meta <- container$scMinimal_full$metadata[,c('donors',meta_vars)]
     meta <- unique(meta)
@@ -73,14 +74,14 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL, s
       donor_mat <- donor_mat[rownames(meta),]
     }
 
-
-    myhmap <- Heatmap(donor_mat, name = "score",
+    myhmap <- Heatmap(as.matrix(donor_mat), name = "score",
                       cluster_columns = FALSE,
                       cluster_rows = FALSE,
                       column_names_gp = gpar(fontsize = 10),
                       col = col_fun, row_title = "Donors",
                       row_title_gp = gpar(fontsize = 14),
-                      show_row_names = show_donor_ids)
+                      show_row_names = show_donor_ids,
+                      border = TRUE)
 
     for (j in 1:ncol(meta)) {
       if (colnames(meta)[j]=='sex') {
@@ -88,17 +89,18 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL, s
         names(mycol) <- unique(meta[,j])
         
         myhmap <- myhmap +
-          Heatmap(meta[,j,drop=FALSE], name = colnames(meta)[j], cluster_rows = FALSE,
+          Heatmap(as.matrix(meta[,j,drop=FALSE]), name = colnames(meta)[j], cluster_rows = FALSE,
                   cluster_columns = FALSE, show_column_names = FALSE,
-                  show_row_names = FALSE, col = mycol)
+                  show_row_names = FALSE, col = mycol, border = TRUE)
         
       } else {
         myhmap <- myhmap +
-          Heatmap(meta[,j,drop=FALSE], name = colnames(meta)[j], cluster_rows = FALSE,
+          Heatmap(as.matrix(meta[,j,drop=FALSE]), name = colnames(meta)[j], cluster_rows = FALSE,
                   cluster_columns = FALSE, show_column_names = FALSE,
-                  show_row_names = FALSE)
+                  show_row_names = FALSE, border = TRUE)
       }
     }
+    myhmap <- myhmap + rowAnnotation(rn = anno_text(rownames(donor_mat)))
   }
 
   # save plot
@@ -199,7 +201,7 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, an
 
   hm_list <- Heatmap(tmp_casted_num, show_row_dend = FALSE, show_column_dend = FALSE,
                      name = "loadings", show_row_names = display_genes,
-                     column_names_gp = gpar(fontsize = 20), cluster_columns = FALSE,
+                     column_names_gp = gpar(fontsize = 12), cluster_columns = FALSE,
                      clustering_method_rows = "ward.D",
                      row_names_side = "left", col=col_fun,
                      column_title = paste0('Factor ', factor_select),
@@ -267,15 +269,7 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, an
 
 
     # add gene significance heatmap to total hmap
-    # col_fun = colorRamp2(c(0, 1), c("white", "cyan"))
     col_fun <- structure(c("white", "cyan"), names = c("0", "1"))
-    # col_fun <- function(mycol) {
-    #   if (mycol==1) {
-    #     return('cyan\n')
-    #   } else {
-    #     return('white\n')
-    #   }
-    # }
     hm_list <- hm_list +
       Heatmap(genes_df,
               name = "True DE Genes", cluster_columns = FALSE,
@@ -427,15 +421,29 @@ get_all_lds_factor_plots <- function(container, use_sig_only=FALSE, annot='none'
 #' Creates a figure of all loadings plots side by side
 #'
 #' @param hm_list list A list of loadings heatmaps for all plots
+#' @param n_rows numeric The number of rows to fit the plots onto
 #' @export
-render_all_lds_plots <- function(hm_list) {
+render_all_lds_plots <- function(hm_list,n_rows) {
+  
   grid::grid.newpage()
+  
+  grid_n_col <- ceiling(length(hm_list)/n_rows)
   for (i in 1:length(hm_list)) {
-    grid::pushViewport(grid::viewport(x = (i-1)*(1/length(hm_list)), width = (1/length(hm_list)),
-                          just = "left"))
+    col_ndx <- i %% grid_n_col
+    if (col_ndx == 0) {
+      col_ndx <- grid_n_col
+    }
+    row_ndx <- n_rows - ceiling(i / grid_n_col) + 1
+    
+    x_pos <- (col_ndx-1)*(1/grid_n_col)
+    y_pos <- row_ndx/n_rows
+    grid::pushViewport(grid::viewport(x = x_pos, y = y_pos, 
+                                      width = 1/grid_n_col, height = 1/n_rows,
+                                      just = c("left","top")))
     draw(hm_list[[i]], newpage = FALSE)
     grid::popViewport()
   }
+  
 }
 
 
