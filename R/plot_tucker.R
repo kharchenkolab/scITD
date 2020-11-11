@@ -135,6 +135,14 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL, s
 #' TRUE the threshold is used as a cutoff for genes to include. If annot is "sig_genes"
 #' this value is used in the gene significance colormap as a minimum threshold. (default=0.05)
 #' @param display_genes logical If TRUE, displays the names of gene names (default=FALSE)
+#' @param gene_callouts logical If TRUE, then adds gene callout annotations to the heatmap
+#' (default=FALSE)
+#' @param callout_n_gene_per_ctype numeric To use if gene_callouts is TRUE. Sets the number
+#' of largest magnitude significant genes from each cell type to include in gene callouts.
+#' (default=5)
+#' @param callout_ctypes character To use if gene_callouts is TRUE. Specifies which cell types
+#' to get gene callouts for. If NULL, then gets gene callouts for largest magnitude significant
+#' genes for all cell types. (default=NULL)
 #' @param show_xlab logical If TRUE, displays the xlabel 'genes' (default=TRUE)
 #'
 #' @return container with the plot put in container$plots$single_lds_plot
@@ -382,6 +390,56 @@ get_significance_vectors <- function(container, factor_select, ctypes) {
   return(padj_all_ctypes)
 }
 
+
+#' Title
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param tmp_casted_num matrix The gene by cell type loadings matrix
+#' @param factor_select numeric The factor to investigate
+#' @param sig_thresh numeric Pvalue cutoff for significant genes
+#' @param top_n_per_ctype numeric The number of significant, largest magnitude
+#' genes from each cell type to generate callouts for (default=5)
+#' @param ctypes character The cell types for which to get the top genes to make
+#' callouts for. If NULL then uses all cell types. (default=NULL)
+#'
+#' @return
+#' @export
+#'
+#' @examples
+get_callouts_annot <- function(container, tmp_casted_num, factor_select, sig_thresh, top_n_per_ctype=5, ctypes=NULL) {
+  
+  # extract the genes to show
+  if (is.null(ctypes)) {
+    ctypes <- container$experiment_params$ctypes_use
+  }
+  sig_vecs <- get_significance_vectors(container,factor_select,ctypes)
+  genes_plot <- c()
+  for (ct in ctypes) {
+    # get significant genes for the ctype
+    ct_sig_genes <- sig_vecs[[ct]]
+    ct_sig_genes <- ct_sig_genes[ct_sig_genes < sig_thresh]
+    
+    # get top loading genes of the significant ones
+    ct_sig_loadings <- tmp_casted_num[names(ct_sig_genes),ct]
+    
+    ct_sig_loadings <- ct_sig_loadings[order(abs(ct_sig_loadings),decreasing=TRUE)]
+    ct_top_genes <- names(ct_sig_loadings)[1:top_n_per_ctype]
+    genes_plot <- c(genes_plot,ct_top_genes)
+  }
+  
+  gene_callouts <- unique(genes_plot)
+  
+  ndx <- match(gene_callouts,rownames(tmp_casted_num))
+  callouts <- list()
+  callouts[[1]] <- ndx
+  callouts[[2]] <- convert_gn(container, gene_callouts)
+  
+  myannot <- rowAnnotation(callouts = anno_mark(at = callouts[[1]], which='row',
+                                                labels = callouts[[2]]))
+  return(myannot)
+}
+
 #' Generate loadings heatmaps for all factors
 #'
 #' @param container environment Project container that stores sub-containers
@@ -389,6 +447,8 @@ get_significance_vectors <- function(container, factor_select, ctypes) {
 #' @param use_sig_only logical If TRUE, includes only significant genes
 #' from jackstraw in the heatmap. If FALSE, includes all the variable genes.
 #' (default = FALSE)
+#' @param nonsig_to_zero logical If TRUE, makes the loadings of all nonsignificant genes 0
+#' (default=FALSE)
 #' @param annot character If set to "pathways" then creates an adjacent heatmap
 #' showing which genes are in which pathways. If set to "sig_genes" then creates
 #' an adjacent heatmap showing which genes were significant from jackstraw. If
@@ -399,11 +459,20 @@ get_significance_vectors <- function(container, factor_select, ctypes) {
 #' TRUE the threshold is used as a cutoff for genes to include. If annot is "sig_genes"
 #' this value is used in the gene significance colormap as a minimum threshold. (default=0.05)
 #' @param display_genes logical If TRUE, displays the names of gene names (default=FALSE)
+#' @param gene_callouts logical If TRUE, then adds gene callout annotations to the heatmap
+#' (default=FALSE)
+#' @param callout_n_gene_per_ctype numeric To use if gene_callouts is TRUE. Sets the number
+#' of largest magnitude significant genes from each cell type to include in gene callouts.
+#' (default=5)
+#' @param callout_ctypes character To use if gene_callouts is TRUE. Specifies which cell types
+#' to get gene callouts for. If NULL, then gets gene callouts for largest magnitude significant
+#' genes for all cell types. (default=NULL)
 #'
 #' @return the project container with the list of plots placed in container$plots$all_lds_plots
 #' @export
-get_all_lds_factor_plots <- function(container, use_sig_only=FALSE, annot='none',
-                                     pathways_list=NULL, sig_thresh=0.05, display_genes=FALSE) {
+get_all_lds_factor_plots <- function(container, use_sig_only=FALSE, nonsig_to_zero=FALSE, annot='none',
+                                     pathways_list=NULL, sig_thresh=0.05, display_genes=FALSE,
+                                     gene_callouts=FALSE, callout_n_gene_per_ctype=5, callout_ctypes=NULL) {
 
   # save any plot previously in the single lds plot slot because will be overwrittern
   prev_lds_plot <- container$plots$single_lds_plot
@@ -416,9 +485,17 @@ get_all_lds_factor_plots <- function(container, use_sig_only=FALSE, annot='none'
     } else {
       show_xlab <- FALSE
     }
-    container <- plot_loadings_annot(container, factor_select=i, use_sig_only=use_sig_only, annot=annot,
-                        pathways=pathways_list[[i]], sig_thresh=sig_thresh,
-                        display_genes=display_genes, show_xlab=show_xlab)
+    container <- plot_loadings_annot(container, factor_select=i, 
+                                     use_sig_only=use_sig_only,
+                                     nonsig_to_zero=nonsig_to_zero,
+                                     annot=annot, pathways=pathways_list[[i]],
+                                     sig_thresh=sig_thresh,
+                                     display_genes=display_genes,
+                                     gene_callouts=gene_callouts,
+                                     callout_n_gene_per_ctype=callout_n_gene_per_ctype,
+                                     callout_ctypes=callout_ctypes,
+                                     show_xlab=show_xlab)
+    
     hm_list[[i]] <- container$plots$single_lds_plot
   }
 
@@ -457,39 +534,6 @@ render_all_lds_plots <- function(hm_list,n_rows) {
     grid::popViewport()
   }
   
-}
-
-get_callouts_annot <- function(container, tmp_casted_num, factor_select, sig_thresh, top_n_per_ctype=5, ctypes=NULL) {
-  
-  # extract the genes to show
-  if (is.null(ctypes)) {
-    ctypes <- container$experiment_params$ctypes_use
-  }
-  sig_vecs <- get_significance_vectors(container,factor_select,ctypes)
-  genes_plot <- c()
-  for (ct in ctypes) {
-    # get significant genes for the ctype
-    ct_sig_genes <- sig_vecs[[ct]]
-    ct_sig_genes <- ct_sig_genes[ct_sig_genes < sig_thresh]
-    
-    # get top loading genes of the significant ones
-    ct_sig_loadings <- tmp_casted_num[names(ct_sig_genes),ct]
-    
-    ct_sig_loadings <- ct_sig_loadings[order(abs(ct_sig_loadings),decreasing=TRUE)]
-    ct_top_genes <- names(ct_sig_loadings)[1:top_n_per_ctype]
-    genes_plot <- c(genes_plot,ct_top_genes)
-  }
-  
-  gene_callouts <- unique(genes_plot)
-  
-  ndx <- match(gene_callouts,rownames(tmp_casted_num))
-  callouts <- list()
-  callouts[[1]] <- ndx
-  callouts[[2]] <- convert_gn(container, gene_callouts)
-
-  myannot <- rowAnnotation(callouts = anno_mark(at = callouts[[1]], which='row',
-                                           labels = callouts[[2]]))
-  return(myannot)
 }
 
 

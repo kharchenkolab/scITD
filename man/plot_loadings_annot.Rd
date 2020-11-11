@@ -14,6 +14,9 @@ plot_loadings_annot(
   sim_de_donor_group = NULL,
   sig_thresh = 0.05,
   display_genes = FALSE,
+  gene_callouts = FALSE,
+  callout_n_gene_per_ctype = 5,
+  callout_ctypes = NULL,
   show_xlab = TRUE
 )
 }
@@ -47,6 +50,17 @@ TRUE the threshold is used as a cutoff for genes to include. If annot is "sig_ge
 this value is used in the gene significance colormap as a minimum threshold. (default=0.05)}
 
 \item{display_genes}{logical If TRUE, displays the names of gene names (default=FALSE)}
+
+\item{gene_callouts}{logical If TRUE, then adds gene callout annotations to the heatmap
+(default=FALSE)}
+
+\item{callout_n_gene_per_ctype}{numeric To use if gene_callouts is TRUE. Sets the number
+of largest magnitude significant genes from each cell type to include in gene callouts.
+(default=5)}
+
+\item{callout_ctypes}{character To use if gene_callouts is TRUE. Specifies which cell types
+to get gene callouts for. If NULL, then gets gene callouts for largest magnitude significant
+genes for all cell types. (default=NULL)}
 
 \item{show_xlab}{logical If TRUE, displays the xlabel 'genes' (default=TRUE)}
 }
