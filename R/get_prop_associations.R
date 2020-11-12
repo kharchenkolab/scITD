@@ -435,6 +435,183 @@ run_subcluster_de <- function(container,ctype,resolution,plot_subclusters=TRUE) 
   return(container)
 }
 
+#' Title
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param ctype character The cell type for which subtypes are to be investigated
+#' @param resolution numeric The clustering resolution that was used to generate
+#' the clustering
+#' @param use_scores logical Set to TRUE to plot donor scores of a factor from 
+#' tucker results as colors on the umap (default=FALSE)
+#' @param factor_use numeric The factor to plot scores of if use_scores is TRUE
+#' (default=NULL)
+#'
+#' @return The embedding plot for the cell type
+#' @export
+plot_subclusts_only <- function(container,ctype,resolution,use_scores=FALSE,
+                                factor_use=NULL) {
+  
+  con <- container[["embedding"]]
+  resolution_name <- paste0('res:',as.character(resolution))
+  subclusts <- container$subclusters[[ctype]][[resolution_name]]
+  
+  # append large cell type name to subclusters
+  subclusts <- sapply(subclusts,function(x){paste0(ctype,'_',x)})
+  
+  # save original embedding
+  orig_embed <- con[["embedding"]]
+
+  # save original cluster labels
+  orig_clusts <- con$clusters$leiden$groups
+
+  # limit cells in subclusts to those that we actually have scores for
+  donor_scores <- container$tucker_results[[1]]
+  donor_vec <- container$scMinimal_full$metadata[names(subclusts),'donors']
+  subclusts <- subclusts[donor_vec %in% rownames(donor_scores)]
+  con$clusters$leiden$groups <- as.factor(subclusts)
+  con[["embedding"]] <- orig_embed[names(subclusts),]
+  
+  # REMOVE OUTLIERS HERE!
+  
+  subc_plot <- con$plotGraph()
+  
+  # make subtype association plot
+  subclusts_num <- sapply(subclusts,function(x){as.numeric(strsplit(x,split="_")[[1]][[2]])})
+  scMinimal <- container$scMinimal_ctype[[ctype]]
+  sub_meta_tmp <- scMinimal$metadata[names(subclusts),]
+
+  # get donor proportions of subclusters
+  donor_props <- compute_donor_props(subclusts_num,sub_meta_tmp)
+
+  subtype_associations <- get_indv_subtype_associations(container,donor_props)
+  
+  
+  # if (use_scores) {
+  #   if (is.null(factor_use)) {
+  #     stop('need to specify factor_use if plotting donor scores')
+  #   }
+  #   
+  #   donor_scores <- container$tucker_results[[1]]
+  #   
+  #   # first limit cells in subclusts to those that we actually have scores for
+  #   donor_vec <- container$scMinimal_full$metadata[names(subclusts),'donors']
+  #   subclusts <- subclusts[donor_vec %in% rownames(donor_scores)]
+  #   con$clusters$leiden$groups <- as.factor(subclusts)
+  #   con[["embedding"]] <- con[["embedding"]][names(subclusts),]
+  #   
+  #   # now get the donor_scores for the donors of these cells
+  #   donor_vec <- donor_vec[donor_vec %in% rownames(donor_scores)]
+  #   d_scores <- donor_scores[as.character(donor_vec),factor_use]
+  #   
+  #   ### testing multiplying scores time proportions
+  #   subclusts_num <- sapply(subclusts,function(x){as.numeric(strsplit(x,split="_")[[1]][[2]])})
+  #   scMinimal <- container$scMinimal_ctype[[ctype]]
+  #   sub_meta_tmp <- scMinimal$metadata[names(subclusts),]
+  #   
+  #   # get donor proportions of subclusters
+  #   donor_props <- compute_donor_props(subclusts_num,sub_meta_tmp)
+  #   
+  #   get_indv_subtype_associations(container,donor_props)
+  #   
+  #   # donor_props_transform <- donor_props
+  #   
+  #   # props_means <- colMeans(donor_props)
+  #   # donor_props_transform <- sweep(donor_props,MARGIN=2,props_means,'/')
+  #   # donor_props_transform <- donor_props
+  #   # min_max_trans <- function(mycol) {
+  #   #   mymin <- min(mycol)
+  #   #   mymax <- max(mycol)
+  #   #   tfed <- c()
+  #   #   for (i in mycol) {
+  #   #     tmp <- (i - mymin) / (mymax - mymin)
+  #   #     tfed <- c(tfed,tmp)
+  #   #   }
+  #   #   return(tfed)
+  #   # }
+  #   
+  #   # for (j in 1:ncol(donor_props)) {
+  #   #   cmin <- min(donor_props[,j])
+  #   #   cmax <- max(donor_props[,j])
+  #   #   for (i in 1:nrow(donor_props)) {
+  #   #     donor_props[i,j] <- (donor_props[i,j] - cmin) / (cmax - cmin)
+  #   #   }
+  #   # }
+  #   # donor_props_transform <- donor_props
+  #   
+  #   # one below calculates zsc
+  #   for (j in 1:ncol(donor_props)) {
+  #     cmean <- mean(donor_props[,j])
+  #     csd <- sd(donor_props[,j])
+  #     for (i in 1:nrow(donor_props)) {
+  #       donor_props[i,j] <- (donor_props[i,j] - cmean) / csd
+  #     }
+  #   }
+  #   donor_props_transform <- donor_props
+  #   
+  #   donor_props_vec <- sapply(1:length(d_scores), function(x) {
+  #     d <- names(d_scores)[x]
+  #     sub_num <- subclusts_num[x]
+  #     return(donor_props_transform[d,sub_num])
+  #   })
+  #   d_scores <- d_scores * donor_props_vec
+  #   ###
+  #   
+  #   names(d_scores) <- names(subclusts)
+  #   
+  #   subc_plot <- con$plotGraph(colors=d_scores)
+  # } else {
+  #   subc_plot <- con$plotGraph()
+  # }
+  
+  # reset the embedding and clusters
+  con$clusters$leiden$groups <- orig_clusts
+  con[["embedding"]] <- orig_embed
+  
+  return(subc_plot)
+}
+
+
+#' Compute single subtype associations with a factor
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param donor_props matrix Donor proportions of subtypes
+#' @param factor_select numeric The factor to get associations for
+#'
+#' @return the association statistics for each factor
+#' @export
+get_indv_subtype_associations <- function(container, donor_props, factor_select) {
+  reg_stats_all <- list()
+  for (j in 1:ncol(donor_props)) {
+    # choose a column (subtype)
+    subtype <- donor_props[,j,drop=FALSE]
+    
+    # add a second column with value of 1 - first column
+    subtype <- cbind(subtype,1-subtype)
+    
+    # get balances
+    donor_balances <- coda.base::coordinates(subtype)
+    rownames(donor_balances) <- rownames(subtype)
+    
+    # compute regression statistics
+    reg_stats <- compute_associations(donor_balances,container$tucker_results[[1]],"adj_pval")
+    reg_stats_all[[paste0("ct_",j,"_")]] <- reg_stats
+  }
+  
+  reg_stats_all <- unlist(reg_stats_all)
+  reg_stats_all <- stats:::p.adjust(reg_stats_all, method = 'fdr')
+  
+  parsed_name <- sapply(names(reg_stats_all),function(x){
+    return(as.numeric(strsplit(x,split="_")[[1]][3]))
+  })
+  print(parsed_name)
+  reg_stats_all <- reg_stats_all[parsed_name==factor_select]
+  
+  return(reg_stats_all)
+}
+
+
 #' Replace leiden groups in con object with subclusters identified for one cell type
 #'
 #' @param con conos Object for the dataset with umap projection and groups as cell types
