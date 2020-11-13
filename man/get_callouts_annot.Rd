@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_tucker.R
 \name{get_callouts_annot}
 \alias{get_callouts_annot}
-\title{Title}
+\title{Get gene callouts annotation for a loadings heatmap}
 \usage{
 get_callouts_annot(
   container,
@@ -30,8 +30,8 @@ genes from each cell type to generate callouts for (default=5)}
 callouts for. If NULL then uses all cell types. (default=NULL)}
 }
 \value{
-
+HeatmapAnnotation for the gene callouts
 }
 \description{
-Title
+Get gene callouts annotation for a loadings heatmap
 }

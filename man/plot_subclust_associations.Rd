@@ -2,7 +2,8 @@
 % Please edit documentation in R/get_prop_associations.R
 \name{plot_subclust_associations}
 \alias{plot_subclust_associations}
-\title{Title}
+\title{Get plot for associations between subcluster proportions for each major cell
+type and each factor}
 \usage{
 plot_subclust_associations(res)
 }
@@ -14,5 +15,6 @@ plots of regression statistics for each subtypes at varying k values and
 for each factor
 }
 \description{
-Title
+Get plot for associations between subcluster proportions for each major cell
+type and each factor
 }

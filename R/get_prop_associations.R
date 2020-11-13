@@ -392,68 +392,23 @@ compute_associations <- function(donor_balances, donor_scores, stat_type) {
   return(all_reg_stats)
 }
 
-#' Run differential expression with cell subtypes included
-#'
-#' @param container environment Project container that stores sub-containers
-#' for each cell type as well as results and plots from all analyses
-#' @param ctype character The cell type for which subtypes are to be investigated
-#' @param resolution numeric The clustering resolution that was used to generate
-#' the clustering
-#' @param plot_subclusters logical TRUE to generate an embedding plot colored by
-#' clusters and subclusters for the specified ctype (default=TRUE)
-#'
-#' @return the project container with the DE results in 
-#' container$subcluster_de$<ctype>$<resolution> and plot results located in
-#' container$plots$subclusters$<ctype>$<resolution>
-#' @export
-run_subcluster_de <- function(container,ctype,resolution,plot_subclusters=TRUE) {
-  ncores <- container$experiment_params$ncores
-  
-  con <- container[["embedding"]]
-  resolution_name <- paste0('res:',as.character(resolution))
-  subclusts <- container$subclusters[[ctype]][[resolution_name]]
-  
-  orig_groups <- con$clusters$leiden$groups
-  new_groups <- replace_groups_with_subclusts(con,subclusts,ctype)
-  
-  con$clusters$leiden$groups <- new_groups
-  de.info <- con$getDifferentialGenes(n.cores=ncores, append.auc=FALSE)
-  
-  # convert gene names in de results dataframe
-  for (de_ctype in names(de.info)) {
-    de.info[[de_ctype]]$Gene <- convert_gn(container,de.info[[de_ctype]]$Gene)
-  }
-  
-  if (plot_subclusters) {
-    subc_plot <- con$plotGraph()
-    container$plots$subclusters[[ctype]][[resolution_name]] <- subc_plot
-  }
-  
-  con$clusters$leiden$groups <- orig_groups
-  
-  container$subcluster_de[[ctype]][[resolution_name]] <- de.info
-  return(container)
-}
 
-#' Title
+#' Gets cell subtype plots including an embedding, a factor association plot, and
+#' a heatmap of differentially expressed genes between subtypes
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
 #' @param ctype character The cell type for which subtypes are to be investigated
 #' @param resolution numeric The clustering resolution that was used to generate
 #' the clustering
-#' @param use_scores logical Set to TRUE to plot donor scores of a factor from 
-#' tucker results as colors on the umap (default=FALSE)
-#' @param factor_use numeric The factor to plot scores of if use_scores is TRUE
-#' (default=NULL)
+#' @param factor_use numeric The factor to plot scores for
 #'
 #' @return The embedding plot for the cell type
 #' @export
-plot_subclusts_only <- function(container,ctype,resolution,use_scores=FALSE,
-                                factor_use=NULL) {
+get_subclust_plots <- function(container,ctype,res,factor_use) {
   
   con <- container[["embedding"]]
-  resolution_name <- paste0('res:',as.character(resolution))
+  resolution_name <- paste0('res:',as.character(res))
   subclusts <- container$subclusters[[ctype]][[resolution_name]]
   
   # append large cell type name to subclusters
@@ -474,7 +429,14 @@ plot_subclusts_only <- function(container,ctype,resolution,use_scores=FALSE,
   
   # REMOVE OUTLIERS HERE!
   
-  subc_plot <- con$plotGraph()
+  subc_embed_plot <- con$plotGraph()
+  subc_embed_plot <- subc_embed_plot + 
+    ggtitle(paste0(ctype,' Subclusters')) + 
+    xlab('UMAP 1') +
+    ylab('UMAP 2') +
+    theme(plot.title = element_text(hjust = 0.5), 
+          axis.title.y = element_text(size = rel(.8)),
+          axis.title.x = element_text(size = rel(.8)))
   
   # make subtype association plot
   subclusts_num <- sapply(subclusts,function(x){as.numeric(strsplit(x,split="_")[[1]][[2]])})
@@ -484,91 +446,69 @@ plot_subclusts_only <- function(container,ctype,resolution,use_scores=FALSE,
   # get donor proportions of subclusters
   donor_props <- compute_donor_props(subclusts_num,sub_meta_tmp)
 
-  subtype_associations <- get_indv_subtype_associations(container,donor_props)
+  subtype_associations <- get_indv_subtype_associations(container,donor_props,factor_use)
   
+  # get directionality of associations
+  for (i in 1:length(subtype_associations)) {
+    subc_name <- names(subtype_associations)[i]
+    subc_name <- strsplit(subc_name,split="_")[[1]][1]
+    
+    # top top and bottom percentile of donor score
+    scores_eval <- donor_scores[,factor_use]
+    cutoffs <- quantile(scores_eval, c(.25, .75)) 
+    donors_low <- names(scores_eval)[scores_eval < cutoffs[1]]
+    donors_high <- names(scores_eval)[scores_eval > cutoffs[2]]
+    
+    donors_high_props <- donor_props[donors_high,subc_name]
+    donors_low_props <- donor_props[donors_low,subc_name]
+    
+    donors_high_props_mean <- mean(donors_high_props)
+    donors_low_props_mean <- mean(donors_low_props)
+    
+    subtype_associations[i] <- -log10(subtype_associations[i])
+    
+    if (donors_high_props_mean < donors_low_props_mean) {
+      subtype_associations[i] <- subtype_associations[i] * -1
+    }
+    
+  }
   
-  # if (use_scores) {
-  #   if (is.null(factor_use)) {
-  #     stop('need to specify factor_use if plotting donor scores')
-  #   }
-  #   
-  #   donor_scores <- container$tucker_results[[1]]
-  #   
-  #   # first limit cells in subclusts to those that we actually have scores for
-  #   donor_vec <- container$scMinimal_full$metadata[names(subclusts),'donors']
-  #   subclusts <- subclusts[donor_vec %in% rownames(donor_scores)]
-  #   con$clusters$leiden$groups <- as.factor(subclusts)
-  #   con[["embedding"]] <- con[["embedding"]][names(subclusts),]
-  #   
-  #   # now get the donor_scores for the donors of these cells
-  #   donor_vec <- donor_vec[donor_vec %in% rownames(donor_scores)]
-  #   d_scores <- donor_scores[as.character(donor_vec),factor_use]
-  #   
-  #   ### testing multiplying scores time proportions
-  #   subclusts_num <- sapply(subclusts,function(x){as.numeric(strsplit(x,split="_")[[1]][[2]])})
-  #   scMinimal <- container$scMinimal_ctype[[ctype]]
-  #   sub_meta_tmp <- scMinimal$metadata[names(subclusts),]
-  #   
-  #   # get donor proportions of subclusters
-  #   donor_props <- compute_donor_props(subclusts_num,sub_meta_tmp)
-  #   
-  #   get_indv_subtype_associations(container,donor_props)
-  #   
-  #   # donor_props_transform <- donor_props
-  #   
-  #   # props_means <- colMeans(donor_props)
-  #   # donor_props_transform <- sweep(donor_props,MARGIN=2,props_means,'/')
-  #   # donor_props_transform <- donor_props
-  #   # min_max_trans <- function(mycol) {
-  #   #   mymin <- min(mycol)
-  #   #   mymax <- max(mycol)
-  #   #   tfed <- c()
-  #   #   for (i in mycol) {
-  #   #     tmp <- (i - mymin) / (mymax - mymin)
-  #   #     tfed <- c(tfed,tmp)
-  #   #   }
-  #   #   return(tfed)
-  #   # }
-  #   
-  #   # for (j in 1:ncol(donor_props)) {
-  #   #   cmin <- min(donor_props[,j])
-  #   #   cmax <- max(donor_props[,j])
-  #   #   for (i in 1:nrow(donor_props)) {
-  #   #     donor_props[i,j] <- (donor_props[i,j] - cmin) / (cmax - cmin)
-  #   #   }
-  #   # }
-  #   # donor_props_transform <- donor_props
-  #   
-  #   # one below calculates zsc
-  #   for (j in 1:ncol(donor_props)) {
-  #     cmean <- mean(donor_props[,j])
-  #     csd <- sd(donor_props[,j])
-  #     for (i in 1:nrow(donor_props)) {
-  #       donor_props[i,j] <- (donor_props[i,j] - cmean) / csd
-  #     }
-  #   }
-  #   donor_props_transform <- donor_props
-  #   
-  #   donor_props_vec <- sapply(1:length(d_scores), function(x) {
-  #     d <- names(d_scores)[x]
-  #     sub_num <- subclusts_num[x]
-  #     return(donor_props_transform[d,sub_num])
-  #   })
-  #   d_scores <- d_scores * donor_props_vec
-  #   ###
-  #   
-  #   names(d_scores) <- names(subclusts)
-  #   
-  #   subc_plot <- con$plotGraph(colors=d_scores)
-  # } else {
-  #   subc_plot <- con$plotGraph()
-  # }
+  # plot enrichment results - use pval cutoff line, make up red and down blue
+  subtype_names <- sapply(1:length(subtype_associations),function(x){
+    paste0(ctype,"_",x)})
+  tmp <- data.frame(cbind(subtype_names,subtype_associations))
+  subc_assoc_plot <- ggplot(tmp,aes(x=subtype_names,y=as.numeric(subtype_associations), 
+                      fill = as.numeric(subtype_associations)>0)) +
+    geom_bar(stat='identity') +
+    scale_fill_manual(values = c("lightblue", "firebrick")) +
+    ylab('-log10(Adj. P-Value)') +
+    xlab('') +
+    geom_hline(yintercept=0, linetype="solid", color = "black") +
+    geom_hline(yintercept=-log10(.05), linetype="dashed", color = "red") +
+    geom_hline(yintercept=log10(.05), linetype="dashed", color = "red") +
+    ggtitle(paste0("Subcluster-Factor ",factor_use," Associations")) +
+    theme_bw() +
+    theme(legend.position = "none", axis.title.y = element_text(size = rel(.8)),
+          plot.title = element_text(hjust = 0.5)) 
+    
+  # get subtype DE results heamap
+  subc_de_hmap <- plotDEheatmap_conos(con, groups=as.factor(subclusts), container,
+                                 row.label.font.size=5)
   
+  # make heatmap into a grob
+  subc_hmap_grob <- grid::grid.grabExpr(draw(subc_de_hmap,annotation_legend_side = "bottom"))
+  
+  # store results in container
+  container$plots$subc_plots[[paste0(ctype,"_",resolution_name)]] <- list(subc_embed_plot,
+                                                                 subc_assoc_plot,
+                                                                 subc_hmap_grob)
+
   # reset the embedding and clusters
   con$clusters$leiden$groups <- orig_clusts
   con[["embedding"]] <- orig_embed
+  container$embedding <- con
   
-  return(subc_plot)
+  return(container)
 }
 
 
@@ -596,46 +536,81 @@ get_indv_subtype_associations <- function(container, donor_props, factor_select)
     
     # compute regression statistics
     reg_stats <- compute_associations(donor_balances,container$tucker_results[[1]],"adj_pval")
-    reg_stats_all[[paste0("ct_",j,"_")]] <- reg_stats
+    reg_stats_all[[paste0("K",j,"_")]] <- reg_stats
   }
   
   reg_stats_all <- unlist(reg_stats_all)
   reg_stats_all <- stats:::p.adjust(reg_stats_all, method = 'fdr')
   
   parsed_name <- sapply(names(reg_stats_all),function(x){
-    return(as.numeric(strsplit(x,split="_")[[1]][3]))
+    return(as.numeric(strsplit(x,split="_")[[1]][2]))
   })
-  print(parsed_name)
   reg_stats_all <- reg_stats_all[parsed_name==factor_select]
   
   return(reg_stats_all)
 }
 
+#' Generate subcluster plots for multiple subclusterings at different resolutsions
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param ctypes character The major cell types for which to get subcluster plots for
+#' @param res numeric The subcluster resolution corresponding to the ctypes vector
+#' @param factors numeric A vector of factors to get compute subtype associations
+#' with. Should be same length as ctypes vector.
+#'
+#' @return the subtype plots for cell types at the specified resolutions
+#' @export
+get_all_subclust_plots <- function(container,ctypes,res,factors) {
+  for (i in 1:length(ctypes)) {
+    ct <- ctypes[i]
+    r <- res[i]
+    f <- factors[i]
+    container <- get_subclust_plots(container=container,ctype=ct,res=r,factor_use=f)
+  }
+  return(container)
+}
 
-#' Replace leiden groups in con object with subclusters identified for one cell type
+#' Render a figure of all subcluster plots
 #'
-#' @param con conos Object for the dataset with umap projection and groups as cell types
-#' @param subclusts numeric Named vector of subcluster assignments for one major cell type
-#' only. Names should be the cell barcodes.
-#' @param sub_ctype character The name of the major cell type that subclusts belong to
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
 #'
-#' @return a factor of the new groups with subclusters included
-replace_groups_with_subclusts <- function(con,subclusts,sub_ctype) {
+#' @export
+render_subtype_plots <- function(container) {
   
-  # add back the large group lable to subtype numbers
-  subclusts <- sapply(subclusts,function(x) {
-    return(paste0(sub_ctype,'_',as.character(x)))
-  })
-  
-  # convert groups to char so can replace by name
-  groups <- as.character(con$clusters$leiden$groups)
-  names(groups) <- names(con$clusters$leiden$groups)
-  groups[names(subclusts)] <- subclusts
-  
-  # convert back to factor for con
-  groups <- as.factor(groups)
-  
-  return(groups)
+  num_subfig_cols <- length(container$plots$subc_plots)
+
+  select_grobs <- function(lay) {
+    id <- unique(c(t(lay)))
+    id[!is.na(id)]
+  }
+
+  hlay <- c()
+  gs <- list()
+  for (j in 1:num_subfig_cols) {
+    # create single list of plots in right order
+    # start by aligning first two plots for the cell type
+    subc_embed_plot <- container$plots$subc_plots[[j]][[1]]
+    subc_assoc_plot <- container$plots$subc_plots[[j]][[2]]
+    
+    # align these two plots
+    ggplots_combined <- ggpubr::ggarrange(subc_embed_plot,subc_assoc_plot,
+                                          ncol = 1,align='v')
+    
+    # set up layout for figure positioning
+    start_ndx <- ((j-1)*2) + 1
+    col_lay <- rbind(c(rep(start_ndx,26),NA),c(NA,NA,rep(start_ndx+1,24),NA))
+    hlay <- cbind(hlay,col_lay)
+    
+    # store plots for layout
+    gs[[start_ndx]] <- ggplots_combined
+    gs[[start_ndx+1]] <- container$plots$subc_plots[[j]][[3]]
+    
+  }
+
+  gridExtra::grid.arrange(grobs=gs, layout_matrix=hlay)
+
 }
 
 
@@ -705,7 +680,8 @@ plot_donor_props <- function(donor_props,donor_scores,significance,ctype_mapping
   return(p_total)
 }
 
-#' Title
+#' Get plot for associations between subcluster proportions for each major cell
+#' type and each factor
 #'
 #' @param res data.frame Regression statistics for each subcluster analysis
 #'
@@ -769,40 +745,45 @@ plot_subclust_associations <- function(res) {
 }
 
 
-plot_subclust_de_hmap <- function(container,ctypes,resolutions) {
-  ncores <- container$experiment_params$ncores
+
+
+
+
+#' Plot a heatmap of differential genes
+#'
+#' @param con conos (or p2) object
+#' @param groups groups in which the DE genes were determined (so that the cells can be ordered correctly)
+#' @param de differential expression result (list of data frames)
+#' @param min.auc optional minimum AUC threshold
+#' @param min.specificity optional minimum specificity threshold
+#' @param min.precision optional minimum precision threshold
+#' @param n.genes.per.cluster number of genes to show for each cluster
+#' @param additional.genes optional additional genes to include (the genes will be assigned to the closest cluster)
+#' @param exclude.genes an optional list of genes to exclude from the heatmap
+#' @param labeled.gene.subset a subset of gene names to show (instead of all genes). Can be a vector of gene names, or a number of top genes (in each cluster) to show the names for.
+#' @param expression.quantile expression quantile to show (0.98 by default)
+#' @param pal palette to use for the main heatmap
+#' @param ordering order by which the top DE genes (to be shown) are determined (default "-AUC")
+#' @param column.metadata additional column metadata, passed either as a data.frame with rows named as cells, or as a list of named cell factors.
+#' @param show.gene.clusters whether to show gene cluster color codes
+#' @param remove.duplicates remove duplicated genes (leaving them in just one of the clusters)
+#' @param column.metadata.colors a list of color specifications for additional column metadata, specified according to the HeatmapMetadata format. Use "clusters" slot to specify cluster colors.
+#' @param show.cluster.legend whether to show the cluster legend
+#' @param show_heatmap_legend whether to show the expression heatmap legend
+#' @param border show borders around the heatmap and annotations
+#' @param return.details if TRUE will return a list containing the heatmap (ha), but also raw matrix (x), expression list (expl) and other info to produce the heatmap on your own.
+#' @param row.label.font.size font size for the row labels
+#' @param order.clusters whether to re-order the clusters according to the similarity of the expression patterns (of the genes being shown)
+#' @param cell.order explicitly supply cell order
+#' @param averaging.window optional window averaging between neighboring cells within each group (turned off by default) - useful when very large number of cells shown (requires zoo package)
+#' @param ... extra parameters are passed to pheatmap
+#' @return ComplexHeatmap::Heatmap object (see return.details param for other output)
+#' @export
+plotDEheatmap_conos <- function(con,groups,container,de=NULL,min.auc=NULL,min.specificity=NULL,min.precision=NULL,n.genes.per.cluster=10,additional.genes=NULL,exclude.genes=NULL, labeled.gene.subset=NULL, expression.quantile=0.99,pal=colorRampPalette(c('dodgerblue1','grey95','indianred1'))(1024),ordering='-AUC',column.metadata=NULL,show.gene.clusters=TRUE, remove.duplicates=TRUE, column.metadata.colors=NULL, show.cluster.legend=TRUE, show_heatmap_legend=FALSE, border=TRUE, return.details=FALSE, row.label.font.size=10, order.clusters=FALSE, split=FALSE, split.gap=0, cell.order=NULL, averaging.window=0, ...) {
   
-  con <- container[["embedding"]]
-  orig_groups <- con$clusters$leiden$groups
-  
-  for (i in 1:length(ctypes)) {
-    ctype <- ctypes[i]
-    res <- resolutions[i]
-    resolution_name <- paste0('res:',as.character(res))
-    subclusts <- container$subclusters[[ctype]][[resolution_name]]
-    new_groups <- replace_groups_with_subclusts(con,subclusts,ctype)
-    con$clusters$leiden$groups <- new_groups
+  if (!requireNamespace("ComplexHeatmap", quietly = TRUE) || packageVersion("ComplexHeatmap") < "2.4") {
+    stop("ComplexHeatmap >= 2.4 package needs to be installed to use plotDEheatmap. Please run \"devtools::install_github('jokergoo/ComplexHeatmap')\".")
   }
-  
-  de.info <- con$getDifferentialGenes(n.cores=ncores, append.auc=TRUE,
-                                      z.threshold=0, upregulated.only=TRUE)
-
-  myhmap <- plotDEheatmap_conos(con, groups=con$clusters$leiden$groups, de=de.info, n.genes.per.cluster = 5,
-                row.label.font.size = 7)
-  
-
-  con$clusters$leiden$groups <- orig_groups
-
-  container$subcluster_de_heatmap <- myhmap
-  return(container)
-}
-
-
-
-plotDEheatmap_conos <- function(con, groups, de=NULL, n.genes.per.cluster=5,
-                                expression.quantile=0.99,pal=colorRampPalette(c('dodgerblue1','grey95','indianred1'))(1024),
-                                ordering='-AUC',column.metadata=NULL, remove.duplicates=TRUE, show.cluster.legend=TRUE,
-                                show_heatmap_legend=FALSE, row.label.font.size=10, ...) {
   
   groups <- as.factor(groups)
   
@@ -819,6 +800,40 @@ plotDEheatmap_conos <- function(con, groups, de=NULL, n.genes.per.cluster=5,
   # order de list to match groups order
   de <- de[order(match(names(de),levels(groups)))]
   
+  
+  # apply filters
+  if(!is.null(min.auc)) {
+    if(!is.null(de[[1]]$AUC)) {
+      de <- lapply(de,function(x) x %>% dplyr::filter(AUC>min.auc))
+    } else {
+      warning("AUC column lacking in the DE results - recalculate with append.auc=TRUE")
+    }
+  }
+  if(!is.null(min.specificity)) {
+    if(!is.null(de[[1]]$Specificity)) {
+      de <- lapply(de,function(x) x %>% dplyr::filter(Specificity>min.specificity))
+    } else {
+      warning("Specificity column lacking in the DE results - recalculate append.specificity.metrics=TRUE")
+    }
+  }
+  
+  if(!is.null(min.precision)) {
+    if(!is.null(de[[1]]$Precision)) {
+      de <- lapply(de,function(x) x %>% dplyr::filter(Precision>min.precision))
+    } else {
+      warning("Precision column lacking in the DE results - recalculate append.specificity.metrics=TRUE")
+    }
+  }
+  
+  #de <- lapply(de,function(x) x%>%arrange(-Precision)%>%head(n.genes.per.cluster))
+  if(n.genes.per.cluster==0) { # want to show only expliclty specified genes
+    if(is.null(additional.genes)) stop("if n.genes.per.cluster is 0, additional.genes must be specified")
+    additional.genes.only <- TRUE;
+    n.genes.per.cluster <- 30; # leave some genes to establish cluster association for the additional genes
+  } else {
+    additional.genes.only <- FALSE;
+  }
+  
   de <- lapply(de,function(x) x%>%dplyr::arrange(!!rlang::parse_expr(ordering))%>%head(n.genes.per.cluster))
   de <- de[unlist(lapply(de, nrow))>0]
   
@@ -826,10 +841,66 @@ plotDEheatmap_conos <- function(con, groups, de=NULL, n.genes.per.cluster=5,
   sn <- function(x) setNames(x,x)
   expl <- lapply(de,function(d) do.call(rbind,lapply(sn(as.character(d$Gene)),function(gene) conos:::getGeneExpression(con,gene))))
   
+  # place additional genes
+  if(!is.null(additional.genes)) {
+    genes.to.add <- setdiff(additional.genes,unlist(lapply(expl,rownames)))
+    if(length(genes.to.add)>0) {
+      x <- setdiff(genes.to.add,conos:::getGenes(con)); if(length(x)>0) warning('the following genes are not found in the dataset: ',paste(x,collapse=' '))
+      
+      age <- do.call(rbind,lapply(sn(genes.to.add),function(gene) conos:::getGeneExpression(con,gene)))
+      
+      # for each gene, measure average correlation with genes of each cluster
+      acc <- do.call(rbind,lapply(expl,function(og) rowMeans(cor(t(age),t(og)),na.rm=TRUE)))
+      acc <- acc[,apply(acc,2,function(x) any(is.finite(x))),drop=FALSE]
+      acc.best <- na.omit(apply(acc,2,which.max))
+      
+      for(i in 1:length(acc.best)) {
+        gn <- names(acc.best)[i];
+        expl[[acc.best[i]]] <- rbind(expl[[acc.best[i]]],age[gn,,drop=FALSE])
+      }
+      if(additional.genes.only) { # leave only genes that were explictly specified
+        expl <- lapply(expl,function(d) d[rownames(d) %in% additional.genes,,drop=FALSE])
+        expl <- expl[unlist(lapply(expl,nrow))>0]
+        
+      }
+    }
+  }
+  
+  # omit genes that should be excluded
+  if(!is.null(exclude.genes)) {
+    expl <- lapply(expl,function(x) {
+      x[!rownames(x) %in% exclude.genes,,drop=FALSE]
+    })
+  }
+  
   
   exp <- do.call(rbind,expl)
   # limit to cells that were participating in the de
   exp <- na.omit(exp[,colnames(exp) %in% names(na.omit(groups))])
+  
+  if(order.clusters) {
+    # group clusters based on expression similarity (of the genes shown)
+    xc <- do.call(cbind,tapply(1:ncol(exp),groups[colnames(exp)],function(ii) rowMeans(exp[,ii,drop=FALSE])))
+    hc <- hclust(as.dist(2-cor(xc)),method='ward.D2')
+    groups <- factor(groups,levels=hc$labels[hc$order])
+    expl <- expl[levels(groups)]
+    # re-create exp (could just reorder it)
+    exp <- do.call(rbind,expl)
+    exp <- na.omit(exp[,colnames(exp) %in% names(na.omit(groups))])
+  }
+  
+  if(averaging.window>0) {
+    # check if zoo is installed
+    if(requireNamespace("zoo", quietly = TRUE)) {
+      exp <- do.call(cbind,tapply(1:ncol(exp),as.factor(groups[colnames(exp)]),function(ii) {
+        xa <- t(zoo::rollapply(as.matrix(t(exp[,ii,drop=FALSE])),averaging.window,mean,align='left',partial=TRUE))
+        colnames(xa) <- colnames(exp)[ii]
+        xa
+      }))
+    } else {
+      warning("window averaging requires zoo package to be installed. skipping.")
+    }
+  }
   
   # transform expression values
   x <- t(apply(as.matrix(exp), 1, function(xp) {
@@ -853,10 +924,15 @@ plotDEheatmap_conos <- function(con, groups, de=NULL, n.genes.per.cluster=5,
     xp
   }))
   
-  o <- order(groups[colnames(x)])
-  x=x[,o]
   
-  rownames(x) <- convert_gn(container,rownames(x))
+  
+  
+  if(!is.null(cell.order)) {
+    o <- cell.order[cell.order %in% colnames(x)]
+  } else { 
+    o <- order(groups[colnames(x)])
+  }
+  x=x[,o]
   
   annot <- data.frame(clusters=groups[colnames(x)],row.names = colnames(x))
   
@@ -871,25 +947,77 @@ plotDEheatmap_conos <- function(con, groups, de=NULL, n.genes.per.cluster=5,
   }
   annot <- annot[,rev(1:ncol(annot)),drop=FALSE]
   
-  
-  column.metadata.colors <- list();
+  if(is.null(column.metadata.colors))  {
+    column.metadata.colors <- list();
+  } else {
+    if(!is.list(column.metadata.colors)) stop("column.metadata.colors must be a list in a format accepted by HeatmapAnnotation col argument")
+    # reorder pallete to match the ordering in groups
+    if(!is.null(column.metadata.colors[['clusters']])) {
+      if(!all(levels(groups) %in% names(column.metadata.colors[['clusters']]))) {
+        stop("column.metadata.colors[['clusters']] must be a named vector of colors containing all levels of the specified cell groups")
+      }
+      column.metadata.colors[['clusters']] <- column.metadata.colors[['clusters']][levels(groups)]
+    }
+  }
   
   # make sure cluster colors are defined
   if(is.null(column.metadata.colors[['clusters']])) {
     uc <- unique(annot$clusters);
     column.metadata.colors$clusters <- setNames(rainbow(length(uc)),uc)
   }
-
+  
+  tt <- unlist(lapply(expl,nrow));
+  rannot <- setNames(rep(names(tt),tt),unlist(lapply(expl,rownames)))
+  #names(rannot) <- rownames(x);
+  rannot <- rannot[!duplicated(names(rannot))]
+  rannot <- rannot[names(rannot) %in% rownames(x)]
+  rannot <- data.frame(clusters=factor(rannot,levels=names(expl)))
+  
   if(remove.duplicates) { x <- x[!duplicated(rownames(x)),] }
   
   # draw heatmap
-  ha <- ComplexHeatmap::HeatmapAnnotation(df=annot,col=column.metadata.colors,show_legend=show.cluster.legend)
-  
-  ha <- ComplexHeatmap::Heatmap(x, name='expression', col=pal, cluster_rows=FALSE, cluster_columns=FALSE, show_column_names=FALSE, top_annotation=ha, row_names_gp = grid::gpar(fontsize = row.label.font.size));
+  ha <- ComplexHeatmap::HeatmapAnnotation(df=annot,border=border,
+                                          col=column.metadata.colors,
+                                          show_legend=TRUE,
+                                          show_annotation_name=FALSE,
+                                          annotation_legend_param = list(nrow=1))
 
+  if(show.gene.clusters) {
+    ra <- ComplexHeatmap::HeatmapAnnotation(df=rannot,which='row',show_annotation_name=FALSE, show_legend=FALSE, border=border,col=column.metadata.colors)
+  } else { ra <- NULL }
+  
+  ## turns off ComplexHeatmap warning:
+  ## `use_raster` is automatically set to TRUE for a matrix with more than
+  ## 2000 columns. You can control `use_raster` argument by explicitly
+  ## setting TRUE/FALSE to it.
+  ## Set `ht_opt$message = FALSE` to turn off this message.
+  ## 
+  ht_opt$message = FALSE
+  
+  #ComplexHeatmap::Heatmap(x, col=pal, cluster_rows=FALSE, cluster_columns=FALSE, show_column_names=FALSE, top_annotation=ha , left_annotation=ra, column_split=groups[colnames(x)], row_split=rannot[,1], row_gap = unit(0, "mm"), column_gap = unit(0, "mm"), border=TRUE,  ...);
+  if(split) {
+    ha <- ComplexHeatmap::Heatmap(x, name='expression', col=pal, row_labels=convert_gn(container,rownames(x)), cluster_rows=FALSE, cluster_columns=FALSE, show_row_names=is.null(labeled.gene.subset), show_column_names=FALSE, top_annotation=ha , left_annotation=ra, border=border,  show_heatmap_legend=show_heatmap_legend, row_names_gp = grid::gpar(fontsize = row.label.font.size), column_split=groups[colnames(x)], row_split=rannot[,1], row_gap = unit(split.gap, "mm"), column_gap = unit(split.gap, "mm"), ...);
+  } else {
+    ha <- ComplexHeatmap::Heatmap(x, name='expression', col=pal,
+                                  row_labels=convert_gn(container,rownames(x)), cluster_rows=FALSE, cluster_columns=FALSE, show_row_names=is.null(labeled.gene.subset), show_column_names=FALSE, top_annotation=ha , left_annotation=ra, border=border,  show_heatmap_legend=show_heatmap_legend, row_names_gp = grid::gpar(fontsize = row.label.font.size), ...);
+  }
+  if(!is.null(labeled.gene.subset)) {
+    if(is.numeric(labeled.gene.subset)) {
+      # select top n genes to show
+      labeled.gene.subset <- unique(unlist(lapply(de,function(x) x$Gene[1:min(labeled.gene.subset,nrow(x))])))
+    }
+    gene.subset <- which(rownames(x) %in% labeled.gene.subset)
+    labels <- rownames(x)[gene.subset];
+    ha <- ha + ComplexHeatmap::rowAnnotation(link = ComplexHeatmap::anno_mark(at = gene.subset, labels = labels, labels_gp = grid::gpar(fontsize = row.label.font.size)))
+    
+  }
+  
+  if(return.details) {
+    return(list(ha=ha,x=x,annot=annot,rannot=rannot,expl=expl,pal=pal,labeled.gene.subset=labeled.gene.subset))
+  }
+  
   return(ha)
 }
-
 
 
 

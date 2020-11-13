@@ -391,7 +391,7 @@ get_significance_vectors <- function(container, factor_select, ctypes) {
 }
 
 
-#' Title
+#' Get gene callouts annotation for a loadings heatmap
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -403,10 +403,7 @@ get_significance_vectors <- function(container, factor_select, ctypes) {
 #' @param ctypes character The cell types for which to get the top genes to make
 #' callouts for. If NULL then uses all cell types. (default=NULL)
 #'
-#' @return
-#' @export
-#'
-#' @examples
+#' @return HeatmapAnnotation for the gene callouts
 get_callouts_annot <- function(container, tmp_casted_num, factor_select, sig_thresh, top_n_per_ctype=5, ctypes=NULL) {
   
   # extract the genes to show
