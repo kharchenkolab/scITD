@@ -116,19 +116,28 @@ determine_ranks_tucker <- function(container, max_ranks_test, method='svd', shuf
 #' @return reconstruction errors
 #' @export
 get_reconstruct_errors_svd <- function(tnsr, max_ranks_test, shuffle_tensor) {
-  # do svd to rnk ranks
+  tnsr <- rTensor::as.tensor(tnsr)
+  
+  if (shuffle_tensor) {
+    # unfold along donor mode
+    d_unfold <- rTensor::k_unfold(tnsr,1)@data
+
+    # shuffle values in each column (preserves gene and ct structure)
+    for (i in 1:ncol(d_unfold)) {
+      d_unfold[,i] <- sample(d_unfold[,i])
+    }
+    
+    print('cool')
+    
+    # refold tensor
+    tnsr <- rTensor::k_fold(d_unfold,m=1,modes=tnsr@modes)
+  }
+  
   mode_rank_errors <- list()
+  
   for (m in 1:length(max_ranks_test)) {
     rnk_errors <- c()
-    d_unfold <- rTensor::k_unfold(rTensor::as.tensor(tnsr),m)@data
-    
-    if (shuffle_tensor) {
-      unfolded_rows <- nrow(d_unfold)
-      unfolded_cols <- ncol(d_unfold)
-      d_unfold_linear <- c(d_unfold)
-      d_unfold_linear_shuffled <- sample(d_unfold_linear)
-      d_unfold <- matrix(d_unfold_linear_shuffled,nrow = unfolded_rows,ncol = unfolded_cols)
-    }
+    d_unfold <- rTensor::k_unfold(tnsr,m)@data
     
     svd_res <- svd(d_unfold)
     d <- diag(svd_res$d)

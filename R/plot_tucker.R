@@ -35,18 +35,19 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL, s
 
   # make colormap for hmap
   color_lim <- max(abs(donor_mat))
-  col_fun = colorRamp2(c(-color_lim, 0, color_lim), c("blue", "white", "red"))
-  # nintieth_per <- stats::quantile(as.matrix(abs(donor_mat)), c(.9))
-  # if (color_lim > (2*nintieth_per)) {
-  #   col_fun = colorRamp2(c(-nintieth_per, 0, nintieth_per), c("blue", "white", "red"))
-  # } else {
-  #   col_fun = colorRamp2(c(-color_lim, 0, color_lim), c("blue", "white", "red"))
-  # }
+  # col_fun = colorRamp2(c(-color_lim, 0, color_lim), c("blue", "white", "red"))
+  
+  nintieth_per <- stats::quantile(as.matrix(abs(donor_mat)), c(.95))
+  if (color_lim > (2*nintieth_per)) {
+    col_fun = colorRamp2(c(-nintieth_per, 0, nintieth_per), c("blue", "white", "red"))
+  } else {
+    col_fun = colorRamp2(c(-color_lim, 0, color_lim), c("blue", "white", "red"))
+  }
 
   if (is.null(meta_vars)) {
     myhmap <- Heatmap(as.matrix(donor_mat), name = "score",
-                      cluster_columns = FALSE,
-                      cluster_rows = FALSE,
+                      cluster_columns = TRUE,show_column_dend = FALSE,
+                      cluster_rows = TRUE, show_row_dend = FALSE,
                       column_names_gp = gpar(fontsize = 10),
                       col = col_fun, row_title = "Donors",
                       row_title_gp = gpar(fontsize = 14),

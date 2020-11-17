@@ -1,4 +1,4 @@
-library(CePa)
+library(cmapR)
 library(data.table)
 library(stringr)
 
@@ -12,7 +12,8 @@ library(stringr)
 
 base_dir <- '/home/jmitchel/data/gtex/'
 
-gtex_tpm <- read.gct(paste0(base_dir,'GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_tpm.gct'))
+gtex_tpm <- parse_gctx(paste0(base_dir,'GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_tpm.gct'))
+gtex_tpm <- gtex_tpm@mat
 
 donor_meta <- as.data.frame(fread(paste0(base_dir,"GTEx_Analysis_v8_Annotations_SubjectPhenotypesDS.txt")))
 sample_meta <- as.data.frame(fread(paste0(base_dir,"GTEx_Analysis_v8_Annotations_SampleAttributesDS.txt")))
@@ -22,10 +23,10 @@ sample_meta$donors <- sapply(sample_meta$SAMPID, function(x) {
   strsplit(x,split='-')[[1]][2]
 })
 
-# convert sample ids to have dots instead of dashes
-sample_meta$SAMPID <- sapply(sample_meta$SAMPID, function(x) {
-  str_replace_all(x,'-','.')
-})
+# # convert sample ids to have dots instead of dashes
+# sample_meta$SAMPID <- sapply(sample_meta$SAMPID, function(x) {
+#   str_replace_all(x,'-','.')
+# })
 
 # subset meta data to only have samples present in the expression matrix
 sample_meta <- sample_meta[sample_meta$SAMPID %in% colnames(gtex_tpm),]
@@ -74,12 +75,21 @@ sample_meta_sub$sex <- sapply(sample_meta_sub$donors, function(x) {
   donor_sex <- donor_meta_sub[donor_meta_sub$SUBJID == x, 'SEX']
   return(donor_sex)
 })
+sample_meta_sub$age <- sapply(sample_meta_sub$donors, function(x) {
+  donor_age <- donor_meta_sub[donor_meta_sub$SUBJID == x, 'AGE']
+  return(donor_age)
+})
+sample_meta_sub$dthhrdy <- sapply(sample_meta_sub$donors, function(x) {
+  donor_dth <- donor_meta_sub[donor_meta_sub$SUBJID == x, 'DTHHRDY']
+  return(donor_dth)
+})
 
 # remove unneeded variables for final meta data df to be used in the analysis
-gtex_meta <- sample_meta_sub[c('SAMPID','SMTSD','donors','sex')]
+gtex_meta <- sample_meta_sub[c('SAMPID','SMTSD','donors','sex','age','dthhrdy')]
 rownames(gtex_meta) <- gtex_meta$SAMPID
 gtex_meta$SAMPID <- NULL
 colnames(gtex_meta)[1] <- 'ctypes'
+print(head(gtex_meta))
 
 # subset the expression matrix to just these donors with intersecting samples
 gtex_tpm_sub <- gtex_tpm[,rownames(gtex_meta)]
@@ -121,6 +131,8 @@ gtex_tpm_sub_transform <- log2(gtex_tpm_sub + 1)
 # saveRDS(gtex_tpm_sub_transform,file='/home/jmitchel/data/gtex/7_tissues_counts.rds')
 # gtex_tpm_sub_transform <- readRDS(file='/home/jmitchel/data/gtex/7_tissues_counts.rds')
 
+# make dthhrdy score a factor
+gtex_meta$dthhrdy <- as.factor(gtex_meta$dthhrdy)
 # saveRDS(gtex_meta,file='/home/jmitchel/data/gtex/7_tissues_meta.rds')
 # gtex_meta <- readRDS(file='/home/jmitchel/data/gtex/7_tissues_meta.rds')
 
@@ -129,51 +141,7 @@ gtex_tpm_sub_transform <- log2(gtex_tpm_sub + 1)
 
 
 
-# # running analysis below
-# ctypes_use <- unique(gtex_meta$ctypes)
-# pbmc_scMinimal <- instantiate_scMinimal(data_sparse=gtex_tpm_sub_transform, 
-#                                         meta_data=gtex_meta)
-# pbmc_container <- make_new_container(pbmc_scMinimal,
-#                                      ctypes_use = ctypes_use,
-#                                      gn_convert = feature.names.final,
-#                                      scale_var = TRUE,
-#                                      var_scale_power = 1, rotate_modes = 'donors',
-#                                      ncores = 30, rand_seed = 10)
-# 
-# pbmc_container <- get_ctype_data(pbmc_container,donor_min_cells=0)
-# 
-# pbmc_container <- get_ctype_vargenes(pbmc_container, method="norm_var", thresh=1000) 
-# 
-# pbmc_container <- run_tucker_ica(pbmc_container, ranks=c(10,20,7), shuffle=FALSE)
-# 
-# pbmc_container <- plot_donor_matrix(pbmc_container, meta_vars=c('sex'),
-#                                     cluster_by_meta='sex')
-# pbmc_container$plots$donor_matrix
-# 
-# pbmc_container <- optimize_var_scale_power(pbmc_container,min_ranks_test=c(2,10,7),
-#                                            max_ranks_test=c(7,15,7),
-#                                            min_power_test=0.25,max_power_test=1)
-# pbmc_container$plots$var_scale_plot
-# 
-# pbmc_container <- set_experiment_params(pbmc_container, var_scale_power = 1)
-# 
-# pbmc_container <- determine_ranks_tucker(pbmc_container, max_ranks_test=c(20,30,7),
-#                                          method='svd', shuffle_level='tensor', num_iter=15)
-# pbmc_container$plots$rank_determination_plot
-# 
-# pbmc_container <- run_tucker_ica(pbmc_container, ranks=c(9,20,7), shuffle=FALSE)
-# 
-# pbmc_container <- plot_donor_matrix(pbmc_container, meta_vars=c('sex'),
-#                                     cluster_by_meta='sex', show_donor_ids=FALSE)
-# pbmc_container$plots$donor_matrix
-# 
-# pbmc_container <- plot_loadings_annot(pbmc_container, factor_select=9,
-#                                       use_sig_only=F, annot='none', display_genes=F)
-# pbmc_container$plots$single_lds_plot
-# 
-# pbmc_container <- run_gsea_one_factor(pbmc_container, factor_select=9, method="fgsea",
-#                                       thresh=0.005, db_use="GO", num_iter=10000)
-# pbmc_container$plots$gsea[['Factor2']][['up']]
+
 
 
 
