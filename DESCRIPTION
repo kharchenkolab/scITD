@@ -41,7 +41,9 @@ Imports:
     Rcpp,
     RColorBrewer,
     GPArotation, 
-    sparsepca
+    sparsepca, 
+    pagoda2, 
+    conos
 Suggests: 
     knitr,
     rmarkdown, 
@@ -49,8 +51,6 @@ Suggests:
     SingleCellExperiment,
     splatter,
     coda.base,
-    pagoda2,
-    conos,
     Seurat,
     MASS,
     grid,
