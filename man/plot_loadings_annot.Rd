@@ -17,7 +17,9 @@ plot_loadings_annot(
   gene_callouts = FALSE,
   callout_n_gene_per_ctype = 5,
   callout_ctypes = NULL,
-  show_xlab = TRUE
+  show_xlab = TRUE,
+  show_var_eplained = TRUE,
+  show_all_legends = TRUE
 )
 }
 \arguments{
@@ -63,6 +65,11 @@ to get gene callouts for. If NULL, then gets gene callouts for largest magnitude
 genes for all cell types. (default=NULL)}
 
 \item{show_xlab}{logical If TRUE, displays the xlabel 'genes' (default=TRUE)}
+
+\item{show_var_eplained}{logical If TRUE then shows an anottation with the explained variance
+for each cell type (default=TRUE)}
+
+\item{show_all_legends}{logical Set to TRUE in order to show legends (default=TRUE)}
 }
 \value{
 container with the plot put in container$plots$single_lds_plot

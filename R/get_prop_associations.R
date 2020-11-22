@@ -428,12 +428,23 @@ get_subclust_plots <- function(container,ctype,res,factor_use) {
   con[["embedding"]] <- orig_embed[names(subclusts),]
   
   # REMOVE OUTLIERS HERE!
+  # get IQR
+  qt_x <- quantile(con[["embedding"]][,1], c(.25,.75)) 
+  qt_y <- quantile(con[["embedding"]][,2], c(.25,.75)) 
+  iqr_x <- qt_x[2] - qt_x[1]
+  iqr_y <- qt_y[2] - qt_y[1]
+  outlier_up_lim_x <- qt_x[2] + 1.5 * iqr_x
+  outlier_down_lim_x <- qt_x[1] - 1.5 * iqr_x 
+  outlier_up_lim_y <- qt_y[2] + 1.5 * iqr_y
+  outlier_down_lim_y <- qt_y[1] - 1.5 * iqr_y 
   
   subc_embed_plot <- con$plotGraph()
   subc_embed_plot <- subc_embed_plot + 
     ggtitle(paste0(ctype,' Subclusters')) + 
     xlab('UMAP 1') +
     ylab('UMAP 2') +
+    xlim(outlier_down_lim_x,outlier_up_lim_x) +
+    ylim(outlier_down_lim_y,outlier_up_lim_y) +
     theme(plot.title = element_text(hjust = 0.5), 
           axis.title.y = element_text(size = rel(.8)),
           axis.title.x = element_text(size = rel(.8)))
@@ -493,7 +504,7 @@ get_subclust_plots <- function(container,ctype,res,factor_use) {
     
   # get subtype DE results heamap
   subc_de_hmap <- plotDEheatmap_conos(con, groups=as.factor(subclusts), container,
-                                 row.label.font.size=5)
+                                 row.label.font.size=8)
   
   # make heatmap into a grob
   subc_hmap_grob <- grid::grid.grabExpr(draw(subc_de_hmap,annotation_legend_side = "bottom"))

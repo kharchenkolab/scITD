@@ -30,9 +30,6 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL, s
     paste0("Factor ", x)
   })
 
-  # # make colormap for hmap
-  # col_fun = colorRamp2(c(-2, 0, 2), c("blue", "white", "red"))
-
   # make colormap for hmap
   color_lim <- max(abs(donor_mat))
   # col_fun = colorRamp2(c(-color_lim, 0, color_lim), c("blue", "white", "red"))
@@ -46,7 +43,7 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL, s
 
   if (is.null(meta_vars)) {
     myhmap <- Heatmap(as.matrix(donor_mat), name = "score",
-                      cluster_columns = TRUE,show_column_dend = FALSE,
+                      cluster_columns = FALSE,show_column_dend = FALSE,
                       cluster_rows = TRUE, show_row_dend = FALSE,
                       column_names_gp = gpar(fontsize = 10),
                       col = col_fun, row_title = "Donors",
@@ -145,12 +142,16 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL, s
 #' to get gene callouts for. If NULL, then gets gene callouts for largest magnitude significant
 #' genes for all cell types. (default=NULL)
 #' @param show_xlab logical If TRUE, displays the xlabel 'genes' (default=TRUE)
+#' @param show_var_eplained logical If TRUE then shows an anottation with the explained variance
+#' for each cell type (default=TRUE)
+#' @param show_all_legends logical Set to TRUE in order to show legends (default=TRUE)
 #'
 #' @return container with the plot put in container$plots$single_lds_plot
 #' @export
 plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, nonsig_to_zero=FALSE, annot='none',
                                 pathways=NULL, sim_de_donor_group=NULL, sig_thresh=0.05, display_genes=FALSE, 
-                                gene_callouts=FALSE, callout_n_gene_per_ctype=5, callout_ctypes=NULL, show_xlab=TRUE) {
+                                gene_callouts=FALSE, callout_n_gene_per_ctype=5, callout_ctypes=NULL, show_xlab=TRUE,
+                                show_var_eplained=TRUE, show_all_legends=TRUE) {
   # check that Tucker has been run
   if (is.null(container$tucker_results)) {
     stop("Need to run run_tucker_ica() first.")
@@ -201,35 +202,50 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
   } else {
     gene_callouts <- NULL
   }
-
-  # make main part of heatmap (loadings)
-  # col_fun <- colorRamp2(c(min(tmp_casted_num), 0, max(tmp_casted_num)),
-  #                       c("blue", "white", "red"))
-
-  # # make main part of heatmap (loadings)
-  # col_fun <- colorRamp2(c(-7, 0, 7.5),
-  #                       c("blue", "white", "red"))
-
+  
+  hm_legends <- list()
+  
+  if (show_var_eplained) {
+    ctype_var_exp <- get_explained_var(container, tmp_casted_num, factor_select)
+    ctype_var_exp <- unlist(ctype_var_exp)
+    ctype_var_exp <- ctype_var_exp[colnames(tmp_casted_num)]
+    col_fun2 = circlize::colorRamp2(c(0, max(ctype_var_exp)), c("white", "black"))
+    var_annot <- ComplexHeatmap::HeatmapAnnotation(var = ctype_var_exp,col=list(var=col_fun2),
+                                                   show_annotation_name=FALSE, border=TRUE,
+                                                   show_legend = show_all_legends)
+    
+    hm_legends[[2]] <- Legend(col_fun = col_fun2, title = "var exp",
+                              grid_height = unit(1, "mm"), grid_width = unit(3, "mm"),
+                              title_position = "leftcenter-rot")
+    
+  } else {
+    var_annot <- NULL
+  }
+  
   # make colormap for hmap
   color_lim <- max(abs(tmp_casted_num))
-  col_fun <- colorRamp2(c(-color_lim, 0, color_lim),c("blue", "white", "red"))
-  # nintieth_per <- stats::quantile(as.matrix(abs(tmp_casted_num)), c(.9))
-  # if (color_lim > (2*nintieth_per)) {
-  #   col_fun = colorRamp2(c(-nintieth_per, 0, nintieth_per), c("blue", "white", "red"))
-  # } else {
-  #   col_fun = colorRamp2(c(-color_lim, 0, color_lim), c("blue", "white", "red"))
-  # }
-
+  nintieth_per <- stats::quantile(as.matrix(abs(tmp_casted_num)), c(.95))
+  if (color_lim > (1.5*nintieth_per)) {
+    col_fun = colorRamp2(c(-nintieth_per, 0, nintieth_per), c("blue", "white", "red"))
+  } else {
+    col_fun = colorRamp2(c(-color_lim, 0, color_lim), c("blue", "white", "red"))
+  }
+  
+  hm_legends[[1]] <- Legend(col_fun = col_fun, title = "loading",
+                            grid_height = unit(1, "mm"), grid_width = unit(3, "mm"),
+                            title_position = "leftcenter-rot")
+  
   hm_list <- Heatmap(tmp_casted_num, show_row_dend = FALSE, show_column_dend = FALSE,
-                     name = "loadings", show_row_names = display_genes,
+                     name = "loading", show_row_names = display_genes,
                      column_names_gp = gpar(fontsize = 12), cluster_columns = FALSE,
-                     clustering_method_rows = "ward.D",
+                     clustering_method_rows = "median",
                      row_names_side = "left", col=col_fun,
                      column_title = paste0('Factor ', factor_select),
                      column_title_gp = gpar(fontsize = 20, fontface = "bold"),
                      row_title = rt, row_title_gp = gpar(fontsize = 14), border = TRUE,
                      row_labels = convert_gn(container,rownames(tmp_casted_num)),
-                     right_annotation = gene_callouts)
+                     right_annotation = gene_callouts, top_annotation=var_annot,
+                     show_heatmap_legend = show_all_legends)
   
   # turn off heatmap message saying callouts require pdf view or zoom view
   ht_opt$message = FALSE
@@ -302,7 +318,10 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
 
   # save plot in the container
   container$plots$single_lds_plot <- hm_list
-
+  
+  pd = packLegend(hm_legends[[1]], hm_legends[[2]], direction = "vertical")
+  container$plots$ldng_legends <- pd
+  
   return(container)
 }
 
@@ -438,6 +457,46 @@ get_callouts_annot <- function(container, tmp_casted_num, factor_select, sig_thr
   return(myannot)
 }
 
+#' Get explained variance for each cell type for one factor
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param tmp_casted_num matrix The gene by cell type loadings matrix
+#' @param factor_use numeric The factor to investigate
+#'
+#' @return explained variance for each cell type in a list
+get_explained_var <- function(container, tmp_casted_num, factor_use) {
+  rnk <- container$experiment_params$ranks
+  tnsr <- container$tensor_data[[4]]
+  donor_scores <- container$tucker_results[[1]]
+  ctypes <- container$experiment_params$ctypes_use
+  
+  ctype_errors <- list()
+  for (i in 1:length(ctypes)) {
+    ct <- ctypes[i]
+    
+    # expression from data tensor (not loadings tensor)
+    t_slice <- tnsr[,,i]
+    
+    # compute reconstruction of cell type gene expression
+    ldngs <- tmp_casted_num[,ct,drop=FALSE]
+    recon <-  as.matrix(donor_scores[,factor_use]) %*% as.matrix(t(ldngs))
+    
+    diff_mat <- t_slice
+    colnames(diff_mat) <- container$tensor_data[[2]]
+    rownames(diff_mat) <- container$tensor_data[[1]]
+    row_ndx <- match(rownames(recon),rownames(diff_mat))
+    col_ndx <- match(colnames(recon),colnames(diff_mat))
+    diff_mat[row_ndx,col_ndx] <- diff_mat[row_ndx,col_ndx] - recon
+      
+    exp_var_rel <- 1-((norm(diff_mat,"F")**2)/(norm(t_slice,"F")**2))
+    exp_var <- exp_var_rel * sum(apply(t_slice, 2, var))
+    
+    ctype_errors[[ct]] <- exp_var
+  }
+  return(ctype_errors)
+}
+
 #' Generate loadings heatmaps for all factors
 #'
 #' @param container environment Project container that stores sub-containers
@@ -462,23 +521,28 @@ get_callouts_annot <- function(container, tmp_casted_num, factor_select, sig_thr
 #' @param callout_n_gene_per_ctype numeric To use if gene_callouts is TRUE. Sets the number
 #' of largest magnitude significant genes from each cell type to include in gene callouts.
 #' (default=5)
-#' @param callout_ctypes character To use if gene_callouts is TRUE. Specifies which cell types
-#' to get gene callouts for. If NULL, then gets gene callouts for largest magnitude significant
+#' @param callout_ctypes list To use if gene_callouts is TRUE. Specifies which cell types
+#' to get gene callouts for. Each entry of the list should be a character vector of ctypes for
+#' the respective factor. If NULL, then gets gene callouts for largest magnitude significant
 #' genes for all cell types. (default=NULL)
+#' @param show_var_eplained logical If TRUE then shows an anottation with the explained variance
+#' for each cell type (default=TRUE)
 #'
 #' @return the project container with the list of plots placed in container$plots$all_lds_plots
 #' @export
 get_all_lds_factor_plots <- function(container, use_sig_only=FALSE, nonsig_to_zero=FALSE, annot='none',
                                      pathways_list=NULL, sig_thresh=0.05, display_genes=FALSE,
-                                     gene_callouts=FALSE, callout_n_gene_per_ctype=5, callout_ctypes=NULL) {
+                                     gene_callouts=FALSE, callout_n_gene_per_ctype=5, callout_ctypes=NULL,
+                                     show_var_eplained=TRUE) {
 
   # save any plot previously in the single lds plot slot because will be overwrittern
   prev_lds_plot <- container$plots$single_lds_plot
 
   num_fact <- nrow(container$tucker_results[[2]])
   hm_list <- list()
+  lgnd_list <- list()
   for (i in 1:num_fact) {
-    if (i==1) {
+    if (i==1 && !gene_callouts) {
       show_xlab <- TRUE
     } else {
       show_xlab <- FALSE
@@ -491,10 +555,13 @@ get_all_lds_factor_plots <- function(container, use_sig_only=FALSE, nonsig_to_ze
                                      display_genes=display_genes,
                                      gene_callouts=gene_callouts,
                                      callout_n_gene_per_ctype=callout_n_gene_per_ctype,
-                                     callout_ctypes=callout_ctypes,
-                                     show_xlab=show_xlab)
+                                     callout_ctypes=callout_ctypes[[i]],
+                                     show_xlab=show_xlab,
+                                     show_var_eplained=show_var_eplained,
+                                     show_all_legends=FALSE)
     
     hm_list[[i]] <- container$plots$single_lds_plot
+    lgnd_list[[i]] <- container$plots$ldng_legends
   }
 
   # rewrite the single plot back into its original slot
@@ -502,16 +569,21 @@ get_all_lds_factor_plots <- function(container, use_sig_only=FALSE, nonsig_to_ze
 
   # save list of all plots
   container$plots$all_lds_plots <- hm_list
-
+  container$plots$all_legends <- lgnd_list
+  
   return(container)
 }
 
 #' Creates a figure of all loadings plots side by side
 #'
-#' @param hm_list list A list of loadings heatmaps for all plots
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
 #' @param n_rows numeric The number of rows to fit the plots onto
 #' @export
-render_all_lds_plots <- function(hm_list,n_rows) {
+render_all_lds_plots <- function(container,n_rows) {
+  
+  hm_list <- container$plots$all_lds_plots
+  hm_legends <- container$plots$all_legends
   
   grid::grid.newpage()
   
@@ -523,13 +595,22 @@ render_all_lds_plots <- function(hm_list,n_rows) {
     }
     row_ndx <- n_rows - ceiling(i / grid_n_col) + 1
     
-    x_pos <- (col_ndx-1)*(1/grid_n_col)
+    if (length(hm_list)%%grid_n_col!=0 && row_ndx==1) {
+      x_buffer <- ((1/grid_n_col)-.02) * (grid_n_col - (length(hm_list)%%grid_n_col))/2
+      x_pos <- (col_ndx-1)*(1/grid_n_col) + x_buffer
+    } else {
+      x_pos <- (col_ndx-1)*(1/grid_n_col)
+    }
     y_pos <- row_ndx/n_rows
+    
     grid::pushViewport(grid::viewport(x = x_pos, y = y_pos, 
-                                      width = 1/grid_n_col, height = 1/n_rows,
+                                      width = (1/grid_n_col)-.02, height = 1/n_rows,
                                       just = c("left","top")))
-    draw(hm_list[[i]], newpage = FALSE)
+    draw(hm_list[[i]],annotation_legend_list = hm_legends[[i]], 
+         legend_grouping = "original",
+         newpage=FALSE)
     grid::popViewport()
+    
   }
   
 }
@@ -541,13 +622,15 @@ render_all_lds_plots <- function(hm_list,n_rows) {
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
 #' @param factor_select numeric The factor to query
-#' @param top_n_per_ctype numeric The number of top genes from each cell type
-#' to plot (default=5)
+#' @param top_n_per_ctype numeric Vector of the number of top genes from each cell type
+#' to plot
+#' @param ctypes_use character The cell types for which to get the top genes to make
+#' callouts for. If NULL then uses all cell types. (default=NULL)
 #'
 #' @return the project container with the plot in the slot
 #' container$plots$donor_sig_genes$Factor#
 #' @export
-plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype=5) {
+plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype, ctypes_use=NULL) {
   ## add catch in case they havent run jackstraw yet...
   
   # temporarily remove variance scaling
@@ -577,11 +660,22 @@ plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype=5) {
   tmp_casted_num <- reshape_loadings(sr_col,genes,ctypes)
   
   # extract the genes to show
-  ctypes <- container$experiment_params$ctypes_use
+  if (is.null(ctypes_use)) {
+    ctypes <- container$experiment_params$ctypes_use
+  } else {
+    ctypes <- ctypes_use
+  }
   sig_vecs <- get_significance_vectors(container,factor_select,ctypes)
   genes_plot <- c()
   ct_in_hmap <- c()
-  for (ct in ctypes) {
+  for (i in 1:length(ctypes)) {
+    ct <- ctypes[i]
+    if (length(top_n_per_ctype)==1) {
+      top_n <- top_n_per_ctype
+    } else {
+      top_n <- top_n_per_ctype[i]
+    }
+    
     # get significant genes for the ctype
     ct_sig_genes <- sig_vecs[[ct]]
     ct_sig_genes <- ct_sig_genes[ct_sig_genes<0.05]
@@ -590,10 +684,10 @@ plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype=5) {
     ct_sig_loadings <- tmp_casted_num[names(ct_sig_genes),ct]
     
     ct_sig_loadings <- ct_sig_loadings[order(abs(ct_sig_loadings),decreasing=TRUE)]
-    ct_top_genes <- names(ct_sig_loadings)[1:top_n_per_ctype]
+    ct_top_genes <- names(ct_sig_loadings)[1:top_n]
     ct_top_genes <- sapply(ct_top_genes,function(x) {paste0(x,"_",ct)})
     genes_plot <- c(genes_plot,ct_top_genes)
-    ct_in_hmap <- c(ct_in_hmap, rep(ct,top_n_per_ctype))
+    ct_in_hmap <- c(ct_in_hmap, rep(ct,top_n))
   }
 
   ct_in_hmap <- factor(ct_in_hmap)
@@ -621,7 +715,11 @@ plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype=5) {
   donor_unfold_sub <- donor_unfold_sub[,order(donor_scores)]
   donor_scores <- donor_scores[order(donor_scores)]
   
-  ha <- ComplexHeatmap::HeatmapAnnotation(df=as.data.frame(donor_scores))
+  donor_scores <- unlist(donor_scores)
+  col_fun2 = circlize::colorRamp2(c(min(donor_scores), 0, max(donor_scores)), c("purple", "white", "green"))
+  ha <- ComplexHeatmap::HeatmapAnnotation(score = donor_scores,col=list(score=col_fun2),
+                                          show_annotation_name=FALSE)
+  
   
   # rename genes
   rownames(donor_unfold_sub) <- sapply(rownames(donor_unfold_sub),function(x) {
@@ -630,20 +728,35 @@ plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype=5) {
     gn <- convert_gn(container,gn)
     return(paste0(gn,"_",ct))
   })
+
+  rn_show <- sapply(rownames(donor_unfold_sub),function(x){
+    strsplit(x,split="_")[[1]][[1]]
+  })
+  ct_show <- sapply(rownames(donor_unfold_sub),function(x){
+    strsplit(x,split="_")[[1]][[2]]
+  })
+  ct_show <- as.factor(ct_show)
   
+  ct_annot <- ComplexHeatmap::rowAnnotation(cell_types=anno_simple(ct_show),
+                                            show_annotation_name=FALSE)
+
   # create the hmap
   col_fun = colorRamp2(c(min(donor_unfold_sub), 0, max(donor_unfold_sub)), c("blue", "white", "red"))
-  
-  myhmap <- Heatmap(donor_unfold_sub, name = "Factor 1",
+
+  myhmap <- Heatmap(donor_unfold_sub, name = "expr",
                     cluster_columns = FALSE,
-                    cluster_rows = FALSE,
-                    column_names_gp = gpar(fontsize = 10),
+                    cluster_rows = TRUE,
+                    column_names_gp = gpar(fontsize = 8),
                     row_names_gp = gpar(fontsize = 10),
-                    col = col_fun, top_annotation=ha)
-  
+                    col = col_fun, top_annotation=ha, row_split = ct_show,
+                    row_labels=rn_show,border=TRUE, show_column_names=TRUE,
+                    left_annotation=ct_annot,show_row_dend = FALSE,
+                    column_title = paste0('Factor ', factor_select,' Top Genes'),
+                    column_title_gp = gpar(fontsize = 20, fontface = "bold"))
+
   # reset scale variance decision
   container <- set_experiment_params(container, scale_var = orig_scale_decision)
-  
+
   container$plots$donor_sig_genes[[paste0('Factor',as.character(factor_select))]] <- myhmap
   return(container)
 }

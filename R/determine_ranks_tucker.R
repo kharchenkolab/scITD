@@ -143,7 +143,7 @@ get_reconstruct_errors_svd <- function(tnsr, max_ranks_test, shuffle_tensor) {
     d <- diag(svd_res$d)
     for (rnk in 1:max_ranks_test[m]) {
       rec <- as.matrix(svd_res$u[,1:rnk]) %*% as.matrix(d[1:rnk,1:rnk]) %*% as.matrix(t(svd_res$v[,1:rnk]))
-      fnorm_relative <- norm(rec - d_unfold, "F") / norm(d_unfold, "F")
+      fnorm_relative <- norm(rec - d_unfold, "F")**2 / norm(d_unfold, "F")**2
 
       rnk_errors <- c(rnk_errors,fnorm_relative)
     }

@@ -5,7 +5,12 @@
 \title{Generate heatmap showing top genes in each cell type significantly associated
 with a given factor}
 \usage{
-plot_donor_sig_genes(container, factor_select, top_n_per_ctype = 5)
+plot_donor_sig_genes(
+  container,
+  factor_select,
+  top_n_per_ctype,
+  ctypes_use = NULL
+)
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
@@ -13,8 +18,11 @@ for each cell type as well as results and plots from all analyses}
 
 \item{factor_select}{numeric The factor to query}
 
-\item{top_n_per_ctype}{numeric The number of top genes from each cell type
-to plot (default=5)}
+\item{top_n_per_ctype}{numeric Vector of the number of top genes from each cell type
+to plot}
+
+\item{ctypes_use}{character The cell types for which to get the top genes to make
+callouts for. If NULL then uses all cell types. (default=NULL)}
 }
 \value{
 the project container with the plot in the slot

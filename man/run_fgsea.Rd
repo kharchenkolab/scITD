@@ -4,14 +4,7 @@
 \alias{run_fgsea}
 \title{Compute enriched gene sets in a cell type for a factor using fgsea}
 \usage{
-run_fgsea(
-  container,
-  factor_select,
-  ctype,
-  db_use = "GO",
-  num_iter = 10000,
-  print_res = TRUE
-)
+run_fgsea(container, factor_select, ctype, db_use = "GO")
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
@@ -24,12 +17,6 @@ for each cell type as well as results and plots from all analyses}
 \item{db_use}{character The database of gene sets to use. Database
 options include "GO", "Reactome", "KEGG", and "BioCarta". More than
 one database can be used. (default="GO")}
-
-\item{num_iter}{numeric The number of random shufflings to perform
-(default=10000)}
-
-\item{print_res}{logical If TRUE, prints out the top up/down gene sets
-(default=TRUE)}
 }
 \value{
 data.frame of the fgsea results limited to genes passing the

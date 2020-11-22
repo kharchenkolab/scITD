@@ -14,7 +14,8 @@ get_all_lds_factor_plots(
   display_genes = FALSE,
   gene_callouts = FALSE,
   callout_n_gene_per_ctype = 5,
-  callout_ctypes = NULL
+  callout_ctypes = NULL,
+  show_var_eplained = TRUE
 )
 }
 \arguments{
@@ -49,9 +50,13 @@ this value is used in the gene significance colormap as a minimum threshold. (de
 of largest magnitude significant genes from each cell type to include in gene callouts.
 (default=5)}
 
-\item{callout_ctypes}{character To use if gene_callouts is TRUE. Specifies which cell types
-to get gene callouts for. If NULL, then gets gene callouts for largest magnitude significant
+\item{callout_ctypes}{list To use if gene_callouts is TRUE. Specifies which cell types
+to get gene callouts for. Each entry of the list should be a character vector of ctypes for
+the respective factor. If NULL, then gets gene callouts for largest magnitude significant
 genes for all cell types. (default=NULL)}
+
+\item{show_var_eplained}{logical If TRUE then shows an anottation with the explained variance
+for each cell type (default=TRUE)}
 }
 \value{
 the project container with the list of plots placed in container$plots$all_lds_plots

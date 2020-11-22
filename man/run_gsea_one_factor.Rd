@@ -9,8 +9,7 @@ run_gsea_one_factor(
   factor_select,
   method = "fgsea",
   thresh = 0.05,
-  db_use = "GO",
-  num_iter = 10000
+  db_use = "GO"
 )
 }
 \arguments{
@@ -28,9 +27,6 @@ resulting heatmap if pvalue is below this threshold for at least one cell type. 
 \item{db_use}{character The database of gene sets to use. Database
 options include "GO", "Reactome", "KEGG", and "BioCarta". More than
 one database can be used. (default="GO")}
-
-\item{num_iter}{numeric The number of random shufflings to perform. Only
-applies if using fgsea method (default=10000)}
 }
 \value{
 a heatmap plot of the gsea results

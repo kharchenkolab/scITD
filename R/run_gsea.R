@@ -8,16 +8,12 @@
 #' @param db_use character The database of gene sets to use. Database
 #' options include "GO", "Reactome", "KEGG", and "BioCarta". More than
 #' one database can be used. (default="GO")
-#' @param num_iter numeric The number of random shufflings to perform
-#' (default=10000)
-#' @param print_res logical If TRUE, prints out the top up/down gene sets
-#' (default=TRUE)
 #'
 #' @return data.frame of the fgsea results limited to genes passing the
 #' significance threshold.
 #' @export
 run_fgsea <- function(container, factor_select, ctype,
-                      db_use="GO", num_iter=10000, print_res=TRUE) {
+                      db_use="GO") {
 
   # make sure Tucker has been run
   if (is.null(container$tucker_results)) {
@@ -80,29 +76,10 @@ run_fgsea <- function(container, factor_select, ctype,
                           stats = ctype_lds,
                           minSize=15,
                           maxSize=500,
-                          nperm=num_iter,
-                          gseaParam=.5)
+                          eps=0,
+                          gseaParam=3)
 
   fgsea_res <- fgsea_res[order(fgsea_res$padj, decreasing=FALSE),]
-
-  if (print_res) {
-    tmp <- fgsea_res
-    tmp$pathway <- sapply(tmp$pathway,function(x) {
-      if (nchar(x) > 40) {
-        return(paste0(substr(x,1,40),"..."))
-      } else {
-        return(x)
-      }
-    })
-
-    print('Top enriched gene sets in positive loading genes')
-    printout1 <- tmp[tmp$NES>0,c('pathway', 'padj', 'NES')]
-    print(printout1[order(printout1$padj,decreasing=FALSE)[1:10],])
-    print('')
-    print('Top enriched in negative loading genes')
-    printout2 <- tmp[tmp$NES<0,c('pathway', 'padj', 'NES')]
-    print(printout2[order(printout2$padj,decreasing=FALSE)[1:10],])
-  }
 
   return(fgsea_res)
 }
@@ -235,21 +212,18 @@ run_hypergeometric_gsea <- function(container, factor_select, ctype, up_down,
 #' @param db_use character The database of gene sets to use. Database
 #' options include "GO", "Reactome", "KEGG", and "BioCarta". More than
 #' one database can be used. (default="GO")
-#' @param num_iter numeric The number of random shufflings to perform. Only
-#' applies if using fgsea method (default=10000)
 #'
 #' @return a heatmap plot of the gsea results
 #' @export
 run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh=0.05,
-                                 db_use="GO", num_iter=10000) {
+                                 db_use="GO") {
   up_sets_all <- list()
   down_sets_all <- list()
   ctypes_use <- container$experiment_params$ctypes_use
   for (ct in ctypes_use) {
     if (method == 'fgsea') {
       fgsea_res <- run_fgsea(container, factor_select=factor_select, ctype=ct,
-                             db_use=db_use, num_iter=num_iter,
-                             print_res=FALSE)
+                             db_use=db_use)
 
       # remove results where NES is na
       fgsea_res <- fgsea_res[!is.na(fgsea_res$NES),]
@@ -372,8 +346,8 @@ plot_gsea_hmap <- function(up_down_sets,thresh) {
 
   # cutoff gene set names
   tmp_names <- sapply(rownames(res_plot),function(x) {
-    if (nchar(x) > 32) {
-      return(paste0(substr(x,1,30),"..."))
+    if (nchar(x) > 42) {
+      return(paste0(substr(x,1,40),"..."))
     } else {
       return(x)
     }
@@ -384,7 +358,7 @@ plot_gsea_hmap <- function(up_down_sets,thresh) {
 
   col_fun <- colorRamp2(c(.05, 0), c("white", "green"))
 
-  myhmap <- Heatmap(res_plot, name = "padj",
+  myhmap <- Heatmap(as.matrix(res_plot), name = "padj",
                     show_row_dend = FALSE, show_column_dend = FALSE,
                     column_names_gp = gpar(fontsize = 10),
                     col = col_fun, row_title = "Gene Sets",
