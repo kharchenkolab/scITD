@@ -34,7 +34,7 @@ options include "GO", "Reactome", "KEGG", and "BioCarta". More than
 one database can be used. (default="GO")}
 }
 \value{
-pvalues for the significantly enriched gene sets
+pvalues for all tested gene sets
 }
 \description{
 Compute enriched gene sets among significant genes in a cell type for

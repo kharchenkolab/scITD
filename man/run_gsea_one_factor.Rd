@@ -18,8 +18,8 @@ for each cell type as well as results and plots from all analyses}
 
 \item{factor_select}{numeric The factor of interest}
 
-\item{method}{character The method of gsea to use. Can either be "fgsea" or
-"hypergeometric". (default="fgsea")}
+\item{method}{character The method of gsea to use. Can either be "fgsea", 
+"fgsea_special or "hypergeometric". (default="fgsea")}
 
 \item{thresh}{numeric Pvalue significance threshold to use. Will include gene sets in
 resulting heatmap if pvalue is below this threshold for at least one cell type. (default=0.05)}
@@ -29,7 +29,8 @@ options include "GO", "Reactome", "KEGG", and "BioCarta". More than
 one database can be used. (default="GO")}
 }
 \value{
-a heatmap plot of the gsea results
+a heatmap plot of the gsea results in the slot
+container$plots$gsea$FactorX$up/down
 }
 \description{
 Run gsea separately for all cell types of one specified factor

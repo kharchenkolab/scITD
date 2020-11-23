@@ -9,8 +9,7 @@
 #' options include "GO", "Reactome", "KEGG", and "BioCarta". More than
 #' one database can be used. (default="GO")
 #'
-#' @return data.frame of the fgsea results limited to genes passing the
-#' significance threshold.
+#' @return data.frame of the fgsea results (including non-significant results)
 #' @export
 run_fgsea <- function(container, factor_select, ctype,
                       db_use="GO") {
@@ -18,11 +17,6 @@ run_fgsea <- function(container, factor_select, ctype,
   # make sure Tucker has been run
   if (is.null(container$tucker_results)) {
     stop('Run run_tucker_ica() first.')
-  }
-
-  # convert ensg symbols to gene symbols
-  if (is.null(container$gn_convert)) {
-    stop('Gene symbols are not present in your data and no gene name conversion was provided')
   }
 
   set.seed(container$experiment_params$rand_seed)
@@ -77,12 +71,80 @@ run_fgsea <- function(container, factor_select, ctype,
                           minSize=15,
                           maxSize=500,
                           eps=0,
-                          gseaParam=3)
+                          gseaParam=1)
 
   fgsea_res <- fgsea_res[order(fgsea_res$padj, decreasing=FALSE),]
 
   return(fgsea_res)
 }
+
+
+
+#' Run fgsea on expression levels as summed after multiplying by donor scores
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param factor_select numeric The factor of interest
+#' @param ctype character The cell type of interest
+#' @param db_use character The database of gene sets to use. Database
+#' options include "GO", "Reactome", "KEGG", and "BioCarta". More than
+#' one database can be used. (default="GO")
+#'
+#' @return data.frame of the fgsea results (including non-significant results)
+#' @export
+fgsea_special <- function(container, factor_select, ctype, db_use="GO") {
+  donor_scores <- container$tucker_results[[1]]
+  
+  # scaling to unit variance!
+  tnsr_slice <- container$scMinimal_ctype[[ctype]]$data_means
+  tnsr_slice <- scale(tnsr_slice, center=TRUE)
+  tnsr_slice <- tnsr_slice[rownames(donor_scores),]
+  
+  # get transformed expression for each gene by summing d_score * scaled exp
+  exp_vals <- sapply(1:ncol(tnsr_slice), function(j) {
+    # exp_transform <- tnsr_slice[,j] * donor_scores[rownames(tnsr_slice),factor_select]
+    # de_val <- sum(exp_transform)
+    
+    exp_transform <- cor(tnsr_slice[,j],donor_scores[rownames(tnsr_slice),factor_select])
+  })
+  
+  names(exp_vals) <- convert_gn(container,colnames(tnsr_slice))
+
+  m_df <- data.frame()
+  for (db in db_use) {
+    if (db == "GO") {
+      # select the GO Biological Processes group of gene sets
+      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
+                                          category = "C5", subcategory = "BP"))
+    } else if (db == "Reactome") {
+      # select the Reactome gene sets
+      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
+                                          category = "C2", subcategory = "CP:REACTOME"))
+    } else if (db == "KEGG") {
+      # select the KEGG gene sets
+      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
+                                          category = "C2", subcategory = "CP:KEGG"))
+    } else if (db == "BioCarta") {
+      # select the BioCarts gene sets
+      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
+                                          category = "C2", subcategory = "CP:BIOCARTA"))
+    }
+  }
+  
+  my_pathways <- split(m_df$gene_symbol, f = m_df$gs_name)
+  fgsea_res <- fgsea::fgsea(pathways = my_pathways,
+                            stats = exp_vals,
+                            minSize=15,
+                            maxSize=500,
+                            eps=0,
+                            gseaParam=2)
+  
+  fgsea_res <- fgsea_res[order(fgsea_res$padj, decreasing=FALSE),]
+  tmp <- fgsea_res[1:50,]
+}
+
+
+
 
 #' Compute enriched gene sets among significant genes in a cell type for
 #' a factor using hypergeometric test
@@ -100,7 +162,7 @@ run_fgsea <- function(container, factor_select, ctype,
 #' options include "GO", "Reactome", "KEGG", and "BioCarta". More than
 #' one database can be used. (default="GO")
 #'
-#' @return pvalues for the significantly enriched gene sets
+#' @return pvalues for all tested gene sets
 #' @export
 run_hypergeometric_gsea <- function(container, factor_select, ctype, up_down,
                                      thresh=0.05, db_use="GO") {
@@ -205,15 +267,16 @@ run_hypergeometric_gsea <- function(container, factor_select, ctype, up_down,
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
 #' @param factor_select numeric The factor of interest
-#' @param method character The method of gsea to use. Can either be "fgsea" or
-#' "hypergeometric". (default="fgsea")
+#' @param method character The method of gsea to use. Can either be "fgsea", 
+#' "fgsea_special or "hypergeometric". (default="fgsea")
 #' @param thresh numeric Pvalue significance threshold to use. Will include gene sets in
 #' resulting heatmap if pvalue is below this threshold for at least one cell type. (default=0.05)
 #' @param db_use character The database of gene sets to use. Database
 #' options include "GO", "Reactome", "KEGG", and "BioCarta". More than
 #' one database can be used. (default="GO")
 #'
-#' @return a heatmap plot of the gsea results
+#' @return a heatmap plot of the gsea results in the slot
+#' container$plots$gsea$FactorX$up/down
 #' @export
 run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh=0.05,
                                  db_use="GO") {
@@ -221,10 +284,15 @@ run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh
   down_sets_all <- list()
   ctypes_use <- container$experiment_params$ctypes_use
   for (ct in ctypes_use) {
-    if (method == 'fgsea') {
-      fgsea_res <- run_fgsea(container, factor_select=factor_select, ctype=ct,
-                             db_use=db_use)
-
+    if (method == 'fgsea' || method == 'fgsea_special') {
+      if (method == 'fgsea') {
+        fgsea_res <- run_fgsea(container, factor_select=factor_select, ctype=ct,
+                               db_use=db_use)
+      } else {
+        fgsea_res <- fgsea_special(container, factor_select=factor_select, ctype=ct,
+                               db_use=db_use)
+      }
+      
       # remove results where NES is na
       fgsea_res <- fgsea_res[!is.na(fgsea_res$NES),]
 
@@ -364,7 +432,8 @@ plot_gsea_hmap <- function(up_down_sets,thresh) {
                     col = col_fun, row_title = "Gene Sets",
                     show_row_names = TRUE,
                     row_title_gp = gpar(fontsize = 14),
-                    row_names_gp = gpar(fontsize = 6))
+                    row_names_gp = gpar(fontsize = 6),
+                    border=TRUE)
   return(myhmap)
 }
 

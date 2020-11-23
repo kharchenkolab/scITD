@@ -13,10 +13,10 @@ for each cell type as well as results and plots from all analyses}
 
 \item{ctype}{character The cell type for which subtypes are to be investigated}
 
-\item{factor_use}{numeric The factor to plot scores for}
-
-\item{resolution}{numeric The clustering resolution that was used to generate
+\item{res}{numeric The clustering resolution that was used to generate
 the clustering}
+
+\item{factor_use}{numeric The factor to plot scores for}
 }
 \value{
 The embedding plot for the cell type

@@ -11,8 +11,8 @@ plot_subclust_associations(res)
 \item{res}{data.frame Regression statistics for each subcluster analysis}
 }
 \value{
-plots of regression statistics for each subtypes at varying k values and
-for each factor
+plots of regression statistics for each subtypes at varying clustering
+resolutions and for each factor
 }
 \description{
 Get plot for associations between subcluster proportions for each major cell

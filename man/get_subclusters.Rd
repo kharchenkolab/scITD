@@ -27,7 +27,7 @@ for each cell type as well as results and plots from all analyses}
 above the size threshold (default='merge')}
 }
 \value{
-
+a vector of cell subclusters
 }
 \description{
 Do leiden subclustering to get cell subtypes

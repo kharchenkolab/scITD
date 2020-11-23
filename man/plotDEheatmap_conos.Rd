@@ -41,6 +41,9 @@ plotDEheatmap_conos(
 
 \item{groups}{groups in which the DE genes were determined (so that the cells can be ordered correctly)}
 
+\item{container}{environment Project container that stores sub-containers
+for each cell type as well as results and plots from all analyses}
+
 \item{de}{differential expression result (list of data frames)}
 
 \item{min.auc}{optional minimum AUC threshold}
@@ -82,6 +85,10 @@ plotDEheatmap_conos(
 \item{row.label.font.size}{font size for the row labels}
 
 \item{order.clusters}{whether to re-order the clusters according to the similarity of the expression patterns (of the genes being shown)}
+
+\item{split}{logical If TRUE splits the heatmap by cell type (default=FALSE)}
+
+\item{split.gap}{numeric The distance to put in the gaps between split parts of the heatmap if split=TRUE (default=0)}
 
 \item{cell.order}{explicitly supply cell order}
 

@@ -2,8 +2,7 @@
 utils::globalVariables(c("dscore", "donor_proportion", "ctypes"))
 
 #' Compute associations between donor factor scores and donor proportions of cell subtypes
-#' @import conos
-#' @importFrom pagoda2 basicP2proc
+#' @importFrom conos Conos embeddingPlot findSubcommunities getBetweenCellTypeDE getBetweenCellTypeCorrectedDE getPerCellTypeDE leiden.community rleiden.community
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -112,7 +111,7 @@ get_subtype_prop_associations <- function(container,max_res,stat_type,integratio
 #' 'merge' to merge clusters below min_cells_group threshold to the nearest cluster
 #' above the size threshold (default='merge')
 #'
-#' @return
+#' @return a vector of cell subclusters
 #' @export
 get_subclusters <- function(container,ctype,resolution,min_cells_group=50,small_clust_action='merge') {
   con <- container$embedding
@@ -147,7 +146,8 @@ get_subclusters <- function(container,ctype,resolution,min_cells_group=50,small_
 #' @param clusts character The initially assigned subclusters by leiden clustering
 #' @param min_cells_group numeric The minimum allowable cluster size
 #'
-#' @return
+#' @return the subclusters with small clusters below the size threshold merged into
+#' the nearest larger cluster
 merge_small_clusts <- function(con,clusts,min_cells_group) {
   # get names of large cluster
   clust_sizes <- table(clusts)
@@ -277,7 +277,7 @@ reduce_dimensions <- function(container, integration_var) {
   }
   
   # turn the list of matrices to list of pagoda2 objects
-  panel.preprocessed <- lapply(panel, basicP2proc, n.cores=ncores,
+  panel.preprocessed <- lapply(panel, pagoda2::basicP2proc, n.cores=ncores,
                                min.cells.per.gene=0, n.odgenes=2e3,
                                get.largevis=FALSE, make.geneknn=FALSE)
   
@@ -399,7 +399,7 @@ compute_associations <- function(donor_balances, donor_scores, stat_type) {
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
 #' @param ctype character The cell type for which subtypes are to be investigated
-#' @param resolution numeric The clustering resolution that was used to generate
+#' @param res numeric The clustering resolution that was used to generate
 #' the clustering
 #' @param factor_use numeric The factor to plot scores for
 #'
@@ -427,8 +427,7 @@ get_subclust_plots <- function(container,ctype,res,factor_use) {
   con$clusters$leiden$groups <- as.factor(subclusts)
   con[["embedding"]] <- orig_embed[names(subclusts),]
   
-  # REMOVE OUTLIERS HERE!
-  # get IQR
+  # get IQR so can remove outliers
   qt_x <- quantile(con[["embedding"]][,1], c(.25,.75)) 
   qt_y <- quantile(con[["embedding"]][,2], c(.25,.75)) 
   iqr_x <- qt_x[2] - qt_x[1]
@@ -696,8 +695,8 @@ plot_donor_props <- function(donor_props,donor_scores,significance,ctype_mapping
 #'
 #' @param res data.frame Regression statistics for each subcluster analysis
 #'
-#' @return plots of regression statistics for each subtypes at varying k values and
-#' for each factor
+#' @return plots of regression statistics for each subtypes at varying clustering
+#' resolutions and for each factor
 #' @export
 plot_subclust_associations <- function(res) {
   
@@ -764,6 +763,8 @@ plot_subclust_associations <- function(res) {
 #'
 #' @param con conos (or p2) object
 #' @param groups groups in which the DE genes were determined (so that the cells can be ordered correctly)
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
 #' @param de differential expression result (list of data frames)
 #' @param min.auc optional minimum AUC threshold
 #' @param min.specificity optional minimum specificity threshold
@@ -785,6 +786,8 @@ plot_subclust_associations <- function(res) {
 #' @param return.details if TRUE will return a list containing the heatmap (ha), but also raw matrix (x), expression list (expl) and other info to produce the heatmap on your own.
 #' @param row.label.font.size font size for the row labels
 #' @param order.clusters whether to re-order the clusters according to the similarity of the expression patterns (of the genes being shown)
+#' @param split logical If TRUE splits the heatmap by cell type (default=FALSE)
+#' @param split.gap numeric The distance to put in the gaps between split parts of the heatmap if split=TRUE (default=0)
 #' @param cell.order explicitly supply cell order
 #' @param averaging.window optional window averaging between neighboring cells within each group (turned off by default) - useful when very large number of cells shown (requires zoo package)
 #' @param ... extra parameters are passed to pheatmap

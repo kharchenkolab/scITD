@@ -14,7 +14,8 @@ merge_small_clusts(con, clusts, min_cells_group)
 \item{min_cells_group}{numeric The minimum allowable cluster size}
 }
 \value{
-
+the subclusters with small clusters below the size threshold merged into
+the nearest larger cluster
 }
 \description{
 Merge small subclusters into larger ones

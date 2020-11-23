@@ -42,21 +42,21 @@ Imports:
     RColorBrewer,
     GPArotation, 
     sparsepca, 
-    pagoda2, 
+    SingleCellExperiment,
+    splatter,
     conos
 Suggests: 
     knitr,
     rmarkdown, 
     testthat,
-    SingleCellExperiment,
-    splatter,
     coda.base,
     Seurat,
     MASS,
     grid,
     Rmisc,
     ggpubr,
-    sfsmisc
+    sfsmisc,
+    pagoda2
 RoxygenNote: 7.1.1
 LinkingTo: Rcpp, RcppArmadillo, RcppProgress
 NeedsCompilation: yes
