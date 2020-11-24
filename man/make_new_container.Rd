@@ -10,6 +10,8 @@ make_new_container(
   gn_convert = NULL,
   scale_var = TRUE,
   var_scale_power = NULL,
+  tucker_type = "regular",
+  rotation_type = "ica",
   rotate_modes = "donors",
   ranks = NULL,
   ncores = 4,
@@ -39,6 +41,12 @@ is initially set to unit variance across donors (for a given cell type).
 Variance for each gene is then scaled by multiplying the unit scaled values
 by each gene's normalized variance (where the effect of the mean-variance
 dependence is taken into account) to the exponent specified here. (default=NULL)}
+
+\item{tucker_type}{character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
+with sparsity constraints (default='regular')}
+
+\item{rotation_type}{character Set to 'ica' to perform ICA rotation on resulting donor factor
+matrix and loadings. Otherwise set to 'varimax' to perform varimax rotation. (default='ica')}
 
 \item{rotate_modes}{character The names of the tensor modes to rotate with
 ICA during Tucker decomposition. Can include 'donors', 'genes', and/or 'ctypes'

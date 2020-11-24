@@ -4,7 +4,7 @@
 \alias{tucker_ica_helper}
 \title{Tucker helper function that actually does the decomposition}
 \usage{
-tucker_ica_helper(tensor_data, ranks, rotate_modes)
+tucker_ica_helper(tensor_data, ranks, rotate_modes, tucker_type, rotation_type)
 }
 \arguments{
 \item{tensor_data}{list The tensor data including donor, gene, and cell type labels
@@ -15,6 +15,12 @@ to decompose to using Tucker decomposition.}
 
 \item{rotate_modes}{character The names of the tensor modes to rotate with
 ICA during Tucker decomposition. Can include 'donors', 'genes', and/or 'ctypes'}
+
+\item{tucker_type}{character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
+with sparsity constraints}
+
+\item{rotation_type}{character Set to 'ica' to perform ICA rotation on resulting donor factor
+matrix and loadings. Otherwise set to 'varimax' to perform varimax rotation.}
 }
 \value{
 list of results for tucker decomposition with donor scores matrix in first

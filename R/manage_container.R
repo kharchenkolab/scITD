@@ -22,6 +22,10 @@
 #' @param rotate_modes character The names of the tensor modes to rotate with
 #' ICA during Tucker decomposition. Can include 'donors', 'genes', and/or 'ctypes'
 #' (default='donors')
+#' @param tucker_type character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
+#' with sparsity constraints (default='regular')
+#' @param rotation_type character Set to 'ica' to perform ICA rotation on resulting donor factor
+#' matrix and loadings. Otherwise set to 'varimax' to perform varimax rotation. (default='ica')
 #' @param ranks numeric The number of donor, gene, and cell type ranks, respectively,
 #' to decompose to using Tucker decomposition (default=NULL)
 #' @param ncores numeric Number of cores to use (default=4)
@@ -32,8 +36,9 @@
 #' for each cell type as well as results and plots from all analyses
 #' @export
 make_new_container <- function(scMinimal, ctypes_use=NULL, gn_convert=NULL, scale_var=TRUE,
-                               var_scale_power=NULL, rotate_modes='donors',
-                               ranks=NULL, ncores = 4, rand_seed=10) {
+                               var_scale_power=NULL, tucker_type='regular', rotation_type='ica',
+                               rotate_modes='donors', ranks=NULL, ncores = 4, rand_seed=10) {
+  
   container <- new.env()
   container$scMinimal_full <- scMinimal
   container$donors <- scMinimal$donors
@@ -46,6 +51,8 @@ make_new_container <- function(scMinimal, ctypes_use=NULL, gn_convert=NULL, scal
                                       scale_var=scale_var,
                                       var_scale_power=var_scale_power,
                                       rotate_modes=rotate_modes,
+                                      tucker_type=tucker_type,
+                                      rotation_type=rotation_type,
                                       ranks=ranks, ncores=ncores,
                                       rand_seed=rand_seed)
   container$experiment_params$run_check <- FALSE
@@ -120,7 +127,11 @@ add_ctype_data_to_container <- function(container,scMinimal) {
 #' to decompose to using Tucker decomposition (default=NULL)
 #' @param rotate_modes character The names of the tensor modes to rotate with
 #' ICA during Tucker decomposition. Can include 'donors', 'genes', and/or 'ctypes'
-#' (default='NULL')
+#' (default=NULL)
+#' @param tucker_type character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
+#' with sparsity constraints (default=NULL)
+#' @param rotation_type character Set to 'ica' to perform ICA rotation on resulting donor factor
+#' matrix and loadings. Otherwise set to 'varimax' to perform varimax rotation. (default=NULL)
 #' @param var_scale_power numeric Exponent of normalized variance that is
 #' used for variance scaling. Variance for each gene
 #' is initially set to unit variance across donors (for a given cell type).
@@ -133,8 +144,9 @@ add_ctype_data_to_container <- function(container,scMinimal) {
 #' container$experiment_params
 #' @export
 set_experiment_params <- function(container, ctypes_use=NULL, scale_var=NULL,
-                                  ranks=NULL, rotate_modes=NULL,
-                                  var_scale_power=NULL, ncores=NULL) {
+                                  ranks=NULL, rotate_modes=NULL, tucker_type=NULL,
+                                  rotation_type=NULL, var_scale_power=NULL, 
+                                  ncores=NULL) {
   # if user/code enters a value for a param then reset its value
   if (!is.null(ctypes_use)) {
     container$experiment_params$ctypes_use <- ctypes_use
@@ -147,6 +159,12 @@ set_experiment_params <- function(container, ctypes_use=NULL, scale_var=NULL,
   }
   if (!is.null(rotate_modes)) {
     container$experiment_params$rotate_modes <- rotate_modes
+  }
+  if (!is.null(tucker_type)) {
+    container$experiment_params$tucker_type <- tucker_type
+  }
+  if (!is.null(rotation_type)) {
+    container$experiment_params$rotation_type <- rotation_type
   }
   if (!is.null(var_scale_power)) {
     container$experiment_params$var_scale_power <- var_scale_power

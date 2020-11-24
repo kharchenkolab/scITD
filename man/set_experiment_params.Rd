@@ -10,6 +10,8 @@ set_experiment_params(
   scale_var = NULL,
   ranks = NULL,
   rotate_modes = NULL,
+  tucker_type = NULL,
+  rotation_type = NULL,
   var_scale_power = NULL,
   ncores = NULL
 )
@@ -30,7 +32,13 @@ to decompose to using Tucker decomposition (default=NULL)}
 
 \item{rotate_modes}{character The names of the tensor modes to rotate with
 ICA during Tucker decomposition. Can include 'donors', 'genes', and/or 'ctypes'
-(default='NULL')}
+(default=NULL)}
+
+\item{tucker_type}{character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
+with sparsity constraints (default=NULL)}
+
+\item{rotation_type}{character Set to 'ica' to perform ICA rotation on resulting donor factor
+matrix and loadings. Otherwise set to 'varimax' to perform varimax rotation. (default=NULL)}
 
 \item{var_scale_power}{numeric Exponent of normalized variance that is
 used for variance scaling. Variance for each gene

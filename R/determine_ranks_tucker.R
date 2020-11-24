@@ -211,6 +211,9 @@ optimize_var_scale_power <- function(container, min_ranks_test, max_ranks_test,
 
   # extract needed inputs from experiment parameters
   rotate_modes <- container$experiment_params$rotate_modes
+  tucker_type <- container$experiment_params$tucker_type
+  rotation_type <- container$experiment_params$rotation_type
+  
   ncores <- container$experiment_params$ncores
 
   if (ncores > 10) {
@@ -242,7 +245,8 @@ optimize_var_scale_power <- function(container, min_ranks_test, max_ranks_test,
 
     combo_max_f <- mclapply(1:nrow(mycombos),function(i,container,tensor_data) {
       tucker_result <- tucker_ica_helper(tensor_data, ranks=unlist(mycombos[i,1:3]),
-                                         rotate_modes = rotate_modes)
+                                         rotate_modes=rotate_modes, tucker_type=tucker_type,
+                                         rotation_type=rotation_type)
       donor_mat <- as.data.frame(as.matrix(tucker_result[[1]]))
 
       meta <- container$scMinimal_full$metadata[,c('donors','sex')]
