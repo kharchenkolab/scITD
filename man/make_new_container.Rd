@@ -12,7 +12,6 @@ make_new_container(
   var_scale_power = NULL,
   tucker_type = "regular",
   rotation_type = "ica",
-  rotate_modes = "donors",
   ranks = NULL,
   ncores = 4,
   rand_seed = 10
@@ -47,10 +46,6 @@ with sparsity constraints (default='regular')}
 
 \item{rotation_type}{character Set to 'ica' to perform ICA rotation on resulting donor factor
 matrix and loadings. Otherwise set to 'varimax' to perform varimax rotation. (default='ica')}
-
-\item{rotate_modes}{character The names of the tensor modes to rotate with
-ICA during Tucker decomposition. Can include 'donors', 'genes', and/or 'ctypes'
-(default='donors')}
 
 \item{ranks}{numeric The number of donor, gene, and cell type ranks, respectively,
 to decompose to using Tucker decomposition (default=NULL)}

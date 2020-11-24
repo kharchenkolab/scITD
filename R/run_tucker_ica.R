@@ -47,9 +47,8 @@ run_tucker_ica <- function(container, ranks=NULL, shuffle=FALSE) {
   container <- form_tensor(container)
 
   # run tucker with ica on the tensor
-  rotate_modes <- container$experiment_params$rotate_modes
   tensor_data <- container$tensor_data
-  tucker_res <- tucker_ica_helper(tensor_data, ranks, rotate_modes, tucker_type,
+  tucker_res <- tucker_ica_helper(tensor_data, ranks, tucker_type,
                                   rotation_type)
   container$tucker_results <- tucker_res
 
@@ -63,17 +62,16 @@ run_tucker_ica <- function(container, ranks=NULL, shuffle=FALSE) {
 #' as well as the tensor array itself
 #' @param ranks numeric The number of donor, gene, and cell type ranks, respectively,
 #' to decompose to using Tucker decomposition.
-#' @param rotate_modes character The names of the tensor modes to rotate with
-#' ICA during Tucker decomposition. Can include 'donors', 'genes', and/or 'ctypes'
 #' @param tucker_type character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
 #' with sparsity constraints
 #' @param rotation_type character Set to 'ica' to perform ICA rotation on resulting donor factor
-#' matrix and loadings. Otherwise set to 'varimax' to perform varimax rotation.
+#' matrix and loadings. Otherwise set to 'varimax' to perform varimax rotation. Set to 'none' to
+#' not do any rotation after tucker.
 #'
 #' @return list of results for tucker decomposition with donor scores matrix in first
 #' element and loadings matrix in second element
 #' @export
-tucker_ica_helper <- function(tensor_data, ranks, rotate_modes, tucker_type, rotation_type) {
+tucker_ica_helper <- function(tensor_data, ranks, tucker_type, rotation_type) {
   # extract tensor and labels
   donor_nm <- tensor_data[[1]]
   gene_nm  <- tensor_data[[2]]
@@ -100,31 +98,19 @@ tucker_ica_helper <- function(tensor_data, ranks, rotate_modes, tucker_type, rot
   rownames(donor_mat) <- donor_nm
 
   if (ranks[1]>1) {
-    if ('donors' %in% rotate_modes) {
-      # rotate donors matrix
-      if (rotation_type == 'ica') {
-        donor_mat <- ica::icafast(donor_mat,ranks[1],center=FALSE,alg='def')$S
-        
-        # make all vectors length 1 as ICA didn't preserve this
-        all_rss <- c()
-        for (j in 1:ncol(donor_mat)) {
-          rss <- sqrt(sum(donor_mat[,j]**2))
-          all_rss <- c(all_rss,rss)
-        }
-        donor_mat <- sweep(donor_mat,2,all_rss,FUN='/')
-      } else if (rotation_type=='varimax') {
-        donor_mat <- GPForth(donor_mat, method = 'varimax')[[1]]
+    # rotate donors matrix
+    if (rotation_type == 'ica') {
+      donor_mat <- ica::icafast(donor_mat,ranks[1],center=FALSE,alg='def')$S
+      
+      # make all vectors length 1 as ICA didn't preserve this
+      all_rss <- c()
+      for (j in 1:ncol(donor_mat)) {
+        rss <- sqrt(sum(donor_mat[,j]**2))
+        all_rss <- c(all_rss,rss)
       }
-    }
-    if ('genes' %in% rotate_modes) {
-      # rotate donors matrix by ICA
-      # gene_by_factors <- ica::icafast(gene_by_factors,ranks[2],center=TRUE,alg='def')$S
-      gene_by_factors <- GPForth(gene_by_factors, method = 'quartimax')[[1]]
-    }
-    if ('ctypes' %in% rotate_modes) {
-      # rotate donors matrix by ICA
-      # ctype_by_factors <- ica::icafast(ctype_by_factors,ranks[3],center=TRUE,alg='def')$S
-      ctype_by_factors <- GPForth(ctype_by_factors, method = 'quartimax')[[1]]
+      donor_mat <- sweep(donor_mat,2,all_rss,FUN='/')
+    } else if (rotation_type=='varimax') {
+      donor_mat <- GPForth(donor_mat, method = 'varimax')[[1]]
     }
   }
 

@@ -19,9 +19,6 @@
 #' Variance for each gene is then scaled by multiplying the unit scaled values
 #' by each gene's normalized variance (where the effect of the mean-variance
 #' dependence is taken into account) to the exponent specified here. (default=NULL)
-#' @param rotate_modes character The names of the tensor modes to rotate with
-#' ICA during Tucker decomposition. Can include 'donors', 'genes', and/or 'ctypes'
-#' (default='donors')
 #' @param tucker_type character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
 #' with sparsity constraints (default='regular')
 #' @param rotation_type character Set to 'ica' to perform ICA rotation on resulting donor factor
@@ -37,7 +34,7 @@
 #' @export
 make_new_container <- function(scMinimal, ctypes_use=NULL, gn_convert=NULL, scale_var=TRUE,
                                var_scale_power=NULL, tucker_type='regular', rotation_type='ica',
-                               rotate_modes='donors', ranks=NULL, ncores = 4, rand_seed=10) {
+                               ranks=NULL, ncores = 4, rand_seed=10) {
   
   container <- new.env()
   container$scMinimal_full <- scMinimal
@@ -50,7 +47,6 @@ make_new_container <- function(scMinimal, ctypes_use=NULL, gn_convert=NULL, scal
   container$experiment_params <- list(ctypes_use=ctypes_use,
                                       scale_var=scale_var,
                                       var_scale_power=var_scale_power,
-                                      rotate_modes=rotate_modes,
                                       tucker_type=tucker_type,
                                       rotation_type=rotation_type,
                                       ranks=ranks, ncores=ncores,
@@ -125,9 +121,6 @@ add_ctype_data_to_container <- function(container,scMinimal) {
 #' donors for each cell type. (default=NULL)
 #' @param ranks numeric The number of donor, gene, and cell type ranks, respectively,
 #' to decompose to using Tucker decomposition (default=NULL)
-#' @param rotate_modes character The names of the tensor modes to rotate with
-#' ICA during Tucker decomposition. Can include 'donors', 'genes', and/or 'ctypes'
-#' (default=NULL)
 #' @param tucker_type character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
 #' with sparsity constraints (default=NULL)
 #' @param rotation_type character Set to 'ica' to perform ICA rotation on resulting donor factor
@@ -144,7 +137,7 @@ add_ctype_data_to_container <- function(container,scMinimal) {
 #' container$experiment_params
 #' @export
 set_experiment_params <- function(container, ctypes_use=NULL, scale_var=NULL,
-                                  ranks=NULL, rotate_modes=NULL, tucker_type=NULL,
+                                  ranks=NULL, tucker_type=NULL,
                                   rotation_type=NULL, var_scale_power=NULL, 
                                   ncores=NULL) {
   # if user/code enters a value for a param then reset its value
@@ -156,9 +149,6 @@ set_experiment_params <- function(container, ctypes_use=NULL, scale_var=NULL,
   }
   if (!is.null(ranks)) {
     container$experiment_params$ranks <- ranks
-  }
-  if (!is.null(rotate_modes)) {
-    container$experiment_params$rotate_modes <- rotate_modes
   }
   if (!is.null(tucker_type)) {
     container$experiment_params$tucker_type <- tucker_type

@@ -46,7 +46,6 @@ run_stability_analysis <- function(container, downsample_ratio=0.9, n_iter=500) 
                                         ctypes_use=container$experiment_params$ctypes_use,
                                         scale_var=container$experiment_params$scale_var,
                                         var_scale_power=container$experiment_params$var_scale_power,
-                                        rotate_modes=container$experiment_params$rotate_modes,
                                         tucker_type=container$experiment_params$tucker_type,
                                         rotation_type=container$experiment_params$rotation_type,
                                         ranks=container$experiment_params$ranks,

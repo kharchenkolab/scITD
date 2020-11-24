@@ -20,7 +20,6 @@ run_jackstraw <- function(container, n_fibers=100, n_iter=500) {
   # extract needed inputs from experiment parameters
   ncores <- container$experiment_params$ncores
   ranks <- container$experiment_params$ranks
-  rotate_modes <- container$experiment_params$rotate_modes
   tucker_type <- container$experiment_params$tucker_type
   rotation_type <- container$experiment_params$rotation_type
   
@@ -33,7 +32,7 @@ run_jackstraw <- function(container, n_fibers=100, n_iter=500) {
     tensor_data <- shuffle_fibers(tensor_data, s_fibers)
 
     # compute tucker
-    tucker_results <- tucker_ica_helper(tensor_data, ranks, rotate_modes, tucker_type,
+    tucker_results <- tucker_ica_helper(tensor_data, ranks, tucker_type,
                                         rotation_type)
 
 
