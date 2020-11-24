@@ -17,7 +17,7 @@ plotDEheatmap_conos(
   exclude.genes = NULL,
   labeled.gene.subset = NULL,
   expression.quantile = 0.99,
-  pal = colorRampPalette(c("dodgerblue1", "grey95", "indianred1"))(1024),
+  pal = (grDevices::colorRampPalette(c("dodgerblue1", "grey95", "indianred1")))(1024),
   ordering = "-AUC",
   column.metadata = NULL,
   show.gene.clusters = TRUE,

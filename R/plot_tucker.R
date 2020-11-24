@@ -490,7 +490,7 @@ get_explained_var <- function(container, tmp_casted_num, factor_use) {
     diff_mat[row_ndx,col_ndx] <- diff_mat[row_ndx,col_ndx] - recon
       
     exp_var_rel <- 1-((norm(diff_mat,"F")**2)/(norm(t_slice,"F")**2))
-    exp_var <- exp_var_rel * sum(apply(t_slice, 2, var))
+    exp_var <- exp_var_rel * sum(apply(t_slice, 2, stats::var))
     
     ctype_errors[[ct]] <- exp_var
   }

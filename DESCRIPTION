@@ -36,7 +36,6 @@ Imports:
     ggplot2,
     mgcv,
     methods,
-    stats,
     utils,
     Rcpp,
     RColorBrewer,
@@ -44,7 +43,8 @@ Imports:
     sparsepca, 
     SingleCellExperiment,
     splatter,
-    conos
+    dplyr,
+    stats
 Suggests: 
     knitr,
     rmarkdown, 
@@ -54,8 +54,13 @@ Suggests:
     MASS,
     grid,
     Rmisc,
+    grDevices,
     ggpubr,
     sfsmisc,
+    gridExtra,
+    zoo,
+    rlang,
+    conos,
     pagoda2
 RoxygenNote: 7.1.1
 LinkingTo: Rcpp, RcppArmadillo, RcppProgress

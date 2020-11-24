@@ -1,8 +1,7 @@
 
-utils::globalVariables(c("dscore", "donor_proportion", "ctypes"))
+utils::globalVariables(c("dscore", "donor_proportion", "ctypes", "AUC", "Specificity", "Precision"))
 
 #' Compute associations between donor factor scores and donor proportions of cell subtypes
-#' @importFrom conos Conos embeddingPlot findSubcommunities getBetweenCellTypeDE getBetweenCellTypeCorrectedDE getPerCellTypeDE leiden.community rleiden.community
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -117,7 +116,7 @@ get_subclusters <- function(container,ctype,resolution,min_cells_group=50,small_
   con <- container$embedding
   
   # using leiden community detection
-  clusts <- findSubcommunities(con,method=leiden.community, resolution=resolution, target.clusters=ctype)
+  clusts <- conos::findSubcommunities(con,method=conos::leiden.community, resolution=resolution, target.clusters=ctype)
   
   # limit clusts to just cells of the cell type
   ctype_bcodes <- rownames(container$scMinimal_ctype[[ctype]]$metadata)
@@ -161,11 +160,9 @@ merge_small_clusts <- function(con,clusts,min_cells_group) {
     ndx <- names(clusts)[clusts==clust_name]
     x_y <- coords[ndx,]
     if (length(ndx)>1) {
-      # x_mean <- mean(x_y[,1])
-      # y_mean <- mean(x_y[,2])
-      x_mean <- median(x_y[,1])
-      y_mean <- median(x_y[,2])
-      return(c(x_mean,y_mean))
+      x_med <- stats::median(x_y[,1])
+      y_med <- stats::median(x_y[,2])
+      return(c(x_med,y_med))
     } else {
       return(x_y)
     }
@@ -281,7 +278,7 @@ reduce_dimensions <- function(container, integration_var) {
                                min.cells.per.gene=0, n.odgenes=2e3,
                                get.largevis=FALSE, make.geneknn=FALSE)
   
-  con <- Conos$new(panel.preprocessed, n.cores=ncores)
+  con <- conos::Conos$new(panel.preprocessed, n.cores=ncores)
   
   # build graph
   con$buildGraph()
@@ -290,7 +287,7 @@ reduce_dimensions <- function(container, integration_var) {
   con$embedGraph(method="UMAP", min.dist=0.01, spread=15, n.cores=ncores, min.prob.lower=1e-3)
   
   # assign ctype names to the cells
-  con$findCommunities(method=leiden.community, resolution=1)
+  con$findCommunities(method=conos::leiden.community, resolution=1)
   cell_assigns <- container$scMinimal_full$metadata[,"ctypes"]
   names(cell_assigns) <- rownames(container$scMinimal_full$metadata)
   con$clusters$leiden$groups <- cell_assigns[names(con$clusters$leiden$groups)]
@@ -428,14 +425,14 @@ get_subclust_plots <- function(container,ctype,res,factor_use) {
   con[["embedding"]] <- orig_embed[names(subclusts),]
   
   # get IQR so can remove outliers
-  qt_x <- quantile(con[["embedding"]][,1], c(.25,.75)) 
-  qt_y <- quantile(con[["embedding"]][,2], c(.25,.75)) 
+  qt_x <- stats::quantile(con[["embedding"]][,1], c(.25,.75)) 
+  qt_y <- stats::quantile(con[["embedding"]][,2], c(.25,.75)) 
   iqr_x <- qt_x[2] - qt_x[1]
   iqr_y <- qt_y[2] - qt_y[1]
-  outlier_up_lim_x <- qt_x[2] + 1.5 * iqr_x
-  outlier_down_lim_x <- qt_x[1] - 1.5 * iqr_x 
-  outlier_up_lim_y <- qt_y[2] + 1.5 * iqr_y
-  outlier_down_lim_y <- qt_y[1] - 1.5 * iqr_y 
+  outlier_up_lim_x <- qt_x[2] + 2 * iqr_x
+  outlier_down_lim_x <- qt_x[1] - 2 * iqr_x 
+  outlier_up_lim_y <- qt_y[2] + 2 * iqr_y
+  outlier_down_lim_y <- qt_y[1] - 2 * iqr_y 
   
   subc_embed_plot <- con$plotGraph()
   subc_embed_plot <- subc_embed_plot + 
@@ -465,7 +462,7 @@ get_subclust_plots <- function(container,ctype,res,factor_use) {
     
     # top top and bottom percentile of donor score
     scores_eval <- donor_scores[,factor_use]
-    cutoffs <- quantile(scores_eval, c(.25, .75)) 
+    cutoffs <- stats::quantile(scores_eval, c(.25, .75)) 
     donors_low <- names(scores_eval)[scores_eval < cutoffs[1]]
     donors_high <- names(scores_eval)[scores_eval > cutoffs[2]]
     
@@ -502,7 +499,8 @@ get_subclust_plots <- function(container,ctype,res,factor_use) {
           plot.title = element_text(hjust = 0.5)) 
     
   # get subtype DE results heamap
-  subc_de_hmap <- plotDEheatmap_conos(con, groups=as.factor(subclusts), container,
+  myde <- con$getDifferentialGenes(groups=as.factor(subclusts),append.auc=TRUE,z.threshold=0,upregulated.only=TRUE)
+  subc_de_hmap <- plotDEheatmap_conos(con, groups=as.factor(subclusts), de=myde, container,
                                  row.label.font.size=8)
   
   # make heatmap into a grob
@@ -550,7 +548,7 @@ get_indv_subtype_associations <- function(container, donor_props, factor_select)
   }
   
   reg_stats_all <- unlist(reg_stats_all)
-  reg_stats_all <- stats:::p.adjust(reg_stats_all, method = 'fdr')
+  reg_stats_all <- stats::p.adjust(reg_stats_all, method = 'fdr')
   
   parsed_name <- sapply(names(reg_stats_all),function(x){
     return(as.numeric(strsplit(x,split="_")[[1]][2]))
@@ -760,6 +758,7 @@ plot_subclust_associations <- function(res) {
 
 
 #' Plot a heatmap of differential genes
+#' @importFrom dplyr %>%
 #'
 #' @param con conos (or p2) object
 #' @param groups groups in which the DE genes were determined (so that the cells can be ordered correctly)
@@ -793,11 +792,13 @@ plot_subclust_associations <- function(res) {
 #' @param ... extra parameters are passed to pheatmap
 #' @return ComplexHeatmap::Heatmap object (see return.details param for other output)
 #' @export
-plotDEheatmap_conos <- function(con,groups,container,de=NULL,min.auc=NULL,min.specificity=NULL,min.precision=NULL,n.genes.per.cluster=10,additional.genes=NULL,exclude.genes=NULL, labeled.gene.subset=NULL, expression.quantile=0.99,pal=colorRampPalette(c('dodgerblue1','grey95','indianred1'))(1024),ordering='-AUC',column.metadata=NULL,show.gene.clusters=TRUE, remove.duplicates=TRUE, column.metadata.colors=NULL, show.cluster.legend=TRUE, show_heatmap_legend=FALSE, border=TRUE, return.details=FALSE, row.label.font.size=10, order.clusters=FALSE, split=FALSE, split.gap=0, cell.order=NULL, averaging.window=0, ...) {
+plotDEheatmap_conos <- function(con,groups,container,de=NULL,min.auc=NULL,min.specificity=NULL,min.precision=NULL,n.genes.per.cluster=10,additional.genes=NULL,exclude.genes=NULL, labeled.gene.subset=NULL, expression.quantile=0.99,pal=grDevices::colorRampPalette(c('dodgerblue1','grey95','indianred1'))(1024),ordering='-AUC',column.metadata=NULL,show.gene.clusters=TRUE, remove.duplicates=TRUE, column.metadata.colors=NULL, show.cluster.legend=TRUE, show_heatmap_legend=FALSE, border=TRUE, return.details=FALSE, row.label.font.size=10, order.clusters=FALSE, split=FALSE, split.gap=0, cell.order=NULL, averaging.window=0, ...) {
   
-  if (!requireNamespace("ComplexHeatmap", quietly = TRUE) || packageVersion("ComplexHeatmap") < "2.4") {
+  if (!requireNamespace("ComplexHeatmap", quietly = TRUE) || utils::packageVersion("ComplexHeatmap") < "2.4") {
     stop("ComplexHeatmap >= 2.4 package needs to be installed to use plotDEheatmap. Please run \"devtools::install_github('jokergoo/ComplexHeatmap')\".")
   }
+  
+  getGeneExpression <- utils::getFromNamespace("getGeneExpression", "conos")
   
   groups <- as.factor(groups)
   
@@ -852,21 +853,21 @@ plotDEheatmap_conos <- function(con,groups,container,de=NULL,min.auc=NULL,min.sp
   de <- de[unlist(lapply(de, nrow))>0]
   
   gns <- lapply(de,function(x) as.character(x$Gene)) %>% unlist
-  sn <- function(x) setNames(x,x)
-  expl <- lapply(de,function(d) do.call(rbind,lapply(sn(as.character(d$Gene)),function(gene) conos:::getGeneExpression(con,gene))))
+  sn <- function(x) stats::setNames(x,x)
+  expl <- lapply(de,function(d) do.call(rbind,lapply(sn(as.character(d$Gene)),function(gene) getGeneExpression(con,gene))))
   
   # place additional genes
   if(!is.null(additional.genes)) {
     genes.to.add <- setdiff(additional.genes,unlist(lapply(expl,rownames)))
     if(length(genes.to.add)>0) {
-      x <- setdiff(genes.to.add,conos:::getGenes(con)); if(length(x)>0) warning('the following genes are not found in the dataset: ',paste(x,collapse=' '))
+      x <- setdiff(genes.to.add,conos::getGenes(con)); if(length(x)>0) warning('the following genes are not found in the dataset: ',paste(x,collapse=' '))
       
-      age <- do.call(rbind,lapply(sn(genes.to.add),function(gene) conos:::getGeneExpression(con,gene)))
+      age <- do.call(rbind,lapply(sn(genes.to.add),function(gene) getGeneExpression(con,gene)))
       
       # for each gene, measure average correlation with genes of each cluster
       acc <- do.call(rbind,lapply(expl,function(og) rowMeans(cor(t(age),t(og)),na.rm=TRUE)))
       acc <- acc[,apply(acc,2,function(x) any(is.finite(x))),drop=FALSE]
-      acc.best <- na.omit(apply(acc,2,which.max))
+      acc.best <- stats::na.omit(apply(acc,2,which.max))
       
       for(i in 1:length(acc.best)) {
         gn <- names(acc.best)[i];
@@ -890,17 +891,17 @@ plotDEheatmap_conos <- function(con,groups,container,de=NULL,min.auc=NULL,min.sp
   
   exp <- do.call(rbind,expl)
   # limit to cells that were participating in the de
-  exp <- na.omit(exp[,colnames(exp) %in% names(na.omit(groups))])
+  exp <- stats::na.omit(exp[,colnames(exp) %in% names(stats::na.omit(groups))])
   
   if(order.clusters) {
     # group clusters based on expression similarity (of the genes shown)
     xc <- do.call(cbind,tapply(1:ncol(exp),groups[colnames(exp)],function(ii) rowMeans(exp[,ii,drop=FALSE])))
-    hc <- hclust(as.dist(2-cor(xc)),method='ward.D2')
+    hc <- stats::hclust(stats::as.dist(2-cor(xc)),method='ward.D2')
     groups <- factor(groups,levels=hc$labels[hc$order])
     expl <- expl[levels(groups)]
     # re-create exp (could just reorder it)
     exp <- do.call(rbind,expl)
-    exp <- na.omit(exp[,colnames(exp) %in% names(na.omit(groups))])
+    exp <- stats::na.omit(exp[,colnames(exp) %in% names(stats::na.omit(groups))])
   }
   
   if(averaging.window>0) {
@@ -919,11 +920,11 @@ plotDEheatmap_conos <- function(con,groups,container,de=NULL,min.auc=NULL,min.sp
   # transform expression values
   x <- t(apply(as.matrix(exp), 1, function(xp) {
     if(expression.quantile<1) {
-      qs <- quantile(xp,c(1-expression.quantile,expression.quantile))
+      qs <- stats::quantile(xp,c(1-expression.quantile,expression.quantile))
       if(diff(qs)==0) { # too much, set to adjacent values
         xps <- unique(xp)
         if(length(xps)<3) { qs <- range(xp) } # only two values, just take the extremes
-        xpm <- median(xp)
+        xpm <- stats::median(xp)
         if(sum(xp<xpm) > sum(xp>xpm)) { # more common to have values below the median
           qs[1] <- max(xp[xp<xpm])
         } else { # more common to have values above the median
@@ -977,11 +978,11 @@ plotDEheatmap_conos <- function(con,groups,container,de=NULL,min.auc=NULL,min.sp
   # make sure cluster colors are defined
   if(is.null(column.metadata.colors[['clusters']])) {
     uc <- unique(annot$clusters);
-    column.metadata.colors$clusters <- setNames(rainbow(length(uc)),uc)
+    column.metadata.colors$clusters <- stats::setNames(grDevices::rainbow(length(uc)),uc)
   }
   
   tt <- unlist(lapply(expl,nrow));
-  rannot <- setNames(rep(names(tt),tt),unlist(lapply(expl,rownames)))
+  rannot <- stats::setNames(rep(names(tt),tt),unlist(lapply(expl,rownames)))
   #names(rannot) <- rownames(x);
   rannot <- rannot[!duplicated(names(rannot))]
   rannot <- rannot[names(rannot) %in% rownames(x)]
