@@ -4,13 +4,15 @@
 \alias{fgsea_special}
 \title{Run fgsea on expression levels as summed after multiplying by donor scores}
 \usage{
-fgsea_special(container, factor_select, ctype, db_use = "GO")
+fgsea_special(container, factor_select, sig_thresh, ctype, db_use = "GO")
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
 for each cell type as well as results and plots from all analyses}
 
 \item{factor_select}{numeric The factor of interest}
+
+\item{sig_thresh}{numeric The pvalue threshold for selecting gene sets}
 
 \item{ctype}{character The cell type of interest}
 

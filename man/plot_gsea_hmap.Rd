@@ -4,12 +4,15 @@
 \alias{plot_gsea_hmap}
 \title{Plot enriched gene sets from all cell types in a heatmap}
 \usage{
-plot_gsea_hmap(up_down_sets, thresh)
+plot_gsea_hmap(up_down_sets, thresh, set_union = NULL)
 }
 \arguments{
 \item{up_down_sets}{list The gsea results with either only the up genes sets or down gene sets}
 
 \item{thresh}{numeric Pvalue threshold to use for including gene sets in the heatmap}
+
+\item{set_union}{character A vector of the main pathways from collapsePathways, and it is the
+union of such pathways from all cell types of the factor (default=NULL)}
 }
 \value{
 the heatmap plot
