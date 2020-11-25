@@ -9,7 +9,8 @@ run_gsea_one_factor(
   factor_select,
   method = "fgsea",
   thresh = 0.05,
-  db_use = "GO"
+  db_use = "GO",
+  collapse_paths = TRUE
 )
 }
 \arguments{
@@ -27,6 +28,9 @@ resulting heatmap if pvalue is below this threshold for at least one cell type. 
 \item{db_use}{character The database of gene sets to use. Database
 options include "GO", "Reactome", "KEGG", and "BioCarta". More than
 one database can be used. (default="GO")}
+
+\item{collapse_paths}{logical Set to TRUE to collapse significant pathways with
+considerable overlap. Only used if method="fgsea". (default=TRUE)}
 }
 \value{
 a heatmap plot of the gsea results in the slot

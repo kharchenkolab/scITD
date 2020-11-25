@@ -4,10 +4,13 @@
 \alias{plot_gsea_hmap}
 \title{Plot enriched gene sets from all cell types in a heatmap}
 \usage{
-plot_gsea_hmap(up_down_sets, thresh, set_union = NULL)
+plot_gsea_hmap(container, factor_select, thresh, set_union = NULL)
 }
 \arguments{
-\item{up_down_sets}{list The gsea results with either only the up genes sets or down gene sets}
+\item{container}{environment Project container that stores sub-containers
+for each cell type as well as results and plots from all analyses}
+
+\item{factor_select}{numeric The factor to plot}
 
 \item{thresh}{numeric Pvalue threshold to use for including gene sets in the heatmap}
 

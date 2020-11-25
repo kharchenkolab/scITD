@@ -1,84 +1,4 @@
 
-#' Compute enriched gene sets in a cell type for a factor using fgsea
-#'
-#' @param container environment Project container that stores sub-containers
-#' for each cell type as well as results and plots from all analyses
-#' @param factor_select numeric The factor of interest
-#' @param ctype character The cell type of interest
-#' @param db_use character The database of gene sets to use. Database
-#' options include "GO", "Reactome", "KEGG", and "BioCarta". More than
-#' one database can be used. (default="GO")
-#'
-#' @return data.frame of the fgsea results (including non-significant results)
-#' @export
-run_fgsea <- function(container, factor_select, ctype,
-                      db_use="GO") {
-
-  # make sure Tucker has been run
-  if (is.null(container$tucker_results)) {
-    stop('Run run_tucker_ica() first.')
-  }
-
-  set.seed(container$experiment_params$rand_seed)
-
-  ldngs <- container$tucker_results[[2]]
-
-  # prep the loadings matrix
-  genes <- sapply(colnames(ldngs),function(x){strsplit(x,split=":")[[1]][2]})
-  ctypes <- sapply(colnames(ldngs),function(x){strsplit(x,split=":")[[1]][1]})
-
-  sr_col <- ldngs[factor_select,]
-
-  tmp_casted_num <- reshape_loadings(sr_col, genes, ctypes)
-
-  ctype_lds <- tmp_casted_num[,ctype]
-
-  names(ctype_lds) <- convert_gn(container, rownames(tmp_casted_num))
-
-  # check for duplicate genes
-  duplicates <- names(ctype_lds)[duplicated(names(ctype_lds))]
-  genes_remove <- names(ctype_lds) %in% duplicates
-  ctype_lds <- ctype_lds[!genes_remove]
-  
-  # trying throwing out 0 value genes...
-  ctype_lds <- ctype_lds[ctype_lds!=0]
-  
-
-  m_df <- data.frame()
-  for (db in db_use) {
-    if (db == "GO") {
-      # select the GO Biological Processes group of gene sets
-      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
-                     category = "C5", subcategory = "BP"))
-    } else if (db == "Reactome") {
-      # select the Reactome gene sets
-      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
-                     category = "C2", subcategory = "CP:REACTOME"))
-    } else if (db == "KEGG") {
-      # select the KEGG gene sets
-      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
-                     category = "C2", subcategory = "CP:KEGG"))
-    } else if (db == "BioCarta") {
-      # select the BioCarts gene sets
-      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
-                     category = "C2", subcategory = "CP:BIOCARTA"))
-    }
-  }
-
-  my_pathways <- split(m_df$gene_symbol, f = m_df$gs_name)
-  fgsea_res <- fgsea::fgsea(pathways = my_pathways,
-                          stats = ctype_lds,
-                          minSize=15,
-                          maxSize=500,
-                          eps=0,
-                          gseaParam=1)
-
-  fgsea_res <- fgsea_res[order(fgsea_res$padj, decreasing=FALSE),]
-
-  return(fgsea_res)
-}
-
-
 
 #' Run fgsea on expression levels as summed after multiplying by donor scores
 #'
@@ -90,10 +10,13 @@ run_fgsea <- function(container, factor_select, ctype,
 #' @param db_use character The database of gene sets to use. Database
 #' options include "GO", "Reactome", "KEGG", and "BioCarta". More than
 #' one database can be used. (default="GO")
+#' @param collapse_paths logical Set to TRUE to collapse significant pathways with
+#' considerable overlap (default=TRUE)
 #'
 #' @return data.frame of the fgsea results (including non-significant results)
 #' @export
-fgsea_special <- function(container, factor_select, sig_thresh, ctype, db_use="GO") {
+run_fgsea <- function(container, factor_select, sig_thresh, ctype, db_use="GO",
+                      collapse_paths=TRUE) {
   donor_scores <- container$tucker_results[[1]]
   
   # scaling to unit variance!
@@ -142,15 +65,20 @@ fgsea_special <- function(container, factor_select, sig_thresh, ctype, db_use="G
                             minSize=15,
                             maxSize=500,
                             eps=0,
-                            gseaParam=2)
+                            gseaParam=3)
   
   fgsea_res <- fgsea_res[order(fgsea_res$padj, decreasing=FALSE),]
   
-  # trying out collapse of pathways
-  fgsea_lim <- fgsea_res[fgsea_res$padj < sig_thresh,]
-  cpaths <- fgsea::collapsePathways(fgseaRes=fgsea_lim,pathways=my_pathways,stats=exp_vals,
-                   pval.threshold=.05,gseaParam=2)
-  main_paths <- cpaths$mainPathways
+  if (collapse_paths) {
+    # collapse significant pathways
+    fgsea_lim <- fgsea_res[fgsea_res$padj < sig_thresh,]
+    cpaths <- fgsea::collapsePathways(fgseaRes=fgsea_lim,pathways=my_pathways,stats=exp_vals,
+                                      pval.threshold=.05,gseaParam=2)
+    main_paths <- cpaths$mainPathways
+  } else {
+    main_paths <- NULL
+  }
+  
   
   return(list(fgsea_res,main_paths))
 }
@@ -270,7 +198,6 @@ run_hypergeometric_gsea <- function(container, factor_select, ctype, up_down,
     pvals[pth_name] <- pval
   }
   padj <- p.adjust(pvals,method='fdr')
-  # padj <- padj[padj<thresh]
   return(padj)
 }
 
@@ -286,25 +213,23 @@ run_hypergeometric_gsea <- function(container, factor_select, ctype, up_down,
 #' @param db_use character The database of gene sets to use. Database
 #' options include "GO", "Reactome", "KEGG", and "BioCarta". More than
 #' one database can be used. (default="GO")
+#' @param collapse_paths logical Set to TRUE to collapse significant pathways with
+#' considerable overlap. Only used if method="fgsea". (default=TRUE)
 #'
 #' @return a heatmap plot of the gsea results in the slot
 #' container$plots$gsea$FactorX$up/down
 #' @export
 run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh=0.05,
-                                 db_use="GO") {
+                                 db_use="GO", collapse_paths=TRUE) {
   up_sets_all <- list()
   down_sets_all <- list()
   set_union <- c()
   ctypes_use <- container$experiment_params$ctypes_use
   for (ct in ctypes_use) {
-    if (method == 'fgsea' || method == 'fgsea_special') {
-      if (method == 'fgsea') {
-        fgsea_res <- run_fgsea(container, factor_select=factor_select, ctype=ct,
-                               db_use=db_use)
-      } else {
-        fgsea_res <- fgsea_special(container, factor_select=factor_select,
-                                   sig_thresh=thresh, ctype=ct, db_use=db_use)
-      }
+    if (method == 'fgsea') {
+      fgsea_res <- run_fgsea(container, factor_select=factor_select,
+                             sig_thresh=thresh, ctype=ct, db_use=db_use,
+                             collapse_paths=collapse_paths)
       
       main_paths <- fgsea_res[[2]]
       fgsea_res <- fgsea_res[[1]]
@@ -324,36 +249,24 @@ run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh
       set_union <- unique(c(set_union,main_paths))
     } else if (method == 'hypergeometric') {
       gsea_res_up <- run_hypergeometric_gsea(container, factor_select=factor_select, ctype=ct,
-                                             up_down='up', thresh=thresh, db_use=db_use)
+                                             up_down='up', thresh=.1, db_use=db_use)
       gsea_res_down <- run_hypergeometric_gsea(container, factor_select=factor_select, ctype=ct,
-                                               up_down='down', thresh=thresh, db_use=db_use)
+                                               up_down='down', thresh=.1, db_use=db_use)
 
       up_sets_all[[ct]] <- gsea_res_up
       down_sets_all[[ct]] <- gsea_res_down
+      set_union <- NULL
     }
   }
-
-
-  # plot results
-  # if (method=='hypergeometric') {
-  #   plot_up <- plot_gsea_hmap(up_sets_all,thresh)
-  #   plot_down <- plot_gsea_hmap(down_sets_all,thresh)
-  # } else {
-  #   plot_up <- plot_gsea_hmap(up_sets_all,thresh,set_union=set_union)
-  #   plot_down <- plot_gsea_hmap(down_sets_all,thresh,set_union=set_union)
-  # }
-  
 
   # add results to container
   factor_name <- paste0('Factor', as.character(factor_select))
   container$gsea_results[[factor_name]] <- list('up'=up_sets_all,
                                                 'down'=down_sets_all)
-  # container$plots$gsea[[factor_name]] <- list('up'=plot_up,
-  #                                             'down'=plot_down)
   
-  
-  myplot <- plot_gsea_hmap2(container,factor_select,thresh,set_union=set_union)
-  container$plots$test_plot <- myplot
+  # plot results
+  myplot <- plot_gsea_hmap(container,factor_select,thresh,set_union=set_union)
+  container$plots$gsea[[factor_name]] <- myplot
 
   return(container)
 }
@@ -400,81 +313,6 @@ get_intersecting_pathways <- function(container, factor_select, these_ctypes_onl
 
 #' Plot enriched gene sets from all cell types in a heatmap
 #'
-#' @param up_down_sets list The gsea results with either only the up genes sets or down gene sets
-#' @param thresh numeric Pvalue threshold to use for including gene sets in the heatmap
-#' @param set_union character A vector of the main pathways from collapsePathways, and it is the
-#' union of such pathways from all cell types of the factor (default=NULL)
-#'
-#' @return the heatmap plot
-#' @export
-plot_gsea_hmap <- function(up_down_sets,thresh,set_union=NULL) {
-
-  # get unique gene sets
-  all_sets <- c()
-  for (i in 1:length(up_down_sets)) {
-    all_sets <- c(all_sets, names(up_down_sets[[i]]))
-  }
-  all_sets <- unique(all_sets)
-  all_sets <- all_sets[!is.na(all_sets)]
-
-  res <- data.frame(matrix(1,ncol=length(up_down_sets),nrow = length(all_sets)))
-  colnames(res) <- names(up_down_sets)
-  rownames(res) <- all_sets
-
-  for (i in 1:length(up_down_sets)) {
-    ctype_res <- up_down_sets[[i]]
-    ctype <- names(up_down_sets)[i]
-    for (j in 1:length(ctype_res)) {
-      sum(is.na(ctype_res))
-      res[names(ctype_res)[j],ctype] <- ctype_res[j]
-    }
-  }
-
-  res_plot <- res[rowSums(res<thresh)>0,]
-
-  if (nrow(res_plot) == 0) {
-    return(NULL)
-  }
-
-  if (!is.null(set_union)) {
-    res_plot <- res_plot[rownames(res_plot)%in%set_union,]
-  }
-  
-  # parse gene set names at first underscore
-  rownames(res_plot) <- sapply(rownames(res_plot),function(x) {
-    regmatches(x, regexpr("_", x), invert = TRUE)[[1]][[2]]
-  })
-
-  # cutoff gene set names
-  tmp_names <- sapply(rownames(res_plot),function(x) {
-    if (nchar(x) > 42) {
-      return(paste0(substr(x,1,40),"..."))
-    } else {
-      return(x)
-    }
-  })
-
-  # ensure repeats given unique name
-  rownames(res_plot) <- make.names(tmp_names, unique = TRUE)
-
-  col_fun <- colorRamp2(c(.05, 0), c("white", "green"))
-
-  myhmap <- Heatmap(as.matrix(res_plot), name = "padj",
-                    show_row_dend = FALSE, show_column_dend = FALSE,
-                    column_names_gp = gpar(fontsize = 10),
-                    col = col_fun, row_title = "Gene Sets",
-                    show_row_names = TRUE,
-                    row_title_gp = gpar(fontsize = 14),
-                    row_names_gp = gpar(fontsize = 6),
-                    border=TRUE)
-  return(myhmap)
-}
-
-
-
-
-#' Plot enriched gene sets from all cell types in a heatmap
-#'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
 #' @param factor_select numeric The factor to plot
@@ -484,7 +322,7 @@ plot_gsea_hmap <- function(up_down_sets,thresh,set_union=NULL) {
 #'
 #' @return the heatmap plot
 #' @export
-plot_gsea_hmap2 <- function(container,factor_select,thresh,set_union=NULL) {
+plot_gsea_hmap <- function(container,factor_select,thresh,set_union=NULL) {
   
   gsea_res <- container$gsea_results[[paste0('Factor',as.character(factor_select))]]
   
@@ -516,7 +354,7 @@ plot_gsea_hmap2 <- function(container,factor_select,thresh,set_union=NULL) {
     res_plot <- res[rowSums(res<thresh)>0,]
     
     if (nrow(res_plot) == 0) {
-      return(NULL)
+      next
     }
     
     if (!is.null(set_union)) {
@@ -525,10 +363,12 @@ plot_gsea_hmap2 <- function(container,factor_select,thresh,set_union=NULL) {
 
     df_list[[names(gsea_res)[k]]] <- res_plot
   }
-  
 
+  if (length(df_list)==0) {
+    return(NULL)
+  }
+  
   # trying to build two separate hmaps and then concatenate them vertically
-  hmap_list <- list()
   for (k in 1:length(df_list)) {
     res_total <- df_list[[k]]
     
@@ -561,19 +401,15 @@ plot_gsea_hmap2 <- function(container,factor_select,thresh,set_union=NULL) {
                       row_title_gp = gpar(fontsize = 14),
                       row_names_gp = gpar(fontsize = 6),
                       border=TRUE)
-    hmap_list[[k]] <- myhmap
+    if (k == 1) {
+      hmap_list <- myhmap
+    } else {
+      hmap_list <- hmap_list %v% myhmap
+    }
   }
-  
-  hmap_list <- hmap_list[[1]] %v% hmap_list[[2]]
   
   return(hmap_list)
 }
-
-
-
-
-
-
 
 
 
