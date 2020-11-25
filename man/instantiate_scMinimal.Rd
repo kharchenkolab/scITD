@@ -4,14 +4,14 @@
 \alias{instantiate_scMinimal}
 \title{Create an scMinimal object}
 \usage{
-instantiate_scMinimal(data_sparse, count_data, meta_data)
+instantiate_scMinimal(data_sparse = NULL, count_data = NULL, meta_data)
 }
 \arguments{
 \item{data_sparse}{sparseMatrix Matrix of normalized, log-transformed
-counts with genes as rows and cells as columns}
+counts with genes as rows and cells as columns (default=NULL)}
 
 \item{count_data}{sparseMatrix Matrix of raw counts with genes as rows
-and cells as columns}
+and cells as columns (default=NULL)}
 
 \item{meta_data}{data.frame Metadata with cells as rows and variables
 as columns. Number of rows in metadata should equal number of columns

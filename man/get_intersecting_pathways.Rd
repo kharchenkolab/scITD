@@ -4,7 +4,13 @@
 \alias{get_intersecting_pathways}
 \title{Extract gene sets that are enriched selectively in one or more cell types for a given factor}
 \usage{
-get_intersecting_pathways(container, factor_select, these_ctypes_only, up_down)
+get_intersecting_pathways(
+  container,
+  factor_select,
+  these_ctypes_only,
+  up_down,
+  thresh = 0.05
+)
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
@@ -17,6 +23,8 @@ enriched in all of these and not in any other cell types}
 
 \item{up_down}{character Set to "up" to get the gene sets for the positive loading genes. Set
 to "down" to get the gene sets for the negative loadings genes.}
+
+\item{thresh}{numeric Pvalue significance threshold for selecting enriched sets (default=0.05)}
 }
 \value{
 a vector of pathways selectively enriched in the listed cell types

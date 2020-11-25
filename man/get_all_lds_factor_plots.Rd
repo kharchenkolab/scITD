@@ -7,10 +7,15 @@
 get_all_lds_factor_plots(
   container,
   use_sig_only = FALSE,
+  nonsig_to_zero = FALSE,
   annot = "none",
   pathways_list = NULL,
   sig_thresh = 0.05,
-  display_genes = FALSE
+  display_genes = FALSE,
+  gene_callouts = FALSE,
+  callout_n_gene_per_ctype = 5,
+  callout_ctypes = NULL,
+  show_var_eplained = TRUE
 )
 }
 \arguments{
@@ -20,6 +25,9 @@ for each cell type as well as results and plots from all analyses}
 \item{use_sig_only}{logical If TRUE, includes only significant genes
 from jackstraw in the heatmap. If FALSE, includes all the variable genes.
 (default = FALSE)}
+
+\item{nonsig_to_zero}{logical If TRUE, makes the loadings of all nonsignificant genes 0
+(default=FALSE)}
 
 \item{annot}{character If set to "pathways" then creates an adjacent heatmap
 showing which genes are in which pathways. If set to "sig_genes" then creates
@@ -34,6 +42,21 @@ TRUE the threshold is used as a cutoff for genes to include. If annot is "sig_ge
 this value is used in the gene significance colormap as a minimum threshold. (default=0.05)}
 
 \item{display_genes}{logical If TRUE, displays the names of gene names (default=FALSE)}
+
+\item{gene_callouts}{logical If TRUE, then adds gene callout annotations to the heatmap
+(default=FALSE)}
+
+\item{callout_n_gene_per_ctype}{numeric To use if gene_callouts is TRUE. Sets the number
+of largest magnitude significant genes from each cell type to include in gene callouts.
+(default=5)}
+
+\item{callout_ctypes}{list To use if gene_callouts is TRUE. Specifies which cell types
+to get gene callouts for. Each entry of the list should be a character vector of ctypes for
+the respective factor. If NULL, then gets gene callouts for largest magnitude significant
+genes for all cell types. (default=NULL)}
+
+\item{show_var_eplained}{logical If TRUE then shows an anottation with the explained variance
+for each cell type (default=TRUE)}
 }
 \value{
 the project container with the list of plots placed in container$plots$all_lds_plots

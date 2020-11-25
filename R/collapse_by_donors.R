@@ -11,8 +11,8 @@
 collapse_by_donors <- function(container, shuffle=FALSE) {
   for (ct in container$experiment_params$ctypes_use) {
     scMinimal <- container$scMinimal_ctype[[ct]]
-    dge_sparse <- methods::as(scMinimal$data_sparse,'sparseMatrix')
-    dge_sparse <- Matrix::t(dge_sparse)
+    dge_sparse <- t(scMinimal$data_sparse)
+
 
     if (shuffle) {
       donor_meta <- as.factor(sample(scMinimal$metadata$donors))

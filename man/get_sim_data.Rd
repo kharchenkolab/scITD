@@ -5,6 +5,8 @@
 \title{Generate simulated data with subgroups of donors expressing multi-cell type processes}
 \usage{
 get_sim_data(
+  data_for_p_est = NULL,
+  prev_params = NULL,
   donors_total,
   cells_per_donor,
   n_processes,
@@ -13,10 +15,17 @@ get_sim_data(
   n_genes = 2000,
   de_prob = 0.05,
   de_strength = 2,
+  factor_overlap = TRUE,
   rseed = 10
 )
 }
 \arguments{
+\item{data_for_p_est}{matrix Gene by cell matrix of counts. It is recommended to input a
+small subsampled matrix for faster runtime. Need an input for either this parameter or the
+params parameter. (default=NULL)}
+
+\item{prev_params}{SplatParams Precomputed parameters from Splatter (default=NULL)}
+
 \item{donors_total}{numeric Total number of donors to include in the simulation}
 
 \item{cells_per_donor}{numeric Average number of cells per donor to generate. Total
@@ -35,21 +44,23 @@ donors_total.}
 de_prob, as too few DE genes will make it hard to detect a signal. (default=2000)}
 
 \item{de_prob}{numeric The probability that each gene gets upregulated in each cell
-type in each process (default=.05)}
+type in each process. Not recommended to set over 0.1 as it will cause unexpected results. 
+(default=0.05)}
 
 \item{de_strength}{numeric This is roughly the average effect size for all differentially
 expressed genes used to generate the distinc processes (default=2)}
 
+\item{factor_overlap}{logical Set to TRUE to have ~20% of the DE genes be found across
+multiple factors (default=TRUE)}
+
 \item{rseed}{numeric The random seed to use (default=10)}
 }
 \value{
-normalized gene by cell count matrix, raw gene by cell count matrix,
-metadata data.frame, and matrix of differentially expressed genes
+Normalized gene by cell count matrix and metadata data.frame. The DE genes can be
+identified by the rownames of the normalized count matrix. GroupX_GeneY indicates that the
+Gene Y was made to be upregulated in GroupX. The group numbers are ordered such that they
+describe cell types 1-N for factor 1, then cell types 1-N for factor 2, and so on.
 }
 \description{
 Generate simulated data with subgroups of donors expressing multi-cell type processes
-}
-\examples{
-get_sim_data(donors_total=50, cells_per_donor=200, n_processes=2, donors_per_process=10,
-n_ctypes=2, n_genes=2000, de_prob=0.05, de_strength=2, rseed=10)
 }

@@ -20,8 +20,9 @@ run_jackstraw <- function(container, n_fibers=100, n_iter=500) {
   # extract needed inputs from experiment parameters
   ncores <- container$experiment_params$ncores
   ranks <- container$experiment_params$ranks
-  rotate_modes <- container$experiment_params$rotate_modes
-
+  tucker_type <- container$experiment_params$tucker_type
+  rotation_type <- container$experiment_params$rotation_type
+  
   fstats_shuffled <- mclapply(1:n_iter, function(x) {
     # extract tensor data as we dont want to overwrite container
     tensor_data <- container$tensor_data
@@ -31,7 +32,8 @@ run_jackstraw <- function(container, n_fibers=100, n_iter=500) {
     tensor_data <- shuffle_fibers(tensor_data, s_fibers)
 
     # compute tucker
-    tucker_results <- tucker_ica_helper(tensor_data, ranks, rotate_modes)
+    tucker_results <- tucker_ica_helper(tensor_data, ranks, tucker_type,
+                                        rotation_type)
 
 
     # compute fiber-factor association F statistics for sampled fibers
@@ -209,9 +211,10 @@ get_fstats_pvals <- function(fstats_real, fstats_shuffled) {
 #' container$plots$min_sig_genes
 #' @export
 get_min_sig_genes <- function(container,donor_rank_range,thresh=0.05) {
-  ranks <- container$experiment_params$ranks
-  if (is.null(ranks)) {
+  if (is.null(container$experiment_params$ranks)) {
     stop("Need to set decomposition ranks first. Use set_experiment_params()")
+  } else {
+    ranks <- container$experiment_params$ranks
   }
   gene_ranks <- ranks[2]
   ctype_ranks <- ranks[3]

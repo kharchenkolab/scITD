@@ -2,7 +2,7 @@ Package: scITD
 Title: Single-Cell Interpretable Tucker Decomposition
 Version: 0.1.0
 Date: 2020-10-18
-Authors@R: c(person("Jonathan", "Mitchel", email="mitchel@mit.edu", role=c("aut","cre")), person("Evan", "Biederstedt", email="evan.biederstedt@gmail.com", role="aut"))
+Authors@R: c(person("Jonathan", "Mitchel", email="mitchel@mit.edu", role=c("cre","aut")), person("Evan", "Biederstedt", email="evan.biederstedt@gmail.com", role="aut"))
 Maintainer: Jonathan Mitchel <mitchel@mit.edu>
 Description: Employs the Tucker tensor decomposition method
     to extract multicell-type gene expression patterns that are variably
@@ -23,39 +23,49 @@ Encoding: UTF-8
 LazyData: true
 biocViews:
 Depends:
-    R (>= 3.5.0), Matrix
+    R (>= 4.0.0), Matrix
 Imports: 
     rTensor,
     ica,
-    venn,
     msigdbr,
     fgsea,
     circlize,
     reshape2,
     ComplexHeatmap,
-    Seurat,
     parallel,
-    ggpubr,
     ggplot2,
     mgcv,
     methods,
-    stats,
     utils,
-    grid,
-    Rmisc,
     Rcpp,
     RColorBrewer,
-    umap,
-    coda.base,
-    gmodels,
-    splatter,
-    SingleCellExperiment,
     GPArotation, 
-    sparsepca
-RoxygenNote: 7.1.1
-LinkingTo: Rcpp, RcppArmadillo, RcppProgress
-NeedsCompilation: yes
+    sparsepca, 
+    SingleCellExperiment,
+    splatter,
+    dplyr,
+    stats
 Suggests: 
     knitr,
     rmarkdown, 
-    testthat
+    testthat,
+    coda.base,
+    Seurat,
+    MASS,
+    grid,
+    Rmisc,
+    grDevices,
+    ggpubr,
+    sfsmisc,
+    gridExtra,
+    zoo,
+    rlang,
+    conos,
+    pagoda2
+RoxygenNote: 7.1.1
+LinkingTo: Rcpp, RcppArmadillo, RcppProgress
+NeedsCompilation: yes
+Remotes:
+    kharchenkolab/pagoda2,
+    kharchenkolab/conos,
+    jokergoo/ComplexHeatmap

@@ -2,15 +2,15 @@
 % Please edit documentation in R/run_gsea.R
 \name{run_fgsea}
 \alias{run_fgsea}
-\title{Compute enriched gene sets in a cell type for a factor using fgsea}
+\title{Run fgsea on expression levels as summed after multiplying by donor scores}
 \usage{
 run_fgsea(
   container,
   factor_select,
+  sig_thresh,
   ctype,
   db_use = "GO",
-  num_iter = 10000,
-  print_res = TRUE
+  collapse_paths = TRUE
 )
 }
 \arguments{
@@ -19,22 +19,20 @@ for each cell type as well as results and plots from all analyses}
 
 \item{factor_select}{numeric The factor of interest}
 
+\item{sig_thresh}{numeric The pvalue threshold for selecting gene sets}
+
 \item{ctype}{character The cell type of interest}
 
 \item{db_use}{character The database of gene sets to use. Database
 options include "GO", "Reactome", "KEGG", and "BioCarta". More than
 one database can be used. (default="GO")}
 
-\item{num_iter}{numeric The number of random shufflings to perform
-(default=10000)}
-
-\item{print_res}{logical If TRUE, prints out the top up/down gene sets
-(default=TRUE)}
+\item{collapse_paths}{logical Set to TRUE to collapse significant pathways with
+considerable overlap (default=TRUE)}
 }
 \value{
-data.frame of the fgsea results limited to genes passing the
-significance threshold.
+data.frame of the fgsea results (including non-significant results)
 }
 \description{
-Compute enriched gene sets in a cell type for a factor using fgsea
+Run fgsea on expression levels as summed after multiplying by donor scores
 }

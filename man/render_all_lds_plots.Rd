@@ -4,10 +4,13 @@
 \alias{render_all_lds_plots}
 \title{Creates a figure of all loadings plots side by side}
 \usage{
-render_all_lds_plots(hm_list)
+render_all_lds_plots(container, n_rows)
 }
 \arguments{
-\item{hm_list}{list A list of loadings heatmaps for all plots}
+\item{container}{environment Project container that stores sub-containers
+for each cell type as well as results and plots from all analyses}
+
+\item{n_rows}{numeric The number of rows to fit the plots onto}
 }
 \description{
 Creates a figure of all loadings plots side by side

@@ -5,14 +5,27 @@
 \title{Evaluate ability to extract sex-linked factor over varying the
 variance scaling exponent parameter}
 \usage{
-optimize_var_scale_power(container, max_ranks_test)
+optimize_var_scale_power(
+  container,
+  min_ranks_test,
+  max_ranks_test,
+  min_power_test,
+  max_power_test
+)
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
 for each cell type as well as results and plots from all analyses}
 
+\item{min_ranks_test}{numeric Vector of length 3 with minimum number of
+ranks to test for donor, gene, and cell type modes in that order}
+
 \item{max_ranks_test}{numeric Vector of length 3 with maximum number of
 ranks to test for donor, gene, and cell type modes in that order}
+
+\item{min_power_test}{numeric The minimum exponent parameter value to test}
+
+\item{max_power_test}{numeric The maximum parameter value to test}
 }
 \value{
 the experiment container with added plot and results

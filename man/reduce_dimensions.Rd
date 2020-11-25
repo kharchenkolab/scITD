@@ -4,12 +4,14 @@
 \alias{reduce_dimensions}
 \title{Gets umap coordinates if not already provided in container$scMinimal_full$umap}
 \usage{
-reduce_dimensions(scMinimal)
+reduce_dimensions(container, integration_var)
 }
 \arguments{
-\item{scMinimal}{environment A sub-container for the project typically
-consisting of gene expression data in its raw and processed forms as well
-as metadata}
+\item{container}{environment Project container that stores sub-containers
+for each cell type as well as results and plots from all analyses}
+
+\item{integration_var}{character The meta data variable to use for creating
+the joint embedding with Conos.}
 }
 \value{
 a dataframe with umap coordinates of each cell in the dataset

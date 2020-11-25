@@ -9,11 +9,11 @@ tucker_sparse(tnsr, ranks = NULL, max_iter = 25, tol = 1e-05)
 \arguments{
 \item{tnsr}{Tensor with K modes.}
 
-\item{ranks}{a vector of the modes of the output core Tensor}
+\item{ranks}{numeric Vector of the modes of the output core Tensor}
 
-\item{max_iter}{maximum number of iterations if error stays above tol}
+\item{max_iter}{numeric Maximum number of iterations if error stays above tol}
 
-\item{tol}{relative Frobenius norm error tolerance}
+\item{tol}{numeric Relative Frobenius norm error tolerance}
 }
 \value{
 a list containing the results

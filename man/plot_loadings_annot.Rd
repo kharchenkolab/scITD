@@ -8,11 +8,18 @@ plot_loadings_annot(
   container,
   factor_select,
   use_sig_only = FALSE,
+  nonsig_to_zero = FALSE,
   annot = "none",
   pathways = NULL,
+  sim_de_donor_group = NULL,
   sig_thresh = 0.05,
   display_genes = FALSE,
-  show_xlab = TRUE
+  gene_callouts = FALSE,
+  callout_n_gene_per_ctype = 5,
+  callout_ctypes = NULL,
+  show_xlab = TRUE,
+  show_var_eplained = TRUE,
+  show_all_legends = TRUE
 )
 }
 \arguments{
@@ -25,6 +32,9 @@ for each cell type as well as results and plots from all analyses}
 from jackstraw in the heatmap. If FALSE, includes all the variable genes.
 (default = FALSE)}
 
+\item{nonsig_to_zero}{logical If TRUE, makes the loadings of all nonsignificant genes 0
+(default=FALSE)}
+
 \item{annot}{character If set to "pathways" then creates an adjacent heatmap
 showing which genes are in which pathways. If set to "sig_genes" then creates
 an adjacent heatmap showing which genes were significant from jackstraw. If
@@ -33,13 +43,33 @@ set to "none" no adjacent heatmap is plotted. (default="none")}
 \item{pathways}{character Gene sets to plot if annot is set to "pathways"
 (default=NULL)}
 
+\item{sim_de_donor_group}{numeric To plot the ground truth significant genes from a
+simulation next to the heatmap, put the number of the donor group that corresponds to
+the factor being plotted (default=NULL).}
+
 \item{sig_thresh}{numeric Pvalue significance threshold to use. If use_sig_only is
 TRUE the threshold is used as a cutoff for genes to include. If annot is "sig_genes"
 this value is used in the gene significance colormap as a minimum threshold. (default=0.05)}
 
 \item{display_genes}{logical If TRUE, displays the names of gene names (default=FALSE)}
 
+\item{gene_callouts}{logical If TRUE, then adds gene callout annotations to the heatmap
+(default=FALSE)}
+
+\item{callout_n_gene_per_ctype}{numeric To use if gene_callouts is TRUE. Sets the number
+of largest magnitude significant genes from each cell type to include in gene callouts.
+(default=5)}
+
+\item{callout_ctypes}{character To use if gene_callouts is TRUE. Specifies which cell types
+to get gene callouts for. If NULL, then gets gene callouts for largest magnitude significant
+genes for all cell types. (default=NULL)}
+
 \item{show_xlab}{logical If TRUE, displays the xlabel 'genes' (default=TRUE)}
+
+\item{show_var_eplained}{logical If TRUE then shows an anottation with the explained variance
+for each cell type (default=TRUE)}
+
+\item{show_all_legends}{logical Set to TRUE in order to show legends (default=TRUE)}
 }
 \value{
 container with the plot put in container$plots$single_lds_plot
