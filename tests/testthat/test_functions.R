@@ -18,5 +18,15 @@ test_that("get_ctype_data() functionality", {
   test_container <- get_ctype_data(test_container,donor_min_cells = 0)
   result <- test_container$scMinimal_ctype[['CD4+ T']]$data_sparse
   expect_equal(result, expected_result)
-  
 })
+
+test_that("run_tucker_ica() functionality", {
+  expected_result <- test_container$tucker_results
+  test_container$tucker_results <- NULL
+  test_container <- run_tucker_ica(test_container, ranks=c(2,4,2),
+                                   shuffle=FALSE)
+  result <- test_container$tucker_results
+  expect_equal(result, expected_result)
+})
+
+

@@ -39,8 +39,9 @@ test_container <- make_new_container(test_scMinimal,
                                      tucker_type = 'regular', rotation_type = 'ica',
                                      ncores = 30, rand_seed = 10)
 
-save(test_container,file='/home/jmitchel/scITD/data/test_container.RData',compress = "xz")
 
 test_container <- get_ctype_data(test_container,donor_min_cells = 0)
+test_container <- run_tucker_ica(test_container, ranks=c(2,4,2), shuffle=FALSE)
 
+save(test_container,file='/home/jmitchel/scITD/data/test_container.RData',compress = "xz")
 
