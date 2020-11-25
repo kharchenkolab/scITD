@@ -1,0 +1,46 @@
+
+pbmc_counts <- readRDS('/home/jmitchel/data/van_der_wijst/pbmc_counts.rds')
+
+pbmc_meta <- readRDS('/home/jmitchel/data/van_der_wijst/pbmc_meta.rds')
+
+feature.names <- readRDS('/home/jmitchel/data/van_der_wijst/genes.rds')
+
+# need to do this one donor at a time!!!
+baby_counts1 <- pbmc_counts[,pbmc_meta$donors == 's5']
+baby_meta1 <- pbmc_meta[pbmc_meta$donors == 's5',]
+baby_counts2 <- pbmc_counts[,pbmc_meta$donors == 's40']
+baby_meta2 <- pbmc_meta[pbmc_meta$donors == 's40',]
+
+ct1 <- 'CD4+ T'
+ct2 <- 'CD8+ T'
+
+cells_use_1_ct1 <- sample(rownames(baby_meta1[baby_meta1$ctypes==ct1,]),5)
+cells_use_1_ct2 <- sample(rownames(baby_meta1[baby_meta1$ctypes==ct2,]),5)
+cells_use_2_ct1 <- sample(rownames(baby_meta2[baby_meta2$ctypes==ct1,]),5)
+cells_use_2_ct2 <- sample(rownames(baby_meta2[baby_meta2$ctypes==ct2,]),5)
+
+cells_use <- c(cells_use_1_ct1,cells_use_1_ct2,cells_use_2_ct1,cells_use_2_ct2)
+
+baby_counts <- pbmc_counts[1:30,cells_use]
+baby_meta <- pbmc_meta[cells_use,]
+
+# counts are too sparse for tests so just using random matrix of ints...
+baby_counts_rand <- matrix(sample.int(15, size = ncol(baby_counts)*nrow(baby_counts),
+                                 replace = TRUE), nrow = nrow(baby_counts),
+                      ncol = ncol(baby_counts))
+colnames(baby_counts_rand) <- colnames(baby_counts)
+rownames(baby_counts_rand) <- rownames(baby_counts)
+
+test_scMinimal <- instantiate_scMinimal(count_data=baby_counts_rand, meta_data=baby_meta)
+test_container <- make_new_container(test_scMinimal,
+                                     ctypes_use = c("CD4+ T", "CD8+ T"),
+                                     scale_var = TRUE,
+                                     var_scale_power = 1.25,
+                                     tucker_type = 'regular', rotation_type = 'ica',
+                                     ncores = 30, rand_seed = 10)
+
+save(test_container,file='/home/jmitchel/scITD/data/test_container.RData',compress = "xz")
+
+test_container <- get_ctype_data(test_container,donor_min_cells = 0)
+
+

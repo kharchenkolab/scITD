@@ -11,3 +11,12 @@ test_that("colMeanVars() functionality", {
   colnames(expected_result) <- c('m','v','nobs')
   expect_equal(result, expected_result)
 })
+
+test_that("get_ctype_data() functionality", {
+  expected_result <- test_container$scMinimal_ctype[['CD4+ T']]$data_sparse
+  test_container$scMinimal_ctype <- NULL
+  test_container <- get_ctype_data(test_container,donor_min_cells = 0)
+  result <- test_container$scMinimal_ctype[['CD4+ T']]$data_sparse
+  expect_equal(result, expected_result)
+  
+})
