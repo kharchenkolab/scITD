@@ -217,7 +217,7 @@ run_hypergeometric_gsea <- function(container, factor_select, ctype, up_down,
 #' considerable overlap. Only used if method="fgsea". (default=TRUE)
 #'
 #' @return a heatmap plot of the gsea results in the slot
-#' container$plots$gsea$FactorX$up/down
+#' container$plots$gsea$FactorX
 #' @export
 run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh=0.05,
                                  db_use="GO", collapse_paths=TRUE) {

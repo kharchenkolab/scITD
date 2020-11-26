@@ -128,7 +128,7 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL, s
 #' (default=NULL)
 #' @param sim_de_donor_group numeric To plot the ground truth significant genes from a
 #' simulation next to the heatmap, put the number of the donor group that corresponds to
-#' the factor being plotted (default=NULL).
+#' the factor being plotted (default=NULL)
 #' @param sig_thresh numeric Pvalue significance threshold to use. If use_sig_only is
 #' TRUE the threshold is used as a cutoff for genes to include. If annot is "sig_genes"
 #' this value is used in the gene significance colormap as a minimum threshold. (default=0.05)
@@ -512,6 +512,10 @@ get_explained_var <- function(container, tmp_casted_num, factor_use) {
 #' set to "none" no adjacent heatmap is plotted. (default="none")
 #' @param pathways_list list A list of sets of pathways for each factor. List index
 #' should be the number corresponding to the factor. (default=NULL)
+#' @param sim_de_donor_group numeric To plot the ground truth significant genes from a
+#' simulation next to the heatmap, put the number of the donor group that corresponds to
+#' the factor being plotted. Here it should be a vector corresponding to the factors.
+#' (default=NULL)
 #' @param sig_thresh numeric Pvalue significance threshold to use. If use_sig_only is
 #' TRUE the threshold is used as a cutoff for genes to include. If annot is "sig_genes"
 #' this value is used in the gene significance colormap as a minimum threshold. (default=0.05)
@@ -531,8 +535,10 @@ get_explained_var <- function(container, tmp_casted_num, factor_use) {
 #' @return the project container with the list of plots placed in container$plots$all_lds_plots
 #' @export
 get_all_lds_factor_plots <- function(container, use_sig_only=FALSE, nonsig_to_zero=FALSE, annot='none',
-                                     pathways_list=NULL, sig_thresh=0.05, display_genes=FALSE,
-                                     gene_callouts=FALSE, callout_n_gene_per_ctype=5, callout_ctypes=NULL,
+                                     pathways_list=NULL, sim_de_donor_group=NULL,
+                                     sig_thresh=0.05, display_genes=FALSE,
+                                     gene_callouts=FALSE, callout_n_gene_per_ctype=5, 
+                                     callout_ctypes=NULL,
                                      show_var_eplained=TRUE) {
 
   # save any plot previously in the single lds plot slot because will be overwrittern
@@ -552,6 +558,7 @@ get_all_lds_factor_plots <- function(container, use_sig_only=FALSE, nonsig_to_ze
                                      nonsig_to_zero=nonsig_to_zero,
                                      annot=annot, pathways=pathways_list[[i]],
                                      sig_thresh=sig_thresh,
+                                     sim_de_donor_group=sim_de_donor_group[i],
                                      display_genes=display_genes,
                                      gene_callouts=gene_callouts,
                                      callout_n_gene_per_ctype=callout_n_gene_per_ctype,
