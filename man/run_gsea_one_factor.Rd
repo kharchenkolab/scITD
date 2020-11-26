@@ -34,7 +34,7 @@ considerable overlap. Only used if method="fgsea". (default=TRUE)}
 }
 \value{
 a heatmap plot of the gsea results in the slot
-container$plots$gsea$FactorX$up/down
+container$plots$gsea$FactorX
 }
 \description{
 Run gsea separately for all cell types of one specified factor

@@ -10,6 +10,7 @@ get_all_lds_factor_plots(
   nonsig_to_zero = FALSE,
   annot = "none",
   pathways_list = NULL,
+  sim_de_donor_group = NULL,
   sig_thresh = 0.05,
   display_genes = FALSE,
   gene_callouts = FALSE,
@@ -36,6 +37,11 @@ set to "none" no adjacent heatmap is plotted. (default="none")}
 
 \item{pathways_list}{list A list of sets of pathways for each factor. List index
 should be the number corresponding to the factor. (default=NULL)}
+
+\item{sim_de_donor_group}{numeric To plot the ground truth significant genes from a
+simulation next to the heatmap, put the number of the donor group that corresponds to
+the factor being plotted. Here it should be a vector corresponding to the factors.
+(default=NULL)}
 
 \item{sig_thresh}{numeric Pvalue significance threshold to use. If use_sig_only is
 TRUE the threshold is used as a cutoff for genes to include. If annot is "sig_genes"

@@ -45,7 +45,7 @@ set to "none" no adjacent heatmap is plotted. (default="none")}
 
 \item{sim_de_donor_group}{numeric To plot the ground truth significant genes from a
 simulation next to the heatmap, put the number of the donor group that corresponds to
-the factor being plotted (default=NULL).}
+the factor being plotted (default=NULL)}
 
 \item{sig_thresh}{numeric Pvalue significance threshold to use. If use_sig_only is
 TRUE the threshold is used as a cutoff for genes to include. If annot is "sig_genes"
