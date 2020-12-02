@@ -56,7 +56,7 @@ seurat_to_scMinimal <- function(s_obj, normalize_counts=TRUE, metadata_cols=NULL
     # scMinimal$data_sparse <- normalize_counts(methods::as(as.matrix(s_obj@assays$RNA@counts),'sparseMatrix'))
     scMinimal$data_sparse <- normalize_counts(s_obj@assays$RNA@counts)
   } else {
-    scMinimal$data_sparse <- methods::as(as.matrix(Seurat::GetAssayData(s_obj)),'sparseMatrix')
+    scMinimal$data_sparse <- s_obj[["RNA"]]@data
   }
   scMinimal$data_residuals <- NULL
   scMinimal$data_means <- NULL
