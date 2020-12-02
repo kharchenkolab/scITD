@@ -4,7 +4,12 @@
 \alias{seurat_to_scMinimal}
 \title{Convert Seurat object to scMinimal object}
 \usage{
-seurat_to_scMinimal(s_obj)
+seurat_to_scMinimal(
+  s_obj,
+  normalize_counts = TRUE,
+  metadata_cols = NULL,
+  metadata_col_nm = NULL
+)
 }
 \arguments{
 \item{s_obj}{Seurat object that has been cleaned and includes the normalized,
@@ -13,6 +18,16 @@ log-transformed counts. The meta.data should include a column with the header
 also have a column with the header 'ctypes' with the corresponding names of
 the cell types as well as a column with header 'donors' that contains
 identifiers for each donor.}
+
+\item{normalize_counts}{logical Set to TRUE to normalize and log transform 
+the counts matrix. Set to FALSE if already supplied in assay data (default=TRUE)}
+
+\item{metadata_cols}{character The names of the metadata columns to use 
+(default=NULL)}
+
+\item{metadata_col_nm}{character New names for the selected metadata columns 
+if wish to change their names. If NULL, then the preexisting column names are
+used. (default=NULL)}
 }
 \value{
 scMinimal object

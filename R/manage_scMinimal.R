@@ -39,22 +39,46 @@ instantiate_scMinimal <- function(data_sparse=NULL,count_data=NULL,meta_data) {
 #' also have a column with the header 'ctypes' with the corresponding names of
 #' the cell types as well as a column with header 'donors' that contains
 #' identifiers for each donor.
+#' @param normalize_counts logical Set to TRUE to normalize and log transform 
+#' the counts matrix. Set to FALSE if already supplied in assay data (default=TRUE)
+#' @param metadata_cols character The names of the metadata columns to use 
+#' (default=NULL)
+#' @param metadata_col_nm character New names for the selected metadata columns 
+#' if wish to change their names. If NULL, then the preexisting column names are
+#' used. (default=NULL)
 #'
 #' @return scMinimal object
 #' @export
-seurat_to_scMinimal <- function(s_obj) {
-  # check if metadata has minimum required columns
-  if (sum(c("donors", "ctypes") %in% colnames(s_obj@meta.data)) != 2) {
-    stop("Metadata does not have columns labeled sex, donors, and ctypes")
-  }
+seurat_to_scMinimal <- function(s_obj, normalize_counts=TRUE, metadata_cols=NULL, metadata_col_nm=NULL) {
+
   scMinimal <- new.env()
-  scMinimal$data_sparse <- methods::as(as.matrix(Seurat::GetAssayData(s_obj)),'sparseMatrix')
-  scMinimal$count_data_sparse <- methods::as(as.matrix(s_obj@assays$RNA@counts),'sparseMatrix')
+  if (normalize_counts) {
+    # scMinimal$data_sparse <- normalize_counts(methods::as(as.matrix(s_obj@assays$RNA@counts),'sparseMatrix'))
+    scMinimal$data_sparse <- normalize_counts(s_obj@assays$RNA@counts)
+  } else {
+    scMinimal$data_sparse <- methods::as(as.matrix(Seurat::GetAssayData(s_obj)),'sparseMatrix')
+  }
   scMinimal$data_residuals <- NULL
   scMinimal$data_means <- NULL
-  scMinimal$metadata <- s_obj@meta.data
-  scMinimal$donors <- levels(s_obj@meta.data$donors)
-  scMinimal$ctypes <- levels(s_obj@meta.data$ctypes)
+  scMinimal$vargenes <- c()
+  scMinimal$associated_genes <- c()
+  
+  metadata <- s_obj@meta.data
+  if (!is.null(metadata_cols)) {
+    metadata <- metadata[,metadata_cols]
+    if (!is.null(metadata_col_nm)) {
+      colnames(metadata) <- metadata_col_nm
+    }
+  }
+  scMinimal$metadata <- metadata
+  scMinimal$donors <- levels(metadata$donors)
+  scMinimal$ctypes <- levels(metadata$ctypes)
+  
+  # check if metadata has minimum required columns
+  if (sum(c("donors", "ctypes") %in% colnames(metadata)) != 2) {
+    stop("Metadata does not have columns labeled donors and ctypes, which is required.")
+  }
+  
   return(scMinimal)
 }
 
