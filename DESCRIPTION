@@ -42,7 +42,7 @@ Imports:
     GPArotation, 
     sparsepca, 
     SingleCellExperiment,
-    splatter,
+    splatter (>= 1.14),
     dplyr,
     stats
 Suggests: 
