@@ -15,7 +15,7 @@
 clean_data <- function(scMinimal, donor_min_cells=5, gene_min_cells=5) {
   donor_counts <- table(scMinimal$metadata$donors)
   donors_keep <- names(donor_counts)[donor_counts > donor_min_cells]
-  gene_counts <- rowSums(as.matrix(scMinimal$data_sparse > 0))
+  gene_counts <- rowSums(scMinimal$data_sparse > 0)
   genes_keep <- names(gene_counts)[gene_counts > gene_min_cells]
   clean_scMinimal <- subset_scMinimal(scMinimal, donors_use = donors_keep, genes_use = genes_keep)
   return(clean_scMinimal)

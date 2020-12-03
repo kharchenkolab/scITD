@@ -11,11 +11,9 @@
 vargenes_anova <- function(scMinimal, ncores) {
   # calculate anova for each gene
   dge_sparse <- t(scMinimal$data_sparse)
-  pvals <- mclapply(as.data.frame(dge_sparse),function(x) {
-    tmp <- as.data.frame(cbind(x,scMinimal$metadata$donors))
-    colnames(tmp) <- c('expres','donors')
-    tmp$expres <- as.numeric(as.character(tmp$expres))
-    anova_res <- aov(expres~donors,tmp)
+  pvals <- mclapply(1:ncol(dge_sparse),function(x) {
+    tmp <- cbind(dge_sparse[,x],scMinimal$metadata$donors)
+    anova_res <- aov(tmp[,1]~tmp[,2])
     pval <- summary(anova_res)[[1]][["Pr(>F)"]][[1]]
   }, mc.cores = ncores)
 

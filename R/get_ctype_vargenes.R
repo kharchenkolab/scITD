@@ -119,6 +119,7 @@ get_ctype_data <- function(container, make_clean=TRUE, donor_min_cells=5, gene_m
   }
   
   for (ct in container$experiment_params$ctypes_use) {
+    print(ct)
     ctype_sub <- subset_scMinimal(container$scMinimal_full, ctypes_use=ct)
     if (make_clean) {
       ctype_sub <- clean_data(ctype_sub,donor_min_cells=donor_min_cells,gene_min_cells=gene_min_cells)
