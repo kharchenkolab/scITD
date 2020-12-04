@@ -70,11 +70,16 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL, s
 
       # order rows of main matrix by metadata ordering
       donor_mat <- donor_mat[rownames(meta),]
+      
+      do_row_clust <- FALSE
+    } else {
+      do_row_clust <- TRUE
     }
 
     myhmap <- Heatmap(as.matrix(donor_mat), name = "score",
                       cluster_columns = FALSE,
-                      cluster_rows = FALSE,
+                      cluster_rows = do_row_clust,
+                      show_row_dend = FALSE,
                       column_names_gp = gpar(fontsize = 10),
                       col = col_fun, row_title = "Donors",
                       row_title_gp = gpar(fontsize = 14),
@@ -183,7 +188,9 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
     sig_df <- sig_df[rownames(tmp_casted_num),colnames(tmp_casted_num)]
 
     # reduce tmp_casted_num to genes significant in at least one cell type
+    print(nrow(tmp_casted_num))
     tmp_casted_num <- tmp_casted_num[rowSums(sig_df < sig_thresh) > 0,]
+    print(nrow(tmp_casted_num))
     
     if (nonsig_to_zero) {
       tmp_casted_num[sig_df[rownames(tmp_casted_num),colnames(tmp_casted_num)] > sig_thresh] <- 0
@@ -389,7 +396,8 @@ get_significance_vectors <- function(container, factor_select, ctypes) {
   # parse the gene significance results to get only gene_ctype combos for factor of interest
   padj <- container$gene_score_associations
   padj_factors <- sapply(names(padj),function(x) {
-    strsplit(x,split = '.', fixed = TRUE)[[1]][[3]]
+    tmp <- strsplit(x,split = '.', fixed = TRUE)[[1]]
+    return(tmp[[length(tmp)]])
   })
   padj_use <- padj[which(padj_factors == as.character(factor_select))]
 
@@ -397,12 +405,19 @@ get_significance_vectors <- function(container, factor_select, ctypes) {
   padj_all_ctypes <- list()
   for (ct in ctypes) {
     padj_ct <- sapply(names(padj_use),function(x) {
-      strsplit(x,split = '.', fixed = TRUE)[[1]][[2]]
+      tmp <- strsplit(x,split = '.', fixed = TRUE)[[1]]
+      return(tmp[[length(tmp)-1]])
     })
     padj_ct <- padj_use[which(padj_ct == ct)]
 
     names(padj_ct) <- sapply(names(padj_ct),function(x) {
-      strsplit(x,split = '.',fixed = TRUE)[[1]][[1]]
+      tmp <- strsplit(x,split = '.',fixed = TRUE)[[1]]
+      
+      if (length(tmp)>3){
+        return(paste0(tmp[[1]],".",tmp[[2]]))
+      } else {
+        return(tmp[[1]])
+      }
     })
 
     padj_all_ctypes[[ct]] <- padj_ct
