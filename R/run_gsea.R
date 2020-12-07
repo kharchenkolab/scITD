@@ -65,7 +65,7 @@ run_fgsea <- function(container, factor_select, sig_thresh, ctype, db_use="GO",
                             minSize=15,
                             maxSize=500,
                             eps=0,
-                            gseaParam=3)
+                            gseaParam=1)
   
   fgsea_res <- fgsea_res[order(fgsea_res$padj, decreasing=FALSE),]
   

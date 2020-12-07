@@ -228,13 +228,17 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
   }
   
   # make colormap for hmap
-  color_lim <- max(abs(tmp_casted_num))
-  nintieth_per <- stats::quantile(as.matrix(abs(tmp_casted_num)), c(.95))
-  if (color_lim > (1.5*nintieth_per)) {
-    col_fun = colorRamp2(c(-nintieth_per, 0, nintieth_per), c("blue", "white", "red"))
-  } else {
-    col_fun = colorRamp2(c(-color_lim, 0, color_lim), c("blue", "white", "red"))
-  }
+  # color_lim <- max(abs(tmp_casted_num))
+  # nintieth_per <- stats::quantile(as.matrix(abs(tmp_casted_num)), c(.95))
+  # if (color_lim > (1.5*nintieth_per)) {
+  #   col_fun = colorRamp2(c(-nintieth_per, 0, nintieth_per), c("blue", "white", "red"))
+  # } else {
+  #   col_fun = colorRamp2(c(-color_lim, 0, color_lim), c("blue", "white", "red"))
+  # }
+  
+  color_lim <- stats::quantile(as.matrix(abs(tmp_casted_num)), c(.9999))
+  col_fun = colorRamp2(c(-color_lim, 0, color_lim), c("blue", "white", "red"))
+  
   
   hm_legends[[1]] <- Legend(col_fun = col_fun, title = "loading",
                             grid_height = unit(1, "mm"), grid_width = unit(3, "mm"),
