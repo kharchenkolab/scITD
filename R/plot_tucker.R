@@ -188,10 +188,8 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
     sig_df <- sig_df[rownames(tmp_casted_num),colnames(tmp_casted_num)]
 
     # reduce tmp_casted_num to genes significant in at least one cell type
-    print(nrow(tmp_casted_num))
     tmp_casted_num <- tmp_casted_num[rowSums(sig_df < sig_thresh) > 0,]
-    print(nrow(tmp_casted_num))
-    
+
     if (nonsig_to_zero) {
       tmp_casted_num[sig_df[rownames(tmp_casted_num),colnames(tmp_casted_num)] > sig_thresh] <- 0
     }
@@ -563,11 +561,11 @@ get_all_lds_factor_plots <- function(container, use_sig_only=FALSE, nonsig_to_ze
   hm_list <- list()
   lgnd_list <- list()
   for (i in 1:num_fact) {
-    if (i==1 && !gene_callouts) {
-      show_xlab <- TRUE
-    } else {
-      show_xlab <- FALSE
-    }
+    # if (i==1 && !gene_callouts) {
+    #   show_xlab <- TRUE
+    # } else {
+    #   show_xlab <- FALSE
+    # }
     container <- plot_loadings_annot(container, factor_select=i, 
                                      use_sig_only=use_sig_only,
                                      nonsig_to_zero=nonsig_to_zero,
@@ -578,7 +576,7 @@ get_all_lds_factor_plots <- function(container, use_sig_only=FALSE, nonsig_to_ze
                                      gene_callouts=gene_callouts,
                                      callout_n_gene_per_ctype=callout_n_gene_per_ctype,
                                      callout_ctypes=callout_ctypes[[i]],
-                                     show_xlab=show_xlab,
+                                     show_xlab=TRUE,
                                      show_var_eplained=show_var_eplained,
                                      show_all_legends=FALSE)
     
@@ -655,13 +653,13 @@ render_all_lds_plots <- function(container,n_rows) {
 plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype, ctypes_use=NULL) {
   ## add catch in case they havent run jackstraw yet...
   
-  # temporarily remove variance scaling
-  orig_scale_decision <- container$experiment_params$scale_var
-  container <- set_experiment_params(container, scale_var = FALSE)
-  
-  # form the tensor for specified cell types
-  container <- collapse_by_donors(container, shuffle=FALSE)
-  container <- form_tensor(container)
+  # # temporarily remove variance scaling
+  # orig_scale_decision <- container$experiment_params$scale_var
+  # container <- set_experiment_params(container, scale_var = FALSE)
+  # 
+  # # form the tensor for specified cell types
+  # container <- collapse_by_donors(container, shuffle=FALSE)
+  # container <- form_tensor(container)
   
   # extract tensor information
   tensor_data <- container$tensor_data
@@ -776,8 +774,8 @@ plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype, ctyp
                     column_title = paste0('Factor ', factor_select,' Top Genes'),
                     column_title_gp = gpar(fontsize = 20, fontface = "bold"))
 
-  # reset scale variance decision
-  container <- set_experiment_params(container, scale_var = orig_scale_decision)
+  # # reset scale variance decision
+  # container <- set_experiment_params(container, scale_var = orig_scale_decision)
 
   container$plots$donor_sig_genes[[paste0('Factor',as.character(factor_select))]] <- myhmap
   return(container)

@@ -49,6 +49,7 @@ Suggests:
     knitr,
     rmarkdown, 
     testthat,
+    sva,
     coda.base,
     Seurat,
     MASS,

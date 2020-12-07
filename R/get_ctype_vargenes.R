@@ -166,6 +166,41 @@ reduce_to_vargenes <- function(container) {
 }
 
 
+#' Run combat on donor mean expression matrix
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param batch_var character The name of the metadata variable corresponding
+#' with the batches to remove
+#'
+#' @return the project container with corrected matrices in 
+#' scMinimal_ctype[[ct]]$data_means
+#' @export
+apply_pseudobulk_batch_correct <- function(container,batch_var) {
+  for (ct in container$experiment_params$ctypes_use) {
+    scMinimal <- container$scMinimal_ctype[[ct]]
 
+    # need metadata at donor level
+    metadata <- unique(scMinimal$metadata)
+    rownames(metadata) <- metadata$donors
+    metadata <- metadata[rownames(scMinimal$data_means),]
+
+    modcombat <- model.matrix(~1, data=metadata)
+    print(dim(t(scMinimal$data_means)))
+    tmp <- sva::ComBat(dat=t(scMinimal$data_means),
+                  batch=metadata[,batch_var],
+                  mod=modcombat, par.prior=TRUE,
+                  prior.plots=FALSE)
+    
+    print(dim(tmp))
+    
+    tmp <- Matrix(tmp, sparse = TRUE)
+    
+    # need to replace both the metadata and the data_sparse since this field is used to get vargenes
+    scMinimal$data_sparse <- tmp
+    scMinimal$metadata <- metadata
+  }
+  return(container)
+}
 
 
