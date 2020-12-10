@@ -33,7 +33,8 @@
 #' describe cell types 1-N for factor 1, then cell types 1-N for factor 2, and so on.
 #' @export
 get_sim_data <- function(data_for_p_est=NULL, prev_params=NULL, donors_total, cells_per_donor, n_processes, donors_per_process,
-                         n_ctypes=2, n_genes=2000, de_prob=0.05, de_strength=2, factor_overlap=TRUE, rseed=10) {
+                         n_ctypes=2, n_genes=2000, de_prob=0.05, de_strength=2, factor_overlap=TRUE, 
+                         add_batch=FALSE, batch_donors=NULL, rseed=10) {
 
   if (!is.null(data_for_p_est)) {
     params <- splatEstimate(data_for_p_est)
@@ -50,7 +51,7 @@ get_sim_data <- function(data_for_p_est=NULL, prev_params=NULL, donors_total, ce
   params <- setParam(params, "nGenes", n_genes)
   params <- setParam(params, "seed", rseed)
 
-  # get general non-DE genes
+  # get general non-DE genes (ie a single population of cells)
   scsim <- splatSimulate(params)
   meta <- colData(scsim)
   sim_counts <- counts(scsim)
@@ -73,9 +74,9 @@ get_sim_data <- function(data_for_p_est=NULL, prev_params=NULL, donors_total, ce
   g_names <- sapply(1:n_groups,function(x){
     paste0('Group',x)
   })
-  group_fracs <- rep((donors_per_process/n_ctypes)/donors_total,n_groups-1)
-  group_fracs <- c(group_fracs,1-sum(group_fracs))
-  meta$Group <- sample(g_names,nrow(meta),prob = group_fracs,replace = TRUE)
+  group_fracs <- rep((donors_per_process/n_ctypes)/donors_total,n_groups-1) # fraction of cells to give to each group
+  group_fracs <- c(group_fracs,1-sum(group_fracs)) # final group is the reference group with most donors
+  meta$Group <- sample(g_names,nrow(meta),prob = group_fracs,replace = TRUE) # randomly assign cells from uniform population to groups
 
   # add data for each group
   de_groups <- data.frame(matrix(ncol=0,nrow=0))
@@ -131,11 +132,11 @@ get_sim_data <- function(data_for_p_est=NULL, prev_params=NULL, donors_total, ce
   # assign cells to cell types
   meta$ctypes <- NA
   ctype_names <- sapply(1:n_ctypes,function(x){paste0('ct',as.character(x))})
-  group_ctypes <- rep(ctype_names,n_processes)
+  group_ctypes <- rep(ctype_names,n_processes) # holds something like c('ct1','ct2','ct1','ct2')
   for (i in 1:(n_groups-1)) {
     group_name <- paste0('Group',i)
     group_mask <- meta$Group==group_name
-    meta$ctypes[group_mask] <- group_ctypes[i]
+    meta$ctypes[group_mask] <- group_ctypes[i] # gives Group1 -> ct1, Group2 -> ct2, Group3 -> ct1, etc.
   }
   # randomly assign last group cells to cell types
   ncells_base <- sum(is.na(meta$ctypes))
@@ -144,7 +145,7 @@ get_sim_data <- function(data_for_p_est=NULL, prev_params=NULL, donors_total, ce
 
   # assign donors to cells
   meta$donors <- NA
-  group_donors <- list()
+  group_donors <- list() # holds ranges of donors in each process: list(c(1,10),c(1,10),c(11,20),c(11,20),c(21,50))
   track <- 1
   for (i in 1:n_processes) {
     d_range <- c(track,track + donors_per_process - 1)
@@ -160,11 +161,97 @@ get_sim_data <- function(data_for_p_est=NULL, prev_params=NULL, donors_total, ce
     group_mask = meta$Group==group_name
     ncells_group = sum(group_mask)
     d_range <- sapply(group_donors[[i]][1]:group_donors[[i]][2], function(x){paste0('s',as.character(x))})
-    assigns <- sample(d_range,ncells_group,replace=T)
+    assigns <- sample(d_range,ncells_group,replace=TRUE) #randomly assigns s1-s10 donors to group1 cells
     meta$donors[group_mask] <- assigns
   }
 
   sim_meta <- meta[,c('Group','donors','ctypes')]
+  
+  if (add_batch) {
+    # add 50 cells per donor worth of batch effect... might need to up this 
+    # params <- setParam(params, "batchCells", c(length(batch_donors[[1]]) * 50, 
+    #                                            length(batch_donors[[2]]) * 50))
+    params <- setParam(params, "batchCells", c(length(batch_donors[[1]]) * 50, 
+                                               length(batch_donors[[2]]) * 50,
+                                               length(batch_donors[[3]]) * 50))
+    batch_sim <- splatSimulate(params)
+    batch_meta <- colData(batch_sim)
+    batch_counts <- counts(batch_sim)
+    
+    # normalize counts
+    lib_sizes <- colSums(batch_counts)
+    batch_counts <- sweep(batch_counts,MARGIN=2,lib_sizes,'/')
+    
+    if (is.null(batch_donors)) {
+      donors_list <- unique(meta$donors)
+      b1 <- sample(donors_list,round(length(donors_list)/2),replace=FALSE)
+      b2 <- donors_list[!(donors_list %in% b1)]
+      print(b1)
+      print(b2)
+      batch_donors <- list(b1,b2)
+    }
+    
+    # b1_assigns <- sample(batch_donors[[1]],(donors_total / 2) * 50,replace=TRUE)
+    # b2_assigns <- sample(batch_donors[[2]],(donors_total / 2) * 50,replace=TRUE)
+    
+    b1_assigns <- sample(batch_donors[[1]],length(batch_donors[[1]]) * 50,replace=TRUE)
+    b2_assigns <- sample(batch_donors[[2]],length(batch_donors[[2]]) * 50,replace=TRUE)
+    b3_assigns <- sample(batch_donors[[3]],length(batch_donors[[3]]) * 50,replace=TRUE)
+    
+    batch_meta$donors <- NULL
+    batch_meta[batch_meta$Batch=='Batch1','donors'] <- b1_assigns
+    batch_meta[batch_meta$Batch=='Batch2','donors'] <- b2_assigns
+    batch_meta[batch_meta$Batch=='Batch3','donors'] <- b3_assigns
+    
+    # hard-coded group assignment below, so make general if going to keep in...
+    g1_g2_donors <- sapply(1:10,function(x){paste0('s',as.character(x))})
+    g3_g4_donors <- sapply(11:20,function(x){paste0('s',as.character(x))})
+    g5_donors <- sapply(21:50,function(x){paste0('s',as.character(x))})
+    
+    batch_meta$Group <- NULL
+    batch_meta$ctypes <- NULL
+    for (i in 1:nrow(batch_meta)) {
+      if (batch_meta[i,'donors'] %in% g1_g2_donors) {
+        g_sel <- sample(c(1,2),1)
+        batch_meta[i,'Group'] <- paste0('Group',as.character(g_sel))
+        batch_meta[i,'ctypes'] <- paste0('ct',as.character(g_sel))
+      } else if (batch_meta[i,'donors'] %in% g3_g4_donors) {
+        g_sel <- sample(c(3,4),1)
+        batch_meta[i,'Group'] <- paste0('Group',g_sel)
+        if (g_sel==3) {
+          batch_meta[i,'ctypes'] <- paste0('ct','1')
+        } else {
+          batch_meta[i,'ctypes'] <- paste0('ct','2')
+        }
+      } else {
+        ct_sel <- as.character(sample(c(1,2),1))
+        batch_meta[i,'Group'] <- 'Group5'
+        batch_meta[i,'ctypes'] <- paste0('ct',ct_sel)
+      }
+    }
+    
+    batch_counts <- log1p(batch_counts*10000)
+    
+    # center batch cells values around nonbatch cell expression
+    batch_counts <- t(batch_counts)
+    batch_counts <- scale(batch_counts, center=TRUE, scale=FALSE)
+    batch_counts <- t(batch_counts)
+    new_centers <- rowMeans(sim_counts)
+    batch_counts <- sweep(batch_counts,MARGIN=1,STATS=new_centers,FUN='+')
+    batch_counts[batch_counts<0] <- 0
+    
+    # change cell names
+    rownames(batch_meta) <- sapply(batch_meta$Cell,function(x){paste0(x,'_batch')})
+    colnames(batch_counts) <- sapply(colnames(batch_counts),function(x){paste0(x,'_batch')})
+    
+    # make gene names same as those in main data
+    rownames(batch_counts) <- rownames(sim_counts)
+    
+    # add batch data into main sim data
+    batch_meta <- batch_meta[,c('Group','donors','ctypes')]
+    sim_meta <- rbind(sim_meta,batch_meta)
+    sim_counts <- cbind(sim_counts,batch_counts)
+  }
 
   return(list(sim_counts,sim_meta))
 }

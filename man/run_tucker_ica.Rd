@@ -4,7 +4,7 @@
 \alias{run_tucker_ica}
 \title{Run Tucker decomposition and apply ICA transformation}
 \usage{
-run_tucker_ica(container, ranks = NULL, shuffle = FALSE)
+run_tucker_ica(container, ranks = NULL, batch_var = NULL, shuffle = FALSE)
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
@@ -13,6 +13,8 @@ for each cell type as well as results and plots from all analyses}
 \item{ranks}{numeric The number of donor, gene, and cell type ranks, respectively,
 to decompose to using Tucker decomposition. If NULL, uses ranks in container$experiment_params
 field. (default=NULL)}
+
+\item{batch_var}{character A batch variable from metadata to remove (default=NULL)}
 
 \item{shuffle}{logical If TRUE, randomly shuffles cell to donor linkages, resulting in a random
 tensor (default=FALSE)}

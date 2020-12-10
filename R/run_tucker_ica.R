@@ -6,12 +6,13 @@
 #' @param ranks numeric The number of donor, gene, and cell type ranks, respectively,
 #' to decompose to using Tucker decomposition. If NULL, uses ranks in container$experiment_params
 #' field. (default=NULL)
+#' @param batch_var character A batch variable from metadata to remove (default=NULL)
 #' @param shuffle logical If TRUE, randomly shuffles cell to donor linkages, resulting in a random
 #' tensor (default=FALSE)
 #'
 #' @return container with results of the decomposition in container$tucker_results
 #' @export
-run_tucker_ica <- function(container, ranks=NULL, shuffle=FALSE) {
+run_tucker_ica <- function(container, ranks=NULL, batch_var=NULL, shuffle=FALSE) {
 
   # check that var_scale_power has been set if scale_var is TRUE
   if (container$experiment_params$scale_var && is.null(container$experiment_params$var_scale_power)) {
@@ -41,10 +42,10 @@ run_tucker_ica <- function(container, ranks=NULL, shuffle=FALSE) {
     }
     ranks <- container$experiment_params$ranks
   }
-
+  
   # form the tensor for specified cell types
   container <- collapse_by_donors(container, shuffle=shuffle)
-  container <- form_tensor(container)
+  container <- form_tensor(container, batch_var=batch_var)
 
   # run tucker with ica on the tensor
   tensor_data <- container$tensor_data

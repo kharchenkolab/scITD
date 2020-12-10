@@ -4,7 +4,7 @@
 \alias{form_tensor}
 \title{Form the tensor and scale the data}
 \usage{
-form_tensor(container, var_scale_power = NULL)
+form_tensor(container, var_scale_power = NULL, batch_var = NULL)
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
@@ -17,6 +17,8 @@ Variance for each gene is then scaled by multiplying the unit scaled values
 by each gene's normalized variance (where the effect of the mean-variance
 dependence is taken into account) to the exponent specified here.
 If NULL, uses var_scale_power from container$experiment_params. (default=NULL)}
+
+\item{batch_var}{character A batch variable from metadata to remove (default=NULL)}
 }
 \value{
 the project container with tensor data added in the

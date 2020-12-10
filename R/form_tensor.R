@@ -10,11 +10,12 @@
 #' by each gene's normalized variance (where the effect of the mean-variance
 #' dependence is taken into account) to the exponent specified here.
 #' If NULL, uses var_scale_power from container$experiment_params. (default=NULL)
-#'
+#' @param batch_var character A batch variable from metadata to remove (default=NULL)
+#' 
 #' @return the project container with tensor data added in the
 #' container$tensor_data slot
 #' @export
-form_tensor <- function(container, var_scale_power=NULL) {
+form_tensor <- function(container, var_scale_power=NULL, batch_var=NULL) {
   ctypes_use <- container$experiment_params$ctypes_use
   scale_var <- container$experiment_params$scale_var
 
@@ -22,8 +23,7 @@ form_tensor <- function(container, var_scale_power=NULL) {
     if (is.null(var_scale_power)) {
       var_scale_power <- container$experiment_params$var_scale_power
       if (is.null(var_scale_power)) {
-        print('need to supply var_scale_power - cannot run')
-        # throw error here
+        stop('need to supply var_scale_power parameter')
       }
     }
   }
@@ -49,11 +49,34 @@ form_tensor <- function(container, var_scale_power=NULL) {
 
     # to change gene variance across donors by normalized variability
     if (scale_var) {
-      scale_factor <- get_normalized_variance(container$scMinimal_ctype[[ct]])
+
+      norm_variances <- container$scMinimal_ctype[[ct]]$norm_variances
+      scale_factor <- norm_variances[colnames(donor_means)]
+      
       donor_means <- apply(donor_means,MARGIN=1,function(x) {
         x * (scale_factor ** var_scale_power)
       })
       donor_means <- t(donor_means)
+      
+      
+      if (!is.null(batch_var)) {
+        scMinimal <- container$scMinimal_ctype[[ct]]
+        
+        # need metadata at donor level
+        metadata <- unique(scMinimal$metadata)
+        rownames(metadata) <- metadata$donors
+        metadata <- metadata[donors_in_all,]
+        
+        modcombat <- model.matrix(~1, data=metadata)
+        tmp <- sva::ComBat(dat=t(donor_means),
+                           batch=metadata[,batch_var],
+                           mod=modcombat, par.prior=TRUE,
+                           prior.plots=FALSE)
+        
+        
+        donor_means <- t(tmp)
+      }
+      
     }
 
     tnsr[, ,i] <- as.matrix(donor_means)

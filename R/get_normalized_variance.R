@@ -9,9 +9,8 @@
 #' @return a vector of the normalized variance for each gene
 #' @export
 get_normalized_variance <- function(scMinimal) {
-
+  
   dge_sparse <- t(scMinimal$data_sparse)
-
   donor_meta <- as.factor(scMinimal$metadata$donors)
   donor_sum_counts <- get_sums(dge_sparse,donor_meta)
 
@@ -24,6 +23,12 @@ get_normalized_variance <- function(scMinimal) {
   depthScale <- 1e3
   donor_sum_counts <- donor_sum_counts/as.numeric(depth/depthScale);
 
+  # d_vars <- colVars(as.matrix(donor_sum_counts))
+  # d_means <- colMeans(as.matrix(donor_sum_counts))
+  # d_obs <- rep(nrow(as.matrix(donor_sum_counts)),length(test2))
+  # df <- as.data.frame(cbind(d_means,d_vars,d_obs))
+  # colnames(df) <- c('m','v','nobs')
+  
   df <- colMeanVars(donor_sum_counts, rowSel = NULL)
   df$m <- log(df$m); df$v <- log(df$v);
   rownames(df) <- colnames(donor_sum_counts);
