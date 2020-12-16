@@ -34,14 +34,6 @@ get_ctype_vargenes <- function(container, method, thresh) {
   # set random seed to work with mclapply
   RNGkind("L'Ecuyer-CMRG")
   set.seed(container$experiment_params$rand_seed)
-  
-  # get normalized variance for each cell type
-  if (is.null(container$scMinimal_ctype[[1]]$norm_variances)) {
-    for (ct in container$experiment_params$ctypes_use) {
-      norm_variances <- get_normalized_variance(container$scMinimal_ctype[[ct]])
-      container$scMinimal_ctype[[ct]]$norm_variances <- norm_variances
-    }
-  }
 
   ncores <- container$experiment_params$ncores
 
@@ -74,8 +66,6 @@ get_ctype_vargenes <- function(container, method, thresh) {
         pvals <- vargenes_anova(container$scMinimal_ctype[[ct]], ncores)
       } else if (method == "empir") {
         pvals <- vargenes_shuffle(container$scMinimal_ctype[[ct]], 10000, ncores)
-      } else if (method == "deseq") {
-        pvals <- vargenes_DESeq2_chisq(container$scMinimal_ctype[[ct]])
       }
       var_res <- rbind(var_res,cbind(names(pvals), pvals, rep(ct,length(pvals))))
     }
@@ -152,6 +142,14 @@ get_ctype_data <- function(container, make_clean=TRUE, donor_min_cells=5, gene_m
     scMinimal <- container$scMinimal_ctype[[ct]]
     scMinimal <- subset_scMinimal(scMinimal, make_copy=FALSE, genes_use=genes_in_all)
   }
+  
+  # get normalized variance for each cell type
+  if (is.null(container$scMinimal_ctype[[1]]$norm_variances)) {
+    for (ct in container$experiment_params$ctypes_use) {
+      norm_variances <- get_normalized_variance(container$scMinimal_ctype[[ct]])
+      container$scMinimal_ctype[[ct]]$norm_variances <- norm_variances
+    }
+  }
 
   return(container)
 }
@@ -174,71 +172,5 @@ reduce_to_vargenes <- function(container) {
   return(container)
 }
 
-
-#' Run combat on donor mean expression matrix
-#'
-#' @param container environment Project container that stores sub-containers
-#' for each cell type as well as results and plots from all analyses
-#' @param batch_var character The name of the metadata variable corresponding
-#' with the batches to remove
-#'
-#' @return the project container with corrected matrices in 
-#' scMinimal_ctype[[ct]]$data_means
-#' @export
-apply_pseudobulk_batch_correct <- function(container,batch_var) {
-  container <- collapse_by_donors(container, shuffle=FALSE)
-  
-  for (ct in container$experiment_params$ctypes_use) {
-    scMinimal <- container$scMinimal_ctype[[ct]]
-
-    # need metadata at donor level
-    metadata <- unique(scMinimal$metadata)
-    rownames(metadata) <- metadata$donors
-    metadata <- metadata[rownames(scMinimal$data_means),]
-
-    modcombat <- model.matrix(~1, data=metadata)
-    tmp <- sva::ComBat(dat=t(scMinimal$data_means),
-                  batch=metadata[,batch_var],
-                  mod=modcombat, par.prior=TRUE,
-                  prior.plots=FALSE)
-    
-
-    tmp <- Matrix(tmp, sparse = TRUE)
-    
-    # need to replace both the metadata and the data_sparse since this field is used to get vargenes
-    scMinimal$data_sparse <- tmp
-    scMinimal$metadata <- metadata
-  }
-  return(container)
-}
-
-#' Run combat on donor mean expression matrix
-#'
-#' @param container environment Project container that stores sub-containers
-#' for each cell type as well as results and plots from all analyses
-#' @param batch_var character The name of the metadata variable corresponding
-#' with the batches to remove
-#'
-#' @return the project container with corrected matrices in 
-#' scMinimal_ctype[[ct]]$data_means
-#' @export
-apply_cellwise_batch_correct <- function(container,batch_var) {
-  for (ct in container$experiment_params$ctypes_use) {
-    scMinimal <- container$scMinimal_ctype[[ct]]
-    metadata <- scMinimal$metadata
-    modcombat <- model.matrix(~1, data=metadata)
-    tmp <- sva::ComBat(dat=scMinimal$data_sparse,
-                       batch=metadata[,batch_var],
-                       mod=modcombat, par.prior=TRUE,
-                       prior.plots=FALSE)
-    
-
-    tmp <- Matrix(tmp, sparse = TRUE)
-    
-    # need to replace both the metadata and the data_sparse since this field is used to get vargenes
-    scMinimal$data_sparse <- tmp
-  }
-  return(container)
-}
 
 

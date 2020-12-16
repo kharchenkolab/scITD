@@ -25,6 +25,9 @@
 #' expressed genes used to generate the distinc processes (default=2)
 #' @param factor_overlap logical Set to TRUE to have ~20% of the DE genes be found across
 #' multiple factors (default=TRUE)
+#' @param add_batch logical Set to TRUE to add batch effects (default=FALSE)
+#' @param batch_donors character Optional list of vectors for the donors that should be
+#' in each batch (default=NULL)
 #' @param rseed numeric The random seed to use (default=10)
 #'
 #' @return Normalized gene by cell count matrix and metadata data.frame. The DE genes can be

@@ -67,7 +67,7 @@ form_tensor <- function(container, var_scale_power=NULL, batch_var=NULL) {
         rownames(metadata) <- metadata$donors
         metadata <- metadata[donors_in_all,]
         
-        modcombat <- model.matrix(~1, data=metadata)
+        modcombat <- stats::model.matrix(~1, data=metadata)
         tmp <- sva::ComBat(dat=t(donor_means),
                            batch=metadata[,batch_var],
                            mod=modcombat, par.prior=TRUE,

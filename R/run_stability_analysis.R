@@ -32,6 +32,9 @@ run_stability_analysis <- function(container, downsample_ratio=0.9, n_iter=500) 
   donors_keep <- container$tensor_data[[1]]
   scMinimal <- subset_scMinimal(container$scMinimal_full, make_copy=TRUE,
                                 donors_use = donors_keep, genes_use = vargenes)
+  
+  ### need to save normalized variances all genes each cell type. put back in container below!!
+  
   all_avmax_lds_cors <- c()
   all_avmax_dnr_cors <- c()
   stability_results <- mclapply(1:n_iter, function(i) {
@@ -51,6 +54,8 @@ run_stability_analysis <- function(container, downsample_ratio=0.9, n_iter=500) 
                                         ranks=container$experiment_params$ranks,
                                         ncores=container$experiment_params$ncores,
                                         rand_seed=container$experiment_params$rand_seed)
+    
+    ### insert normalized variance values here!!!
 
     # create donor av ctype matrices (we already limited it to vargenes above)
     container_sub <- get_ctype_data(container_sub, make_clean=FALSE)

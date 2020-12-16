@@ -12,22 +12,10 @@ vargenes_anova <- function(scMinimal, ncores) {
   # calculate anova for each gene
   dge_sparse <- t(scMinimal$data_sparse)
   pvals <- mclapply(1:ncol(dge_sparse),function(x) {
-    # tmp <- cbind(dge_sparse[,x],scMinimal$metadata$donors)
-    # 
-    # anova_res <- aov(tmp[,1]~tmp[,2])
-    # pval <- summary(anova_res)[[1]][["Pr(>F)"]][[1]]
-    
-    # # trying mixed model
-    # tmp <- cbind(dge_sparse[,x],scMinimal$metadata$donors,
-    #              scMinimal$metadata$pool)
-    tmp <- cbind(dge_sparse[,x],scMinimal$metadata$donor_genotype,
-                 scMinimal$metadata$pool)
-    full_res <- lme4::lmer(tmp[,1] ~ tmp[,2] + (1|tmp[,3]),
-                           REML = FALSE)
-    reduced_res <- lme4::lmer(tmp[,1] ~ (1|tmp[,3]),
-                              REML = FALSE)
-    anova_res <- anova(reduced_res, full_res)
-    pval <- anova_res[['Pr(>Chisq)']][[2]]
+    tmp <- cbind(dge_sparse[,x],scMinimal$metadata$donors)
+
+    anova_res <- aov(tmp[,1]~tmp[,2])
+    pval <- summary(anova_res)[[1]][["Pr(>F)"]][[1]]
   }, mc.cores = ncores)
 
   names(pvals) <- colnames(dge_sparse)
