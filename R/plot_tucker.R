@@ -146,14 +146,6 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL, s
 
   # save plot
   container$plots$donor_matrix <- myhmap
-  
-  # if (add_meta_associations) {
-  #   if (!is.null(container$plots$meta_associations)) {
-  #     # ht_list = container$plots$meta_associations %v% myhmap  
-  #     # draw(ht_list)
-  #   }
-  # }
-
 
   return(container)
 }
@@ -190,19 +182,29 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL, s
 #' to get gene callouts for. If NULL, then gets gene callouts for largest magnitude significant
 #' genes for all cell types. (default=NULL)
 #' @param show_xlab logical If TRUE, displays the xlabel 'genes' (default=TRUE)
-#' @param show_var_eplained logical If TRUE then shows an anottation with the explained variance
+#' @param show_var_explained logical If TRUE then shows an anottation with the explained variance
 #' for each cell type (default=TRUE)
-#' @param show_all_legends logical Set to TRUE in order to show legends (default=TRUE)
+#' @param reset_other_factor_plots logical Set to TRUE to set all other loadings plots to NULL.
+#' Useful if run get_all_lds_factor_plots but then only want to show one or two plots. (default=FALSE)
+#' @param draw_plot logical Set to TRUE to show the plot. Plot is stored regardless. (default=TRUE)
 #'
-#' @return container with the plot put in container$plots$single_lds_plot
+#' @return container with the plot put in container$plots$all_lds_plots and the legend put in
+#' container$plots$all_legends. Use draw(<hmap obj>,annotation_legend_list = <hmap legend obj>) 
+#' to re-render the plot with legend
 #' @export
 plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, nonsig_to_zero=FALSE, annot='none',
                                 pathways=NULL, sim_de_donor_group=NULL, sig_thresh=0.05, display_genes=FALSE, 
                                 gene_callouts=FALSE, callout_n_gene_per_ctype=5, callout_ctypes=NULL, show_xlab=TRUE,
-                                show_var_eplained=TRUE, show_all_legends=TRUE) {
+                                show_var_explained=TRUE, reset_other_factor_plots=FALSE, draw_plot=TRUE) {
   # check that Tucker has been run
   if (is.null(container$tucker_results)) {
     stop("Need to run run_tucker_ica() first.")
+  }
+  
+  # remove other loadings plots if indicated
+  if (reset_other_factor_plots) {
+    container$plots$all_lds_plots <- NULL
+    container$plots$all_legends <- NULL
   }
 
   ldngs <- container$tucker_results[[2]]
@@ -253,14 +255,14 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
   
   hm_legends <- list()
   
-  if (show_var_eplained) {
+  if (show_var_explained) {
     ctype_var_exp <- get_explained_var(container, tmp_casted_num, factor_select)
     ctype_var_exp <- unlist(ctype_var_exp)
     ctype_var_exp <- ctype_var_exp[colnames(tmp_casted_num)]
     col_fun2 = circlize::colorRamp2(c(0, max(ctype_var_exp)), c("white", "black"))
     var_annot <- ComplexHeatmap::HeatmapAnnotation(var = ctype_var_exp,col=list(var=col_fun2),
                                                    show_annotation_name=FALSE, border=TRUE,
-                                                   show_legend = show_all_legends)
+                                                   show_legend = FALSE)
     
     hm_legends[[2]] <- Legend(col_fun = col_fun2, title = "var exp",
                               grid_height = unit(1, "mm"), grid_width = unit(3, "mm"),
@@ -297,7 +299,7 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
                      row_title = rt, row_title_gp = gpar(fontsize = 14), border = TRUE,
                      row_labels = convert_gn(container,rownames(tmp_casted_num)),
                      right_annotation = gene_callouts, top_annotation=var_annot,
-                     show_heatmap_legend = show_all_legends)
+                     show_heatmap_legend = FALSE)
   
   # turn off heatmap message saying callouts require pdf view or zoom view
   ht_opt$message = FALSE
@@ -369,11 +371,24 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
   }
 
   # save plot in the container
-  container$plots$single_lds_plot <- hm_list
+  container$plots$all_lds_plots[[as.character(factor_select)]] <- hm_list
   
-  pd = packLegend(hm_legends[[1]], hm_legends[[2]], direction = "vertical")
-  container$plots$ldng_legends <- pd
+  # save legend in container
+  if (show_var_explained) {
+    pd <- packLegend(hm_legends[[1]], hm_legends[[2]], direction = "vertical")
+  } else {
+    pd <- hm_legends[[1]]
+  }
+  container$plots$all_legends[[as.character(factor_select)]] <- pd
   
+  # optionally draw the plot
+  if (draw_plot) {
+    draw(hm_list,annotation_legend_list = pd, 
+         legend_grouping = "original",
+         newpage=FALSE)
+  }
+
+
   return(container)
 }
 
@@ -589,7 +604,7 @@ get_explained_var <- function(container, tmp_casted_num, factor_use) {
 #' to get gene callouts for. Each entry of the list should be a character vector of ctypes for
 #' the respective factor. If NULL, then gets gene callouts for largest magnitude significant
 #' genes for all cell types. (default=NULL)
-#' @param show_var_eplained logical If TRUE then shows an anottation with the explained variance
+#' @param show_var_explained logical If TRUE then shows an anottation with the explained variance
 #' for each cell type (default=TRUE)
 #'
 #' @return the project container with the list of plots placed in container$plots$all_lds_plots
@@ -599,20 +614,10 @@ get_all_lds_factor_plots <- function(container, use_sig_only=FALSE, nonsig_to_ze
                                      sig_thresh=0.05, display_genes=FALSE,
                                      gene_callouts=FALSE, callout_n_gene_per_ctype=5, 
                                      callout_ctypes=NULL,
-                                     show_var_eplained=TRUE) {
-
-  # save any plot previously in the single lds plot slot because will be overwrittern
-  prev_lds_plot <- container$plots$single_lds_plot
+                                     show_var_explained=TRUE) {
 
   num_fact <- nrow(container$tucker_results[[2]])
-  hm_list <- list()
-  lgnd_list <- list()
   for (i in 1:num_fact) {
-    # if (i==1 && !gene_callouts) {
-    #   show_xlab <- TRUE
-    # } else {
-    #   show_xlab <- FALSE
-    # }
     container <- plot_loadings_annot(container, factor_select=i, 
                                      use_sig_only=use_sig_only,
                                      nonsig_to_zero=nonsig_to_zero,
@@ -624,33 +629,36 @@ get_all_lds_factor_plots <- function(container, use_sig_only=FALSE, nonsig_to_ze
                                      callout_n_gene_per_ctype=callout_n_gene_per_ctype,
                                      callout_ctypes=callout_ctypes[[i]],
                                      show_xlab=TRUE,
-                                     show_var_eplained=show_var_eplained,
-                                     show_all_legends=FALSE)
+                                     show_var_explained=show_var_explained,
+                                     reset_other_factor_plots=FALSE,
+                                     draw_plot=FALSE)
     
-    hm_list[[i]] <- container$plots$single_lds_plot
-    lgnd_list[[i]] <- container$plots$ldng_legends
   }
-
-  # rewrite the single plot back into its original slot
-  container$plots$single_lds_plot <- prev_lds_plot
-
-  # save list of all plots
-  container$plots$all_lds_plots <- hm_list
-  container$plots$all_legends <- lgnd_list
   
   return(container)
 }
 
-#' Creates a figure of all loadings plots side by side
+#' Creates a figure of all loadings plots arranged
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
 #' @param n_rows numeric The number of rows to fit the plots onto
+#' @param data_type character Can be either "loadings", "gsea", or "dgenes". This
+#' determines which list of heatmaps to organize into the figure.
 #' @export
-render_all_lds_plots <- function(container,n_rows) {
+render_multi_plots <- function(container, n_rows, data_type) {
   
-  hm_list <- container$plots$all_lds_plots
-  hm_legends <- container$plots$all_legends
+  if (data_type == "loadings") {
+    hm_list <- container$plots$all_lds_plots
+    hm_legends <- container$plots$all_legends
+  } else if (data_type == "gsea") {
+    hm_list <- container$plots$gsea
+  } else if (data_type == "dgenes") {
+    hm_list <- container$plots$donor_sig_genes
+  }
+  
+  # order the list of heatmaps by factor number
+  hm_list <- hm_list[order(as.numeric(names(hm_list)),decreasing=FALSE)]
   
   grid::grid.newpage()
   
@@ -673,13 +681,17 @@ render_all_lds_plots <- function(container,n_rows) {
     grid::pushViewport(grid::viewport(x = x_pos, y = y_pos, 
                                       width = (1/grid_n_col)-.02, height = 1/n_rows,
                                       just = c("left","top")))
-    draw(hm_list[[i]],annotation_legend_list = hm_legends[[i]], 
-         legend_grouping = "original",
-         newpage=FALSE)
+    if (data_type == "loadings") {
+      draw(hm_list[[i]],annotation_legend_list = hm_legends[[i]], 
+           legend_grouping = "original",
+           newpage=FALSE)
+    } else if (data_type == "gsea" | data_type == "dgenes") {
+      draw(hm_list[[i]], newpage=FALSE)
+    }
+    
     grid::popViewport()
     
   }
-  
 }
 
 
@@ -824,7 +836,7 @@ plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype, ctyp
   # # reset scale variance decision
   # container <- set_experiment_params(container, scale_var = orig_scale_decision)
 
-  container$plots$donor_sig_genes[[paste0('Factor',as.character(factor_select))]] <- myhmap
+  container$plots$donor_sig_genes[[as.character(factor_select)]] <- myhmap
   return(container)
 }
 

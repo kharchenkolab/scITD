@@ -16,7 +16,7 @@ get_all_lds_factor_plots(
   gene_callouts = FALSE,
   callout_n_gene_per_ctype = 5,
   callout_ctypes = NULL,
-  show_var_eplained = TRUE
+  show_var_explained = TRUE
 )
 }
 \arguments{
@@ -61,7 +61,7 @@ to get gene callouts for. Each entry of the list should be a character vector of
 the respective factor. If NULL, then gets gene callouts for largest magnitude significant
 genes for all cell types. (default=NULL)}
 
-\item{show_var_eplained}{logical If TRUE then shows an anottation with the explained variance
+\item{show_var_explained}{logical If TRUE then shows an anottation with the explained variance
 for each cell type (default=TRUE)}
 }
 \value{

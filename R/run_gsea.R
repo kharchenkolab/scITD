@@ -19,9 +19,9 @@ run_fgsea <- function(container, factor_select, sig_thresh, ctype, db_use="GO",
                       collapse_paths=TRUE) {
   donor_scores <- container$tucker_results[[1]]
   
-  # scaling to unit variance!
+  # select mean exp data for one cell type 
   tnsr_slice <- container$scMinimal_ctype[[ctype]]$data_means
-  tnsr_slice <- scale(tnsr_slice, center=TRUE)
+  tnsr_slice <- scale(tnsr_slice, center=TRUE) # scaling to unit variance!
   tnsr_slice <- tnsr_slice[rownames(donor_scores),]
   
   # get transformed expression for each gene by summing d_score * scaled exp
@@ -215,12 +215,21 @@ run_hypergeometric_gsea <- function(container, factor_select, ctype, up_down,
 #' one database can be used. (default="GO")
 #' @param collapse_paths logical Set to TRUE to collapse significant pathways with
 #' considerable overlap. Only used if method="fgsea". (default=TRUE)
+#' @param reset_other_factor_plots logical Set to TRUE to set all other gsea plots to NULL (default=FALSE)
+#' @param draw_plot logical Set to TRUE to show the plot. Plot is stored regardless. (default=TRUE)
 #'
 #' @return a heatmap plot of the gsea results in the slot
 #' container$plots$gsea$FactorX
 #' @export
 run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh=0.05,
-                                 db_use="GO", collapse_paths=TRUE) {
+                                db_use="GO", collapse_paths=TRUE, 
+                                reset_other_factor_plots=FALSE, draw_plot=TRUE) {
+  
+  if (reset_other_factor_plots) {
+    container$plots$gsea <- NULL
+    container$gsea_results <- NULL
+  }
+  
   up_sets_all <- list()
   down_sets_all <- list()
   set_union <- c()
@@ -260,13 +269,16 @@ run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh
   }
 
   # add results to container
-  factor_name <- paste0('Factor', as.character(factor_select))
-  container$gsea_results[[factor_name]] <- list('up'=up_sets_all,
+  container$gsea_results[[as.character(factor_select)]] <- list('up'=up_sets_all,
                                                 'down'=down_sets_all)
   
   # plot results
   myplot <- plot_gsea_hmap(container,factor_select,thresh,set_union=set_union)
-  container$plots$gsea[[factor_name]] <- myplot
+  container$plots$gsea[[as.character(factor_select)]] <- myplot
+  
+  if (draw_plot) {
+    draw(myplot,newpage=FALSE)
+  }
 
   return(container)
 }
@@ -323,8 +335,8 @@ get_intersecting_pathways <- function(container, factor_select, these_ctypes_onl
 #' @return the heatmap plot
 #' @export
 plot_gsea_hmap <- function(container,factor_select,thresh,set_union=NULL) {
-  
-  gsea_res <- container$gsea_results[[paste0('Factor',as.character(factor_select))]]
+  factor_name <- paste0('Factor',as.character(factor_select))
+  gsea_res <- container$gsea_results[[as.character(factor_select)]]
   
   df_list <- list()
   for (k in 1:length(gsea_res)) {
@@ -346,7 +358,6 @@ plot_gsea_hmap <- function(container,factor_select,thresh,set_union=NULL) {
       ctype_res <- up_down_sets[[i]]
       ctype <- names(up_down_sets)[i]
       for (j in 1:length(ctype_res)) {
-        sum(is.na(ctype_res))
         res[names(ctype_res)[j],ctype] <- ctype_res[j]
       }
     }
@@ -400,6 +411,9 @@ plot_gsea_hmap <- function(container,factor_select,thresh,set_union=NULL) {
                       show_row_names = TRUE,
                       row_title_gp = gpar(fontsize = 14),
                       row_names_gp = gpar(fontsize = 6),
+                      column_title = factor_name,
+                      column_title_side = "top",
+                      column_title_gp = gpar(fontsize = 20, fontface = "bold"),
                       border=TRUE)
     if (k == 1) {
       hmap_list <- myhmap
