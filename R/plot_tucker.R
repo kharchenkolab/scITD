@@ -12,10 +12,13 @@
 #' by. If NULL, donor clustering is done using donor scores. (default=NULL)
 #' @param show_donor_ids logical Set to TRUE to show donor id as row name on the
 #' heamap (default=FALSE)
+#' @param add_meta_associations logical If TRUE then vertically appends metadata
+#' associations heatmap, which should have been previously generated with 
+#' plot_meta_associations() (default=FALSE)
 #'
 #' @return the project container with the plot in container$plots$donor_matrix
 #' @export
-plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL, show_donor_ids=FALSE) {
+plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL, show_donor_ids=FALSE, add_meta_associations=FALSE) {
 
   # check that Tucker has been run
   if (is.null(container$tucker_results)) {
@@ -42,14 +45,30 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL, s
   }
 
   if (is.null(meta_vars)) {
-    myhmap <- Heatmap(as.matrix(donor_mat), name = "score",
-                      cluster_columns = FALSE,show_column_dend = FALSE,
-                      cluster_rows = TRUE, show_row_dend = FALSE,
-                      column_names_gp = gpar(fontsize = 10),
-                      col = col_fun, row_title = "Donors",
-                      row_title_gp = gpar(fontsize = 14),
-                      show_row_names = show_donor_ids,
-                      border = TRUE)
+    if (add_meta_associations) {
+      col_fun_annot = colorRamp2(c(0, 1), c("white", "forest green"))
+      ta <- HeatmapAnnotation(rsq=t(container$meta_associations),col = list(rsq = col_fun_annot),
+                              border=TRUE,annotation_name_side = "right")
+      
+      myhmap <- Heatmap(as.matrix(donor_mat), name = "score",
+                        cluster_columns = FALSE,show_column_dend = FALSE,
+                        cluster_rows = TRUE, show_row_dend = FALSE,
+                        column_names_gp = gpar(fontsize = 10),
+                        col = col_fun, row_title = "Donors",
+                        row_title_gp = gpar(fontsize = 14),
+                        show_row_names = show_donor_ids,
+                        border = TRUE, top_annotation=ta)
+    } else {
+      myhmap <- Heatmap(as.matrix(donor_mat), name = "score",
+                        cluster_columns = FALSE,show_column_dend = FALSE,
+                        cluster_rows = TRUE, show_row_dend = FALSE,
+                        column_names_gp = gpar(fontsize = 10),
+                        col = col_fun, row_title = "Donors",
+                        row_title_gp = gpar(fontsize = 14),
+                        show_row_names = show_donor_ids,
+                        border = TRUE)
+    }
+   
   } else {
     meta <- container$scMinimal_full$metadata[,c('donors',meta_vars)]
     meta <- unique(meta)
@@ -76,16 +95,32 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL, s
       do_row_clust <- TRUE
     }
 
-    myhmap <- Heatmap(as.matrix(donor_mat), name = "score",
-                      cluster_columns = FALSE,
-                      cluster_rows = do_row_clust,
-                      show_row_dend = FALSE,
-                      column_names_gp = gpar(fontsize = 10),
-                      col = col_fun, row_title = "Donors",
-                      row_title_gp = gpar(fontsize = 14),
-                      show_row_names = show_donor_ids,
-                      border = TRUE)
-
+    if (add_meta_associations) {
+      col_fun_annot = colorRamp2(c(0, 1), c("white", "forest green"))
+      ta <- HeatmapAnnotation(rsq=t(container$meta_associations),col = list(rsq = col_fun_annot),
+                              border=TRUE,annotation_name_side = "right")
+      
+      myhmap <- Heatmap(as.matrix(donor_mat), name = "score",
+                        cluster_columns = FALSE,
+                        cluster_rows = do_row_clust,
+                        show_row_dend = FALSE,
+                        column_names_gp = gpar(fontsize = 10),
+                        col = col_fun, row_title = "Donors",
+                        row_title_gp = gpar(fontsize = 14),
+                        show_row_names = show_donor_ids,
+                        border = TRUE, top_annotation=ta)
+    } else {
+      myhmap <- Heatmap(as.matrix(donor_mat), name = "score",
+                        cluster_columns = FALSE,
+                        cluster_rows = do_row_clust,
+                        show_row_dend = FALSE,
+                        column_names_gp = gpar(fontsize = 10),
+                        col = col_fun, row_title = "Donors",
+                        row_title_gp = gpar(fontsize = 14),
+                        show_row_names = show_donor_ids,
+                        border = TRUE)
+    }
+    
     for (j in 1:ncol(meta)) {
       if (colnames(meta)[j]=='sex') {
         mycol <- RColorBrewer::brewer.pal(n = 3, name = "Accent")
@@ -111,6 +146,14 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL, s
 
   # save plot
   container$plots$donor_matrix <- myhmap
+  
+  # if (add_meta_associations) {
+  #   if (!is.null(container$plots$meta_associations)) {
+  #     # ht_list = container$plots$meta_associations %v% myhmap  
+  #     # draw(ht_list)
+  #   }
+  # }
+
 
   return(container)
 }
@@ -787,9 +830,153 @@ plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype, ctyp
 
 
 
+#' Pairwise comparison of factors from two separate decompositions
+#'
+#' @param tucker_res1 list The container$tucker_res from first decomposition
+#' @param tucker_res2 list The container$tucker_res from first decomposition
+#' @param decomp_names character Names of the two decompositions that will go 
+#' on the axes of the heatmap
+#' @param meta_anno1 matrix The result of calling get_meta_associations() 
+#' corresponding to the first decomposition, which is stored in 
+#' container$meta_associations
+#' @param meta_anno2 matrix The result of calling get_meta_associations() 
+#' corresponding to the second decomposition, which is stored in 
+#' container$meta_associations
+#' @param use_text logical If TRUE, then displays correlation coefficients in cells
+#' (default=TRUE)
+#'
+#' @export
+compare_decompositions <- function(tucker_res1,tucker_res2,decomp_names,meta_anno1,meta_anno2,use_text=TRUE) {
+  ## first get donor scores comparison
+  # ensure donors in same order
+  tr1 <- tucker_res1[[1]]
+  tr2 <- tucker_res2[[1]]
+  
+  # get donors present in both decompositions
+  donors_use <- intersect(rownames(tr1),rownames(tr2))
+  tr1 <- tr1[donors_use,]
+  tr2 <- tr2[donors_use,]
+  
+  res_cor <- cor(tr1,tr2)
+  rownames(res_cor) <- sapply(1:ncol(tr1),function(x){paste0('Factor',as.character(x))})
+  colnames(res_cor) <- sapply(1:ncol(tr2),function(x){paste0('Factor',as.character(x))})
+  
+  res_orig <- res_cor
+  
+  # order max vals along the diagonal
+  mx_dimension <- which(dim(res_cor)==max(dim(res_cor)))
+  if (length(mx_dimension)>1) {
+    mx_dimension <- 1
+  }
+  
+  if (mx_dimension==1) {
+    # order columns by max value in column
+    col_maxes <- apply(abs(res_cor), 2, function(x) max(x, na.rm = TRUE))
+    res_cor <- res_cor[,order(col_maxes,decreasing=TRUE)]
+    # loop through columns, rearranging rows to make max on diagonal
+    for (j in 1:ncol(res_cor)) {
+      new_row_order <- order(abs(res_cor[j:nrow(res_cor),j]),decreasing=TRUE)
+      res_tmp <- res_cor[j:nrow(res_cor),,drop=FALSE]
+      res_tmp <- res_tmp[new_row_order,,drop=FALSE]
+      res_cor[j:nrow(res_cor),] <- res_tmp
+      rownames(res_cor)[j:nrow(res_cor)] <- rownames(res_tmp) 
+    }
+  } else if (mx_dimension==2) {
+    # order rows by max value in row
+    row_maxes <- apply(abs(res_cor), 1, function(x) max(x, na.rm = TRUE))
+    res_cor <- res_cor[order(row_maxes,decreasing=TRUE),]
+    # loop through rows, rearranging columns to make max on diagonal
+    for (j in 1:nrow(res_cor)) {
+      new_col_order <- order(abs(res_cor[j,j:ncol(res_cor)]),decreasing=TRUE)
+      res_tmp <- res_cor[,j:ncol(res_cor),drop=FALSE]
+      res_tmp <- res_tmp[,new_col_order,drop=FALSE]
+      res_cor[,j:ncol(res_cor)] <- res_tmp
+      colnames(res_cor)[j:ncol(res_cor)] <- colnames(res_tmp) 
+    }
+  }
+  
+  col_fun = colorRamp2(c(-1, 0, 1), c("blue", "white", "red"))
+  new_row_order <- match(rownames(res_cor),rownames(res_orig))
+  new_col_order <- match(colnames(res_cor),colnames(res_orig))
+  col_fun_annot = colorRamp2(c(0, 1), c("white", "forest green"))
+  la <- rowAnnotation(rsq=t(meta_anno1),col = list(rsq = col_fun_annot),
+                      border=TRUE,annotation_name_side = "top")
+  ba <- HeatmapAnnotation(rsq=t(meta_anno2),col = list(rsq = col_fun_annot),
+                          border=TRUE,annotation_name_side = "left",show_legend=FALSE)
+  dscores_hmap <- Heatmap(res_orig, name = "Pearson r",
+                    cluster_columns = FALSE,
+                    cluster_rows = FALSE,
+                    column_names_gp = gpar(fontsize = 8),
+                    row_names_gp = gpar(fontsize = 10),
+                    col = col_fun,border=TRUE, show_column_names=TRUE,
+                    show_row_names=TRUE,show_row_dend = FALSE,
+                    show_column_dend = FALSE,
+                    row_title = decomp_names[1],
+                    row_title_gp = gpar(fontsize = 20),
+                    column_title = decomp_names[2],
+                    column_title_gp = gpar(fontsize = 20),
+                    column_title_side = "bottom",
+                    bottom_annotation=ba,
+                    left_annotation=la,
+                    row_names_side = "left",
+                    row_order = new_row_order,
+                    column_order = new_col_order,
+                    cell_fun = function(j, i, x, y, width, height, fill) {
+                      if (use_text) {
+                        grid::grid.text(sprintf("%.2f", res_orig[i, j]), x, y, gp = gpar(fontsize = 10))
+                      }
+                    })
+  
+  ## now to get loadings comparison with same factor ordering
+  # ensure genes in same order
+  tr1 <- tucker_res1[[2]]
+  tr2 <- tucker_res2[[2]]
+  
+  # get gene_ctype combos present in both decompositions
+  gc_use <- intersect(colnames(tr1),colnames(tr2))
+  tr1 <- t(tr1[,gc_use])
+  tr2 <- t(tr2[,gc_use])
+  
+  res_cor <- cor(tr1,tr2)
+  rownames(res_cor) <- sapply(1:ncol(tr1),function(x){paste0('Factor',as.character(x))})
+  colnames(res_cor) <- sapply(1:ncol(tr2),function(x){paste0('Factor',as.character(x))})
+  
+  loadings_hmap <- Heatmap(res_cor, name = "Loadings Pearson r",
+                    cluster_columns = FALSE,
+                    cluster_rows = FALSE,
+                    column_names_gp = gpar(fontsize = 8),
+                    row_names_gp = gpar(fontsize = 10),
+                    col = col_fun,border=TRUE, show_column_names=TRUE,
+                    show_row_names=TRUE,show_row_dend = FALSE,
+                    show_column_dend = FALSE,
+                    row_title = decomp_names[1],
+                    row_title_gp = gpar(fontsize = 20),
+                    column_title = decomp_names[2],
+                    column_title_gp = gpar(fontsize = 20),
+                    column_title_side = "bottom",
+                    bottom_annotation=ba,
+                    left_annotation=la,
+                    row_names_side = "left",
+                    row_order = new_row_order,
+                    column_order = new_col_order,
+                    show_heatmap_legend = FALSE,
+                    cell_fun = function(j, i, x, y, width, height, fill) {
+                      if (use_text) {
+                        grid::grid.text(sprintf("%.2f", res_cor[i, j]), x, y, gp = gpar(fontsize = 10))
+                      }
+                    })
+  
+  hmlist <- list(dscores_hmap,loadings_hmap)
+  hmlist <- dscores_hmap + loadings_hmap
+  
+  draw(hmlist, padding = unit(c(2, 2, 10, 2), "mm")) # add space for titles
+  decorate_heatmap_body("Pearson r", {
+    grid::grid.text("Donor Scores Comparison", y = unit(1, "npc") + unit(2, "mm"), just = "bottom")
+  })
+  decorate_heatmap_body("Loadings Pearson r", {
+    grid::grid.text("Loadings Comparison", y = unit(1, "npc") + unit(2, "mm"), just = "bottom")
+  })
 
-
-
-
+}
 
 

@@ -126,8 +126,6 @@ get_ctype_data <- function(container, make_clean=TRUE, donor_min_cells=5, gene_m
     container <- add_ctype_data_to_container(container, ctype_sub)
   }
 
-  ## need to ensure all ctype matrices have same genes...
-
   # first get intersection of genes in all ctypes not removed by cleaning
   ct1 <- container$experiment_params$ctypes_use[1]
   g1 <- rownames(container$scMinimal_ctype[[ct]]$data_sparse)
