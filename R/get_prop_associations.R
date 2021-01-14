@@ -382,8 +382,6 @@ compute_associations <- function(donor_balances, donor_scores, stat_type) {
       reg_stat <- lmres$p.value
     }
     
-    
-
     all_reg_stats <- c(all_reg_stats,reg_stat)
   }
   return(all_reg_stats)

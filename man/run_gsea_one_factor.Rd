@@ -10,7 +10,9 @@ run_gsea_one_factor(
   method = "fgsea",
   thresh = 0.05,
   db_use = "GO",
-  collapse_paths = TRUE
+  collapse_paths = TRUE,
+  reset_other_factor_plots = FALSE,
+  draw_plot = TRUE
 )
 }
 \arguments{
@@ -31,6 +33,10 @@ one database can be used. (default="GO")}
 
 \item{collapse_paths}{logical Set to TRUE to collapse significant pathways with
 considerable overlap. Only used if method="fgsea". (default=TRUE)}
+
+\item{reset_other_factor_plots}{logical Set to TRUE to set all other gsea plots to NULL (default=FALSE)}
+
+\item{draw_plot}{logical Set to TRUE to show the plot. Plot is stored regardless. (default=TRUE)}
 }
 \value{
 a heatmap plot of the gsea results in the slot

@@ -992,3 +992,102 @@ compare_decompositions <- function(tucker_res1,tucker_res2,decomp_names,meta_ann
 }
 
 
+#' Plot dotplots for each factor to compare donor scores between meta groups
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param meta_var character The meta data variable to compare groups for
+#'
+#' @return a figure of comparison plots (one for each factor)
+#' @export
+plot_scores_by_meta <- function(container,meta_var) {
+  dscores <- container[["tucker_results"]][[1]]
+  
+  meta <- container$scMinimal_full$metadata[,c('donors',meta_var)]
+  meta <- unique(meta)
+  rownames(meta) <- meta$donors
+  meta$donors <- NULL
+  meta_vals <- as.character(unique(meta[[meta_var]]))
+  
+  # make all columns of meta to be factors
+  for (i in 1:ncol(meta)) {
+    meta[,i] <- as.factor(unlist(meta[,i]))
+  }
+  
+  all_plots <- list()
+  all_pvals <- data.frame(matrix(nrow=0,ncol=4))
+  all_dat <- data.frame(matrix(nrow=0,ncol=3))
+  
+  for (j in 1:ncol(dscores)) {
+    f <- dscores[,j]
+    
+    # limit rows of meta to those in dscores
+    meta <- meta[names(f),,drop=FALSE]
+    
+    tmp <- as.data.frame(cbind(f,meta,rep(j,nrow(meta))))
+    
+    # get p-value by t-test for each group comparison (pairwise)
+    g_compare <- combn(meta_vals,2)
+    for (i in 1:ncol(g_compare)) {
+      g1 <- g_compare[1,i]
+      g2 <- g_compare[2,i]
+      t_res <- t.test(tmp[tmp[[meta_var]]==g1,1], tmp[tmp[[meta_var]]==g2,1], 
+                      alternative = "two.sided",var.equal = FALSE)
+      pval <- t_res$p.value
+      all_pvals <- rbind(all_pvals,c(j,'dscore',g1,g2,pval))
+      all_dat <- rbind(all_dat,tmp)
+    }
+  }
+  
+  colnames(all_pvals) <- c('myfactor','.y.','group1','group2','p.adj')
+  all_pvals$myfactor <- as.factor(all_pvals$myfactor)
+  all_pvals$group1 <- as.character(all_pvals$group1)
+  all_pvals$group2 <- as.character(all_pvals$group2)
+  
+  
+  colnames(all_dat) <- c('dscore','Status','myfactor')
+  all_dat$myfactor <- as.factor(all_dat$myfactor)
+  
+  # apply fdr correction
+  all_pvals$p.adj <- p.adjust(all_pvals$p.adj,method='fdr')
+  
+  # write p-vals as text
+  all_pvals$p.adj <- sapply(all_pvals$p.adj,function(x) {
+    paste0('p = ',as.character(round(x,digits=5)))
+  })
+  
+  for (j in 1:ncol(dscores)) {
+    tmp_dat <- all_dat[all_dat$myfactor==j,]
+    tmp_pvals <- all_pvals[all_pvals$myfactor==j,,drop=FALSE]
+    p <- ggplot(tmp_dat,aes(x=Status,y=dscore)) +
+      geom_violin() +
+      geom_dotplot(binaxis = 'y', stackdir = 'center', method = 'histodot',
+                   dotsize = 2.5, binwidth = .005) +
+      # geom_boxplot() +
+      ggpubr::stat_pvalue_manual(
+        tmp_pvals, 
+        y.position = max(tmp$f)+.2, step.increase = .1,
+        label = "p.adj"
+      ) +
+      ylab('Score') +
+      ggtitle(paste0('Factor ',as.character(j))) +
+      theme(plot.title = element_text(hjust = 0.5)) +
+      scale_y_continuous(expand = expansion(mult = c(0, 0.25)))
+    
+    all_plots[[j]] <- p
+  }
+  
+  if (ncol(dscores) >= 5) {
+    nc <- 5
+    nr <- ceiling(ncol(dscores) / 5)
+  } else {
+    nc <- ncol(dscores)
+    nr <- 1
+  }
+  p_final <- ggpubr::ggarrange(plotlist=all_plots, nrow = nr, ncol = nc)
+    
+  return(p_final)
+}
+
+
+

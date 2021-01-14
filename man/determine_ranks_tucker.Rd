@@ -9,7 +9,8 @@ determine_ranks_tucker(
   max_ranks_test,
   method = "svd",
   shuffle_level = "cells",
-  num_iter = 100
+  num_iter = 100,
+  batch_var = NULL
 )
 }
 \arguments{
@@ -29,6 +30,8 @@ mode. For 'tucker', reconstruction errors are computed using tucker decompositio
 the svd method (default="cells")}
 
 \item{num_iter}{numeric Number of null iterations (default=100)}
+
+\item{batch_var}{character A batch variable from metadata to remove (default=NULL)}
 }
 \value{
 the project container with rank determination plot and results

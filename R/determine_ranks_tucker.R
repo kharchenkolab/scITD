@@ -17,11 +17,12 @@ utils::globalVariables(c("num_ranks", "rec_error", "num_iter", "run_type", "erro
 #' "tensor" to shuffle values within the tensor. Currently "tensor" only works with
 #' the svd method (default="cells")
 #' @param num_iter numeric Number of null iterations (default=100)
+#' @param batch_var character A batch variable from metadata to remove (default=NULL)
 #'
 #' @return the project container with rank determination plot and results
 #' added into slots
 #' @export
-determine_ranks_tucker <- function(container, max_ranks_test, method='svd', shuffle_level='cells', num_iter=100) {
+determine_ranks_tucker <- function(container, max_ranks_test, method='svd', shuffle_level='cells', num_iter=100, batch_var=NULL) {
 
   # check that var_scale_power has been set if scale_var is TRUE
   if (container$experiment_params$scale_var && is.null(container$experiment_params$var_scale_power)) {
@@ -46,7 +47,7 @@ determine_ranks_tucker <- function(container, max_ranks_test, method='svd', shuf
     }
 
     # form a tensor
-    container <- form_tensor(container)
+    container <- form_tensor(container,batch_var=batch_var)
     tmp_tnsr <- container$tensor_data[[4]]
 
     # get and store reconstruction errors
@@ -346,6 +347,14 @@ plot_rec_errors_line_svd <- function(real,shuffled,mode_to_show) {
   plot_res$rec_error <- as.numeric(as.character(plot_res$rec_error))
   plot_res$num_ranks <- as.numeric(as.character(plot_res$num_ranks))
 
+  if (mode_to_show==1) {
+    by_interval <- 2
+  } else if (mode_to_show==2) {
+    by_interval <- 5
+  } else {
+    by_interval <- 1
+  }
+   
 
   p <- ggplot(plot_res,aes(x=num_ranks,y=rec_error,group=num_iter,color=run_type)) +
     geom_line() +
@@ -354,9 +363,9 @@ plot_rec_errors_line_svd <- function(real,shuffled,mode_to_show) {
     xlab("Number of Factors") +
     ylab("Relative Error") +
     labs(color = "Type") +
-    scale_x_continuous(breaks=c(1:length(real[[mode_to_show]]))) +
     ggtitle(paste0('Mode ', as.character(mode_to_show), ' Error')) +
-    theme(plot.title = element_text(hjust = 0.5))
+    theme(plot.title = element_text(hjust = 0.5)) +
+    scale_x_continuous(breaks = seq(1, max(plot_res$num_ranks), by = by_interval))
 
   return(p)
 }
@@ -394,15 +403,24 @@ plot_rec_errors_bar_svd <- function(real,shuffled,mode_to_show) {
   suppressWarnings(tgc <- Rmisc::summarySE(plot_res, measurevar="error_diff",
                                            groupvars=c("num_ranks","run_type")))
 
+  if (mode_to_show==1) {
+    by_interval <- 2
+  } else if (mode_to_show==2) {
+    by_interval <- 5
+  } else {
+    by_interval <- 1
+  }
+  
   p <- ggplot(tgc, aes(x=num_ranks, y=error_diff, fill=run_type)) +
     geom_bar(stat="identity", color="black", position=position_dodge()) +
     geom_errorbar(aes(ymin=error_diff-sd, ymax=error_diff+sd), width=1,position=position_dodge()) +
     xlab("Number of Factors") +
     ylab("Error(n-1) - Error(n)") +
     labs(fill = "Type") +
-    scale_x_continuous(breaks=c(1:length(real[[mode_to_show]]))) +
     ggtitle(paste0('Mode ', as.character(mode_to_show), ' Error Differences')) +
-    theme(plot.title = element_text(hjust = 0.5))
+    theme(plot.title = element_text(hjust = 0.5)) +
+    scale_x_continuous(breaks = seq(1, max(tgc$num_ranks), by = by_interval))
+  
 
   return(p)
 }
@@ -541,7 +559,70 @@ plot_var_scale_power <- function(power_results) {
 }
 
 
-
+#' Get plot of r-squared values for each factor's association with a batch variable
+#' to varying numbers of donor factors
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param donor_ranks_test numeric The number of donor rank values to test
+#' @param batch_var character The name of the batch meta variable
+#' @param thresh numeric The threshold r-squared cutoff for considering a
+#' factor to be a batch factor. Can be a vector of multiple values to get plots
+#' at varying thresholds. (default=0.5)
+#'
+#' @return plots of factor-batch associations for varying numbers of factors
+#' @export
+get_num_batch_ranks <- function(container,donor_ranks_test,batch_var,thresh=0.5) {
+  n_ctypes <- length(container$experiment_params$ctypes_use)
+  res <- data.frame(matrix(nrow=0,ncol=2))
+  for (r in donor_ranks_test) {
+    # container <- run_tucker_ica(container, ranks=c(r,r*n_ctypes,n_ctypes), shuffle=FALSE)
+    container <- run_tucker_ica(container, ranks=c(r,100,n_ctypes), shuffle=FALSE)
+    container <- get_meta_associations(container,vars_test=c(batch_var))
+    tmp <- cbind(t(container[["meta_associations"]]),rep(r,r))
+    res <- rbind(res,tmp)
+  }
+  rownames(res) <- NULL
+  colnames(res) <- c('rsq','total_n_factors')
+  
+  raw_plot <- ggplot(res,aes(x=total_n_factors,y=rsq)) +
+    geom_point() +
+    xlab('Total Number of Factors') +
+    ylab('Batch Association (r^2)') +
+    ggtitle('Factor-Batch Associations') +
+    theme(plot.title = element_text(hjust = 0.5))
+  
+  all_plots <- list(raw_plot)
+  for (i in 1:length(thresh)) {
+    thr <- thresh[i]
+    res2 <- data.frame(matrix(nrow=0,ncol=3))
+    for (r in donor_ranks_test) {
+      res_sub <- res[res$total_n_factors==r,]
+      num_less <- sum(res_sub$rsq < thr)
+      num_greater <- sum(res_sub$rsq >= thr)
+      tmp <- cbind(c(num_less,num_greater),rep(r,2),c('non-batch','batch'))
+      res2 <- rbind(res2,tmp)
+    }
+    colnames(res2) <- c('n_factors','total_n_factors','factor_type')
+    res2$n_factors <- as.numeric(res2$n_factors)
+    res2$total_n_factors <- as.numeric(res2$total_n_factors)
+    
+    thresh_plot <- ggplot(res2,aes(x=total_n_factors,y=n_factors,color=factor_type)) +
+      geom_line() +
+      xlab('Total Number of Factors') +
+      ylab('Number of Factors') +
+      ggtitle(paste0('Threshold r^2 = ',as.character(thr))) +
+      theme(plot.title = element_text(hjust = 0.5)) +
+      labs(color='Factor Type') 
+    
+    all_plots[[i+1]] <- thresh_plot
+  }
+  
+  
+  p <- ggpubr::ggarrange(plotlist=all_plots, nrow = 1)
+  
+  return(p)
+}
 
 
 
