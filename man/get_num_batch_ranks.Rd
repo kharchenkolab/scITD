@@ -5,7 +5,15 @@
 \title{Get plot of r-squared values for each factor's association with a batch variable
 to varying numbers of donor factors}
 \usage{
-get_num_batch_ranks(container, donor_ranks_test, batch_var, thresh = 0.5)
+get_num_batch_ranks(
+  container,
+  donor_ranks_test,
+  gene_ranks,
+  batch_var,
+  thresh = 0.5,
+  tucker_type = "regular",
+  rotation_type = "ica"
+)
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
@@ -13,14 +21,22 @@ for each cell type as well as results and plots from all analyses}
 
 \item{donor_ranks_test}{numeric The number of donor rank values to test}
 
+\item{gene_ranks}{numeric The number of gene ranks to use throughout}
+
 \item{batch_var}{character The name of the batch meta variable}
 
 \item{thresh}{numeric The threshold r-squared cutoff for considering a
 factor to be a batch factor. Can be a vector of multiple values to get plots
 at varying thresholds. (default=0.5)}
+
+\item{tucker_type}{character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
+with sparsity constraints (default='regular')}
+
+\item{rotation_type}{character Set to 'ica' to perform ICA rotation on resulting donor factor
+matrix and loadings. Otherwise set to 'varimax' to perform varimax rotation. (default='ica')}
 }
 \value{
-plots of factor-batch associations for varying numbers of factors
+plots placed in container$plots$num_batch_factors slot
 }
 \description{
 Get plot of r-squared values for each factor's association with a batch variable

@@ -8,7 +8,9 @@ get_subtype_prop_associations(
   container,
   max_res,
   stat_type,
-  integration_var = NULL
+  integration_var = NULL,
+  min_cells_group = 50,
+  n_col = 2
 )
 }
 \arguments{
@@ -22,11 +24,15 @@ R-squared values, or "adj_pval" to get adjusted pvalues.}
 
 \item{integration_var}{character The meta data variable to use for creating
 the joint embedding with Conos if not already provided in container$embedding (default=NULL)}
+
+\item{min_cells_group}{numeric The minimum allowable size for cell subpopulations
+(default=50)}
+
+\item{n_col}{numeric The number of columns to organize the plots into (default=2)}
 }
 \value{
 the project container with a plot of association results in
-container$plots$subtype_prop_factor_associations and proportion plots in
-container$plots$prop_plots_all
+container$plots$subtype_prop_factor_associations
 }
 \description{
 Compute associations between donor factor scores and donor proportions of cell subtypes

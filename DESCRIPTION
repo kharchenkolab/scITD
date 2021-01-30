@@ -37,12 +37,11 @@ Imports:
     mgcv,
     methods,
     utils,
+    splatter (>= 1.12),
     Rcpp,
     RColorBrewer,
     GPArotation, 
     sparsepca, 
-    SingleCellExperiment,
-    splatter (>= 1.12),
     dplyr,
     stats
 Suggests: 
@@ -62,7 +61,8 @@ Suggests:
     zoo,
     rlang,
     conos,
-    pagoda2
+    pagoda2,
+    edgeR
 RoxygenNote: 7.1.1
 LinkingTo: Rcpp, RcppArmadillo, RcppProgress
 NeedsCompilation: yes

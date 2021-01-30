@@ -2,15 +2,19 @@
 % Please edit documentation in R/determine_ranks_tucker.R
 \name{determine_ranks_tucker}
 \alias{determine_ranks_tucker}
-\title{Rank determination method}
+\title{Rank determination by svd on the tensor unfolded along each mode.}
 \usage{
 determine_ranks_tucker(
   container,
   max_ranks_test,
-  method = "svd",
   shuffle_level = "cells",
+  shuffle_within = NULL,
   num_iter = 100,
-  batch_var = NULL
+  batch_var = NULL,
+  norm_method = "trim",
+  scale_factor = 10000,
+  scale_var = TRUE,
+  var_scale_power = 0.5
 )
 }
 \arguments{
@@ -20,23 +24,42 @@ for each cell type as well as results and plots from all analyses}
 \item{max_ranks_test}{numeric Vector of length 3 with maximum number of
 ranks to test for donor, gene, and cell type modes in that order}
 
-\item{method}{character The method to use for rank determination. For 'svd',
-reconstruction errors are computed using svd on the unfolded tensor along each
-mode. For 'tucker', reconstruction errors are computed using tucker decomposition
-(default='svd')}
-
-\item{shuffle_level}{character Either "cells" to shuffle cell-donor linkages or 
+\item{shuffle_level}{character Either "cells" to shuffle cell-donor linkages or
 "tensor" to shuffle values within the tensor. Currently "tensor" only works with
 the svd method (default="cells")}
 
+\item{shuffle_within}{character A metadata variable to shuffle cell-donor linkages
+within (default=NULL)}
+
 \item{num_iter}{numeric Number of null iterations (default=100)}
 
-\item{batch_var}{character A batch variable from metadata to remove (default=NULL)}
+\item{batch_var}{character A batch variable from metadata to remove. No batch
+correction applied if NULL. (default=NULL)}
+
+\item{norm_method}{character The normalization method to use on the pseudobulked
+count data. Set to 'regular' to do standard normalization of dividing by
+library size. Set to 'trim' to use edgeR trim-mean normalization, whereby counts
+are divided by library size times a normalization factor. (default='trim')}
+
+\item{scale_factor}{numeric The number that gets multiplied by fractional counts
+during normalization of the pseudobulked data (default=10000)}
+
+\item{scale_var}{logical TRUE to scale the gene expression variance across donors
+for each cell type. If FALSE then all genes are scaled to unit variance across
+donors for each cell type. (default=TRUE)}
+
+\item{var_scale_power}{numeric Exponent of normalized variance that is
+used for variance scaling. Variance for each gene
+is initially set to unit variance across donors (for a given cell type).
+Variance for each gene is then scaled by multiplying the unit scaled values
+by each gene's normalized variance (where the effect of the mean-variance
+dependence is taken into account) to the exponent specified here.
+If NULL, uses var_scale_power from container$experiment_params. (default=.5)}
 }
 \value{
-the project container with rank determination plot and results
-added into slots
+the project container with rank determination plot in
+container$plots$rank_determination_plot
 }
 \description{
-Rank determination method
+Rank determination by svd on the tensor unfolded along each mode.
 }

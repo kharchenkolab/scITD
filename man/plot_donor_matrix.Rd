@@ -9,7 +9,8 @@ plot_donor_matrix(
   meta_vars = NULL,
   cluster_by_meta = NULL,
   show_donor_ids = FALSE,
-  add_meta_associations = FALSE
+  add_meta_associations = FALSE,
+  show_var_explained = TRUE
 )
 }
 \arguments{
@@ -26,8 +27,11 @@ by. If NULL, donor clustering is done using donor scores. (default=NULL)}
 heamap (default=FALSE)}
 
 \item{add_meta_associations}{logical If TRUE then vertically appends metadata
-associations heatmap, which should have been previously generated with 
+associations heatmap, which should have been previously generated with
 plot_meta_associations() (default=FALSE)}
+
+\item{show_var_explained}{logical Set to TRUE to display the explained variance for
+each factor (default=TRUE)}
 }
 \value{
 the project container with the plot in container$plots$donor_matrix

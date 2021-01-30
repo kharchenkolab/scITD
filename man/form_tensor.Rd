@@ -4,11 +4,51 @@
 \alias{form_tensor}
 \title{Form the tensor and scale the data}
 \usage{
-form_tensor(container, var_scale_power = NULL, batch_var = NULL)
+form_tensor(
+  container,
+  donor_min_cells = 5,
+  gene_min_cells = 5,
+  norm_method = "trim",
+  scale_factor = 10000,
+  vargenes_method = "norm_var",
+  vargenes_thresh = 500,
+  batch_var = NULL,
+  scale_var = TRUE,
+  var_scale_power = 0.5,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
 for each cell type as well as results and plots from all analyses}
+
+\item{donor_min_cells}{numeric Minimum threshold for number of cells per
+donor (default=5)}
+
+\item{gene_min_cells}{numeric Minimum threshold for number of cells
+with nonzero expression of a gene (default=5)}
+
+\item{norm_method}{character The normalization method to use on the pseudobulked
+count data. Set to 'regular' to do standard normalization of dividing by
+library size. Set to 'trim' to use edgeR trim-mean normalization, whereby counts
+are divided by library size times a normalization factor. (default='trim')}
+
+\item{scale_factor}{numeric The number that gets multiplied by fractional counts
+during normalization of the pseudobulked data (default=10000)}
+
+\item{vargenes_method}{character The method by which to select highly variable
+genes from each cell type. Set to 'anova' or 'norm_var' (default='norm_var')}
+
+\item{vargenes_thresh}{numeric The threshold to use in variable gene selection.
+For 'anova' and 'empir' this should be a p-value threshold. For 'norm_var' this
+should be the number of most variably expressed genes to select from each cell
+type (default=500)}
+
+\item{batch_var}{character A batch variable from metadata to remove (default=NULL)}
+
+\item{scale_var}{logical TRUE to scale the gene expression variance across donors
+for each cell type. If FALSE then all genes are scaled to unit variance across
+donors for each cell type. (default=TRUE)}
 
 \item{var_scale_power}{numeric Exponent of normalized variance that is
 used for variance scaling. Variance for each gene
@@ -16,9 +56,9 @@ is initially set to unit variance across donors (for a given cell type).
 Variance for each gene is then scaled by multiplying the unit scaled values
 by each gene's normalized variance (where the effect of the mean-variance
 dependence is taken into account) to the exponent specified here.
-If NULL, uses var_scale_power from container$experiment_params. (default=NULL)}
+If NULL, uses var_scale_power from container$experiment_params. (default=.5)}
 
-\item{batch_var}{character A batch variable from metadata to remove (default=NULL)}
+\item{verbose}{logical Set to TRUE to print out progress (default=TRUE)}
 }
 \value{
 the project container with tensor data added in the

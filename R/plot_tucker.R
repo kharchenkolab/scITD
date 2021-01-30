@@ -13,12 +13,16 @@
 #' @param show_donor_ids logical Set to TRUE to show donor id as row name on the
 #' heamap (default=FALSE)
 #' @param add_meta_associations logical If TRUE then vertically appends metadata
-#' associations heatmap, which should have been previously generated with 
+#' associations heatmap, which should have been previously generated with
 #' plot_meta_associations() (default=FALSE)
+#' @param show_var_explained logical Set to TRUE to display the explained variance for
+#' each factor (default=TRUE)
 #'
 #' @return the project container with the plot in container$plots$donor_matrix
 #' @export
-plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL, show_donor_ids=FALSE, add_meta_associations=FALSE) {
+plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL,
+                              show_donor_ids=FALSE, add_meta_associations=FALSE,
+                              show_var_explained=TRUE) {
 
   # check that Tucker has been run
   if (is.null(container$tucker_results)) {
@@ -33,10 +37,26 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL, s
     paste0("Factor ", x)
   })
 
+  if (show_var_explained) {
+    col_fun2 = circlize::colorRamp2(c(0, max(container$exp_var)), c("white", "black"))
+    ba <- HeatmapAnnotation(exp_var=container$exp_var,col = list(exp_var = col_fun2),
+                            border=TRUE, show_annotation_name=FALSE)
+  } else {
+    ba <- NULL
+  }
+
+  if (add_meta_associations) {
+    col_fun_annot = colorRamp2(c(0, 1), c("white", "forest green"))
+    ta <- HeatmapAnnotation(rsq=t(container$meta_associations),col = list(rsq = col_fun_annot),
+                            border=TRUE,annotation_name_side = "right")
+  } else {
+    ta <- NULL
+  }
+
   # make colormap for hmap
   color_lim <- max(abs(donor_mat))
   # col_fun = colorRamp2(c(-color_lim, 0, color_lim), c("blue", "white", "red"))
-  
+
   nintieth_per <- stats::quantile(as.matrix(abs(donor_mat)), c(.95))
   if (color_lim > (2*nintieth_per)) {
     col_fun = colorRamp2(c(-nintieth_per, 0, nintieth_per), c("blue", "white", "red"))
@@ -45,30 +65,16 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL, s
   }
 
   if (is.null(meta_vars)) {
-    if (add_meta_associations) {
-      col_fun_annot = colorRamp2(c(0, 1), c("white", "forest green"))
-      ta <- HeatmapAnnotation(rsq=t(container$meta_associations),col = list(rsq = col_fun_annot),
-                              border=TRUE,annotation_name_side = "right")
-      
-      myhmap <- Heatmap(as.matrix(donor_mat), name = "score",
-                        cluster_columns = FALSE,show_column_dend = FALSE,
-                        cluster_rows = TRUE, show_row_dend = FALSE,
-                        column_names_gp = gpar(fontsize = 10),
-                        col = col_fun, row_title = "Donors",
-                        row_title_gp = gpar(fontsize = 14),
-                        show_row_names = show_donor_ids,
-                        border = TRUE, top_annotation=ta)
-    } else {
-      myhmap <- Heatmap(as.matrix(donor_mat), name = "score",
-                        cluster_columns = FALSE,show_column_dend = FALSE,
-                        cluster_rows = TRUE, show_row_dend = FALSE,
-                        column_names_gp = gpar(fontsize = 10),
-                        col = col_fun, row_title = "Donors",
-                        row_title_gp = gpar(fontsize = 14),
-                        show_row_names = show_donor_ids,
-                        border = TRUE)
-    }
-   
+    myhmap <- Heatmap(as.matrix(donor_mat), name = "score",
+                      cluster_columns = FALSE,show_column_dend = FALSE,
+                      cluster_rows = TRUE, show_row_dend = FALSE,
+                      column_names_gp = gpar(fontsize = 10),
+                      col = col_fun, row_title = "Donors",
+                      row_title_gp = gpar(fontsize = 14),
+                      show_row_names = show_donor_ids,
+                      border = TRUE, top_annotation=ta,
+                      bottom_annotation=ba)
+
   } else {
     meta <- container$scMinimal_full$metadata[,c('donors',meta_vars)]
     meta <- unique(meta)
@@ -89,48 +95,31 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL, s
 
       # order rows of main matrix by metadata ordering
       donor_mat <- donor_mat[rownames(meta),]
-      
+
       do_row_clust <- FALSE
     } else {
       do_row_clust <- TRUE
     }
 
-    if (add_meta_associations) {
-      col_fun_annot = colorRamp2(c(0, 1), c("white", "forest green"))
-      ta <- HeatmapAnnotation(rsq=t(container$meta_associations),col = list(rsq = col_fun_annot),
-                              border=TRUE,annotation_name_side = "right")
-      
-      myhmap <- Heatmap(as.matrix(donor_mat), name = "score",
-                        cluster_columns = FALSE,
-                        cluster_rows = do_row_clust,
-                        show_row_dend = FALSE,
-                        column_names_gp = gpar(fontsize = 10),
-                        col = col_fun, row_title = "Donors",
-                        row_title_gp = gpar(fontsize = 14),
-                        show_row_names = show_donor_ids,
-                        border = TRUE, top_annotation=ta)
-    } else {
-      myhmap <- Heatmap(as.matrix(donor_mat), name = "score",
-                        cluster_columns = FALSE,
-                        cluster_rows = do_row_clust,
-                        show_row_dend = FALSE,
-                        column_names_gp = gpar(fontsize = 10),
-                        col = col_fun, row_title = "Donors",
-                        row_title_gp = gpar(fontsize = 14),
-                        show_row_names = show_donor_ids,
-                        border = TRUE)
-    }
-    
+    myhmap <- Heatmap(as.matrix(donor_mat), name = "score",cluster_columns = FALSE,
+                      cluster_rows = do_row_clust,show_row_dend = FALSE,
+                      column_names_gp = gpar(fontsize = 10),
+                      col = col_fun, row_title = "Donors",
+                      row_title_gp = gpar(fontsize = 14),
+                      show_row_names = show_donor_ids,
+                      border = TRUE, top_annotation=ta,
+                      bottom_annotation=ba)
+
     for (j in 1:ncol(meta)) {
       if (colnames(meta)[j]=='sex') {
         mycol <- RColorBrewer::brewer.pal(n = 3, name = "Accent")
         names(mycol) <- unique(meta[,j])
-        
+
         myhmap <- myhmap +
           Heatmap(as.matrix(meta[,j,drop=FALSE]), name = colnames(meta)[j], cluster_rows = FALSE,
                   cluster_columns = FALSE, show_column_names = FALSE,
                   show_row_names = FALSE, col = mycol, border = TRUE)
-        
+
       } else {
         myhmap <- myhmap +
           Heatmap(as.matrix(meta[,j,drop=FALSE]), name = colnames(meta)[j], cluster_rows = FALSE,
@@ -138,7 +127,7 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL, s
                   show_row_names = FALSE, border = TRUE)
       }
     }
-    
+
     if (show_donor_ids) {
       myhmap <- myhmap + rowAnnotation(rn = anno_text(rownames(donor_mat)))
     }
@@ -149,6 +138,7 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL, s
 
   return(container)
 }
+
 
 #' Plot the gene x cell type loadings for a factor
 #'
@@ -182,25 +172,25 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL, s
 #' to get gene callouts for. If NULL, then gets gene callouts for largest magnitude significant
 #' genes for all cell types. (default=NULL)
 #' @param show_xlab logical If TRUE, displays the xlabel 'genes' (default=TRUE)
-#' @param show_var_explained logical If TRUE then shows an anottation with the explained variance
+#' @param show_var_explained logical If TRUE then shows an anotation with the explained variance
 #' for each cell type (default=TRUE)
 #' @param reset_other_factor_plots logical Set to TRUE to set all other loadings plots to NULL.
 #' Useful if run get_all_lds_factor_plots but then only want to show one or two plots. (default=FALSE)
 #' @param draw_plot logical Set to TRUE to show the plot. Plot is stored regardless. (default=TRUE)
 #'
 #' @return container with the plot put in container$plots$all_lds_plots and the legend put in
-#' container$plots$all_legends. Use draw(<hmap obj>,annotation_legend_list = <hmap legend obj>) 
+#' container$plots$all_legends. Use draw(<hmap obj>,annotation_legend_list = <hmap legend obj>)
 #' to re-render the plot with legend
 #' @export
 plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, nonsig_to_zero=FALSE, annot='none',
-                                pathways=NULL, sim_de_donor_group=NULL, sig_thresh=0.05, display_genes=FALSE, 
+                                pathways=NULL, sim_de_donor_group=NULL, sig_thresh=0.05, display_genes=FALSE,
                                 gene_callouts=FALSE, callout_n_gene_per_ctype=5, callout_ctypes=NULL, show_xlab=TRUE,
                                 show_var_explained=TRUE, reset_other_factor_plots=FALSE, draw_plot=TRUE) {
   # check that Tucker has been run
   if (is.null(container$tucker_results)) {
     stop("Need to run run_tucker_ica() first.")
   }
-  
+
   # remove other loadings plots if indicated
   if (reset_other_factor_plots) {
     container$plots$all_lds_plots <- NULL
@@ -245,33 +235,36 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
   } else {
     rt <- ""
   }
-  
+
   if (gene_callouts) {
-    gene_callouts <- get_callouts_annot(container, tmp_casted_num, factor_select, sig_thresh, 
+    gene_callouts <- get_callouts_annot(container, tmp_casted_num, factor_select, sig_thresh,
                        top_n_per_ctype=callout_n_gene_per_ctype, ctypes=callout_ctypes)
   } else {
     gene_callouts <- NULL
   }
-  
+
   hm_legends <- list()
-  
+
   if (show_var_explained) {
-    ctype_var_exp <- get_explained_var(container, tmp_casted_num, factor_select)
-    ctype_var_exp <- unlist(ctype_var_exp)
-    ctype_var_exp <- ctype_var_exp[colnames(tmp_casted_num)]
-    col_fun2 = circlize::colorRamp2(c(0, max(ctype_var_exp)), c("white", "black"))
-    var_annot <- ComplexHeatmap::HeatmapAnnotation(var = ctype_var_exp,col=list(var=col_fun2),
+
+    explained_variances <- c()
+    for (i in 1:ncol(tmp_casted_num)) {
+      ct<- colnames(tmp_casted_num)[i]
+      exp_var <- get_ctype_exp_var(container,factor_select,ct)
+      explained_variances[i] <- exp_var
+    }
+    col_fun2 = circlize::colorRamp2(c(0, max(explained_variances)), c("white", "black"))
+    var_annot <- ComplexHeatmap::HeatmapAnnotation(exp_var = explained_variances,col=list(exp_var=col_fun2),
                                                    show_annotation_name=FALSE, border=TRUE,
                                                    show_legend = FALSE)
-    
     hm_legends[[2]] <- Legend(col_fun = col_fun2, title = "var exp",
                               grid_height = unit(1, "mm"), grid_width = unit(3, "mm"),
                               title_position = "leftcenter-rot")
-    
+
   } else {
     var_annot <- NULL
   }
-  
+
   # make colormap for hmap
   # color_lim <- max(abs(tmp_casted_num))
   # nintieth_per <- stats::quantile(as.matrix(abs(tmp_casted_num)), c(.95))
@@ -280,15 +273,17 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
   # } else {
   #   col_fun = colorRamp2(c(-color_lim, 0, color_lim), c("blue", "white", "red"))
   # }
-  
-  color_lim <- stats::quantile(as.matrix(abs(tmp_casted_num)), c(.9999))
+
+  # color_lim <- stats::quantile(as.matrix(abs(tmp_casted_num)), c(.9999))
+  color_lim <- stats::quantile(as.matrix(abs(tmp_casted_num)), c(.99))
   col_fun = colorRamp2(c(-color_lim, 0, color_lim), c("blue", "white", "red"))
-  
-  
+
+
   hm_legends[[1]] <- Legend(col_fun = col_fun, title = "loading",
                             grid_height = unit(1, "mm"), grid_width = unit(3, "mm"),
                             title_position = "leftcenter-rot")
-  
+
+  # 'median' clustering method works well
   hm_list <- Heatmap(tmp_casted_num, show_row_dend = FALSE, show_column_dend = FALSE,
                      name = "loading", show_row_names = display_genes,
                      column_names_gp = gpar(fontsize = 12), cluster_columns = FALSE,
@@ -299,11 +294,13 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
                      row_title = rt, row_title_gp = gpar(fontsize = 14), border = TRUE,
                      row_labels = convert_gn(container,rownames(tmp_casted_num)),
                      right_annotation = gene_callouts, top_annotation=var_annot,
-                     show_heatmap_legend = FALSE)
-  
+                     show_heatmap_legend = FALSE,
+                     width = unit(8, "cm"),
+                     height = unit(8, "cm"))
+
   # turn off heatmap message saying callouts require pdf view or zoom view
   ht_opt$message = FALSE
-  
+
   if (annot == 'pathways') {
     if (is.null(container$gn_convert)) {
       stop('Gene symbols are not present in your data and no gene name conversion was provided')
@@ -341,38 +338,27 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
               name = "adj p-value", cluster_columns = FALSE,
               col = col_fun, show_row_names = FALSE,
               show_heatmap_legend = TRUE, show_column_dend = FALSE,
-              column_names_gp = gpar(fontsize = 20), border = TRUE)
+              column_names_gp = gpar(fontsize = 12), border = TRUE)
   }
 
   if (!is.null(sim_de_donor_group)) {
-    genes_df <- tmp_casted_num
-    genes <- rownames(tmp_casted_num)
-    for (j in 1:ncol(genes_df)) {
-      for (g in genes) {
-        groups <- strsplit(g,split = '_')
-        cur_group <- paste0('Group',(ncol(genes_df)*(sim_de_donor_group-1))+j)
-        if (cur_group %in% groups[[1]]) {
-          genes_df[g,j] <- 1
-        } else {
-          genes_df[g,j] <- 0
-        }
-      }
-    }
 
-
-    # add gene significance heatmap to total hmap
-    col_fun <- structure(c("white", "cyan"), names = c("0", "1"))
+    de_genes <- sim_de_donor_group[[factor_select]][rownames(tmp_casted_num),]
+    color_lim <- stats::quantile(as.matrix(abs(de_genes)), c(.95))
+    col_fun = colorRamp2(c(0,0.6,color_lim), c("white","white", "violet"))
     hm_list <- hm_list +
-      Heatmap(genes_df,
+      Heatmap(as.matrix(de_genes), col=col_fun,
               name = "True DE Genes", cluster_columns = FALSE,
-              col = col_fun, show_row_names = FALSE,
+              show_row_names = FALSE,
               show_heatmap_legend = TRUE, show_column_dend = FALSE,
-              column_names_gp = gpar(fontsize = 20), border = TRUE)
+              column_names_gp = gpar(fontsize = 12), border = TRUE)
+
+
   }
 
   # save plot in the container
   container$plots$all_lds_plots[[as.character(factor_select)]] <- hm_list
-  
+
   # save legend in container
   if (show_var_explained) {
     pd <- packLegend(hm_legends[[1]], hm_legends[[2]], direction = "vertical")
@@ -380,10 +366,10 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
     pd <- hm_legends[[1]]
   }
   container$plots$all_legends[[as.character(factor_select)]] <- pd
-  
+
   # optionally draw the plot
   if (draw_plot) {
-    draw(hm_list,annotation_legend_list = pd, 
+    draw(hm_list,annotation_legend_list = pd,
          legend_grouping = "original",
          newpage=FALSE)
   }
@@ -472,7 +458,7 @@ get_significance_vectors <- function(container, factor_select, ctypes) {
 
     names(padj_ct) <- sapply(names(padj_ct),function(x) {
       tmp <- strsplit(x,split = '.',fixed = TRUE)[[1]]
-      
+
       if (length(tmp)>3){
         return(paste0(tmp[[1]],".",tmp[[2]]))
       } else {
@@ -500,7 +486,7 @@ get_significance_vectors <- function(container, factor_select, ctypes) {
 #'
 #' @return HeatmapAnnotation for the gene callouts
 get_callouts_annot <- function(container, tmp_casted_num, factor_select, sig_thresh, top_n_per_ctype=5, ctypes=NULL) {
-  
+
   # extract the genes to show
   if (is.null(ctypes)) {
     ctypes <- container$experiment_params$ctypes_use
@@ -511,66 +497,27 @@ get_callouts_annot <- function(container, tmp_casted_num, factor_select, sig_thr
     # get significant genes for the ctype
     ct_sig_genes <- sig_vecs[[ct]]
     ct_sig_genes <- ct_sig_genes[ct_sig_genes < sig_thresh]
-    
+
     # get top loading genes of the significant ones
     ct_sig_loadings <- tmp_casted_num[names(ct_sig_genes),ct]
-    
+
     ct_sig_loadings <- ct_sig_loadings[order(abs(ct_sig_loadings),decreasing=TRUE)]
     ct_top_genes <- names(ct_sig_loadings)[1:top_n_per_ctype]
     genes_plot <- c(genes_plot,ct_top_genes)
   }
-  
+
   gene_callouts <- unique(genes_plot)
-  
+
   ndx <- match(gene_callouts,rownames(tmp_casted_num))
   callouts <- list()
   callouts[[1]] <- ndx
   callouts[[2]] <- convert_gn(container, gene_callouts)
-  
+
   myannot <- rowAnnotation(callouts = anno_mark(at = callouts[[1]], which='row',
                                                 labels = callouts[[2]]))
   return(myannot)
 }
 
-#' Get explained variance for each cell type for one factor
-#'
-#' @param container environment Project container that stores sub-containers
-#' for each cell type as well as results and plots from all analyses
-#' @param tmp_casted_num matrix The gene by cell type loadings matrix
-#' @param factor_use numeric The factor to investigate
-#'
-#' @return explained variance for each cell type in a list
-get_explained_var <- function(container, tmp_casted_num, factor_use) {
-  rnk <- container$experiment_params$ranks
-  tnsr <- container$tensor_data[[4]]
-  donor_scores <- container$tucker_results[[1]]
-  ctypes <- container$experiment_params$ctypes_use
-  
-  ctype_errors <- list()
-  for (i in 1:length(ctypes)) {
-    ct <- ctypes[i]
-    
-    # expression from data tensor (not loadings tensor)
-    t_slice <- tnsr[,,i]
-    
-    # compute reconstruction of cell type gene expression
-    ldngs <- tmp_casted_num[,ct,drop=FALSE]
-    recon <-  as.matrix(donor_scores[,factor_use]) %*% as.matrix(t(ldngs))
-    
-    diff_mat <- t_slice
-    colnames(diff_mat) <- container$tensor_data[[2]]
-    rownames(diff_mat) <- container$tensor_data[[1]]
-    row_ndx <- match(rownames(recon),rownames(diff_mat))
-    col_ndx <- match(colnames(recon),colnames(diff_mat))
-    diff_mat[row_ndx,col_ndx] <- diff_mat[row_ndx,col_ndx] - recon
-      
-    exp_var_rel <- 1-((norm(diff_mat,"F")**2)/(norm(t_slice,"F")**2))
-    exp_var <- exp_var_rel * sum(apply(t_slice, 2, stats::var))
-    
-    ctype_errors[[ct]] <- exp_var
-  }
-  return(ctype_errors)
-}
 
 #' Generate loadings heatmaps for all factors
 #'
@@ -612,13 +559,13 @@ get_explained_var <- function(container, tmp_casted_num, factor_use) {
 get_all_lds_factor_plots <- function(container, use_sig_only=FALSE, nonsig_to_zero=FALSE, annot='none',
                                      pathways_list=NULL, sim_de_donor_group=NULL,
                                      sig_thresh=0.05, display_genes=FALSE,
-                                     gene_callouts=FALSE, callout_n_gene_per_ctype=5, 
+                                     gene_callouts=FALSE, callout_n_gene_per_ctype=5,
                                      callout_ctypes=NULL,
                                      show_var_explained=TRUE) {
 
   num_fact <- nrow(container$tucker_results[[2]])
   for (i in 1:num_fact) {
-    container <- plot_loadings_annot(container, factor_select=i, 
+    container <- plot_loadings_annot(container, factor_select=i,
                                      use_sig_only=use_sig_only,
                                      nonsig_to_zero=nonsig_to_zero,
                                      annot=annot, pathways=pathways_list[[i]],
@@ -632,9 +579,9 @@ get_all_lds_factor_plots <- function(container, use_sig_only=FALSE, nonsig_to_ze
                                      show_var_explained=show_var_explained,
                                      reset_other_factor_plots=FALSE,
                                      draw_plot=FALSE)
-    
+
   }
-  
+
   return(container)
 }
 
@@ -642,12 +589,18 @@ get_all_lds_factor_plots <- function(container, use_sig_only=FALSE, nonsig_to_ze
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
-#' @param n_rows numeric The number of rows to fit the plots onto
 #' @param data_type character Can be either "loadings", "gsea", or "dgenes". This
 #' determines which list of heatmaps to organize into the figure.
+#' @param max_cols numeric The max number of columns to plot. Can only either be 2
+#' or 3 since these are large plots. (default=3)
+#'
+#' @return the multi-plot figure
 #' @export
-render_multi_plots <- function(container, n_rows, data_type) {
-  
+render_multi_plots <- function(container,data_type,max_cols=3) {
+  # if (!(max_cols == 2 || max_cols == 3)) {
+  #   stop('max_cols can only be set to 2 or 3')
+  # }
+
   if (data_type == "loadings") {
     hm_list <- container$plots$all_lds_plots
     hm_legends <- container$plots$all_legends
@@ -656,42 +609,53 @@ render_multi_plots <- function(container, n_rows, data_type) {
   } else if (data_type == "dgenes") {
     hm_list <- container$plots$donor_sig_genes
   }
-  
+
   # order the list of heatmaps by factor number
-  hm_list <- hm_list[order(as.numeric(names(hm_list)),decreasing=FALSE)]
-  
-  grid::grid.newpage()
-  
-  grid_n_col <- ceiling(length(hm_list)/n_rows)
-  for (i in 1:length(hm_list)) {
-    col_ndx <- i %% grid_n_col
-    if (col_ndx == 0) {
-      col_ndx <- grid_n_col
-    }
-    row_ndx <- n_rows - ceiling(i / grid_n_col) + 1
-    
-    if (length(hm_list)%%grid_n_col!=0 && row_ndx==1) {
-      x_buffer <- ((1/grid_n_col)-.02) * (grid_n_col - (length(hm_list)%%grid_n_col))/2
-      x_pos <- (col_ndx-1)*(1/grid_n_col) + x_buffer
-    } else {
-      x_pos <- (col_ndx-1)*(1/grid_n_col)
-    }
-    y_pos <- row_ndx/n_rows
-    
-    grid::pushViewport(grid::viewport(x = x_pos, y = y_pos, 
-                                      width = (1/grid_n_col)-.02, height = 1/n_rows,
-                                      just = c("left","top")))
-    if (data_type == "loadings") {
-      draw(hm_list[[i]],annotation_legend_list = hm_legends[[i]], 
-           legend_grouping = "original",
-           newpage=FALSE)
-    } else if (data_type == "gsea" | data_type == "dgenes") {
-      draw(hm_list[[i]], newpage=FALSE)
-    }
-    
-    grid::popViewport()
-    
+  hm_order <- order(as.numeric(names(hm_list)),decreasing=FALSE)
+  hm_list <- hm_list[hm_order]
+  if (data_type=='ldngs') {
+    hm_legends <- hm_legends[hm_order]
   }
+
+  grob_lst <- list()
+  for (i in 1:length(hm_list)) {
+    if (data_type=='loadings') {
+      gb <- grid::grid.grabExpr(draw(hm_list[[i]],annotation_legend_list = hm_legends[[i]],
+                                     legend_grouping = "original",
+                                     newpage=FALSE))
+    } else {
+      gb <- grid::grid.grabExpr(draw(hm_list[[i]], newpage=FALSE))
+    }
+
+    grob_lst[[i]] <- gb
+  }
+
+  num_plots <- length(grob_lst)
+
+  if (num_plots > max_cols) {
+    num_rows <- floor(num_plots/max_cols)
+    num_bottom <- num_plots %% max_cols
+
+    top_rows <- grob_lst[1:(num_plots-num_bottom)]
+    top_rows <- cowplot::plot_grid(plotlist=top_rows,ncol=max_cols,align = "v")
+
+    if (num_bottom==1) {
+      bottom_row <- list(NULL,grob_lst[[num_plots]],NULL)
+      bottom_row <- cowplot::plot_grid(plotlist=bottom_row, ncol=max_cols,rel_widths=c((1/2.825),(1/3),(1/3)))
+      fig <- cowplot::plot_grid(top_rows, bottom_row, ncol=1, rel_heights=c(num_rows,1),align = "v")
+    } else if (num_bottom==2) {
+      bottom_row <- list(NULL,grob_lst[[num_plots-1]],grob_lst[[num_plots]],NULL)
+      bottom_row <- cowplot::plot_grid(plotlist=bottom_row, ncol=4, rel_widths=c((1/3)/2,(1/3),(1/3),(1/3)/2))
+      fig <- cowplot::plot_grid(top_rows, bottom_row, ncol=1, rel_heights=c(num_rows,1),align = "v")
+    } else {
+      fig <- top_rows
+    }
+  } else {
+    fig <- cowplot::plot_grid(plotlist=grob_lst, ncol=num_plots)
+  }
+
+
+  return(fig)
 }
 
 
@@ -705,39 +669,43 @@ render_multi_plots <- function(container, n_rows, data_type) {
 #' to plot
 #' @param ctypes_use character The cell types for which to get the top genes to make
 #' callouts for. If NULL then uses all cell types. (default=NULL)
+#' @param show_donor_labels logical Set to TRUE to display donor labels (default=FALSE)
+#' @param additional_meta character Another meta variable to plot (default=NULL)
 #'
 #' @return the project container with the plot in the slot
 #' container$plots$donor_sig_genes$Factor#
 #' @export
-plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype, ctypes_use=NULL) {
+plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype,
+                                 ctypes_use=NULL, show_donor_labels=FALSE,
+                                 additional_meta=NULL) {
   ## add catch in case they havent run jackstraw yet...
-  
+
   # # temporarily remove variance scaling
   # orig_scale_decision <- container$experiment_params$scale_var
   # container <- set_experiment_params(container, scale_var = FALSE)
-  # 
+  #
   # # form the tensor for specified cell types
   # container <- collapse_by_donors(container, shuffle=FALSE)
   # container <- form_tensor(container)
-  
+
   # extract tensor information
   tensor_data <- container$tensor_data
   donor_nm <- tensor_data[[1]]
   gene_nm  <- tensor_data[[2]]
   ctype_nm  <- tensor_data[[3]]
   tnsr <- tensor_data[[4]]
-  
+
   # get the loadings matrix
   ldngs <- container$tucker_results[[2]]
-  
+
   # break down a factor from the loadings matrix
   genes <- sapply(colnames(ldngs),function(x){strsplit(x,split=":")[[1]][2]})
   ctypes <- sapply(colnames(ldngs),function(x){strsplit(x,split=":")[[1]][1]})
-  
+
   sr_col <- ldngs[factor_select,]
-  
+
   tmp_casted_num <- reshape_loadings(sr_col,genes,ctypes)
-  
+
   # extract the genes to show
   if (is.null(ctypes_use)) {
     ctypes <- container$experiment_params$ctypes_use
@@ -754,14 +722,14 @@ plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype, ctyp
     } else {
       top_n <- top_n_per_ctype[i]
     }
-    
+
     # get significant genes for the ctype
     ct_sig_genes <- sig_vecs[[ct]]
     ct_sig_genes <- ct_sig_genes[ct_sig_genes<0.05]
-    
+
     # get top loading genes of the significant ones
     ct_sig_loadings <- tmp_casted_num[names(ct_sig_genes),ct]
-    
+
     ct_sig_loadings <- ct_sig_loadings[order(abs(ct_sig_loadings),decreasing=TRUE)]
     ct_top_genes <- names(ct_sig_loadings)[1:top_n]
     ct_top_genes <- sapply(ct_top_genes,function(x) {paste0(x,"_",ct)})
@@ -770,36 +738,55 @@ plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype, ctyp
   }
 
   ct_in_hmap <- factor(ct_in_hmap)
-  
+
   # unfold tensor along donor mode
   donor_unfold <- rTensor::k_unfold(rTensor::as.tensor(tnsr),1)@data
-  
+
   gn_ctype_cnames <- c()
   for (ct in ctype_nm) {
     for (gn in gene_nm) {
       gn_ctype_cnames <- c(gn_ctype_cnames,paste0(gn,"_",ct))
     }
   }
-  
+
   colnames(donor_unfold) <- gn_ctype_cnames
   rownames(donor_unfold) <- donor_nm
-  
+
   # subset data to just genes to plot
   donor_unfold_sub <- donor_unfold[,genes_plot]
   donor_unfold_sub <- t(donor_unfold_sub)
-  
+
   # reorder donors by their score for the factor
   donor_scores <- container$tucker_results[[1]]
   donor_scores <- donor_scores[,factor_select]
   donor_unfold_sub <- donor_unfold_sub[,order(donor_scores)]
   donor_scores <- donor_scores[order(donor_scores)]
-  
+
   donor_scores <- unlist(donor_scores)
   col_fun2 = circlize::colorRamp2(c(min(donor_scores), 0, max(donor_scores)), c("purple", "white", "green"))
   ha <- ComplexHeatmap::HeatmapAnnotation(score = donor_scores,col=list(score=col_fun2),
                                           show_annotation_name=FALSE)
-  
-  
+
+
+  if (!is.null(additional_meta)) {
+    meta <- container$scMinimal_full$metadata[,c('donors',additional_meta)]
+    meta <- unique(meta)
+    rownames(meta) <- meta$donors
+    meta$donors <- NULL
+    meta <- meta[colnames(donor_unfold_sub),,drop=FALSE]
+
+    # make all columns of meta to be factors
+    for (i in 1:ncol(meta)) {
+      meta[,i] <- as.factor(unlist(meta[,i]))
+    }
+
+    ta <- ComplexHeatmap::HeatmapAnnotation(df = meta, show_annotation_name=TRUE)
+  } else {
+    ta <- NULL
+  }
+
+
+
   # rename genes
   rownames(donor_unfold_sub) <- sapply(rownames(donor_unfold_sub),function(x) {
     gn <- strsplit(x,split="_")[[1]][1]
@@ -815,7 +802,7 @@ plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype, ctyp
     strsplit(x,split="_")[[1]][[2]]
   })
   ct_show <- as.factor(ct_show)
-  
+
   ct_annot <- ComplexHeatmap::rowAnnotation(cell_types=anno_simple(ct_show),
                                             show_annotation_name=FALSE)
 
@@ -827,14 +814,23 @@ plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype, ctyp
                     cluster_rows = TRUE,
                     column_names_gp = gpar(fontsize = 8),
                     row_names_gp = gpar(fontsize = 10),
-                    col = col_fun, top_annotation=ha, row_split = ct_show,
-                    row_labels=rn_show,border=TRUE, show_column_names=TRUE,
+                    col = col_fun, bottom_annotation=ha, row_split = ct_show,
+                    row_labels=rn_show,border=TRUE, show_column_names=show_donor_labels,
                     left_annotation=ct_annot,show_row_dend = FALSE,
-                    column_title = paste0('Factor ', factor_select,' Top Genes'),
-                    column_title_gp = gpar(fontsize = 20, fontface = "bold"))
+                    column_title = 'Donors',
+                    column_title_gp = gpar(fontsize = 10),
+                    column_title_side = "bottom",
+                    top_annotation=ta)
 
   # # reset scale variance decision
   # container <- set_experiment_params(container, scale_var = orig_scale_decision)
+
+  # draw(myhmap, padding = unit(c(2, 2, 10, 2), "mm")) # add space for titles
+  # decorate_heatmap_body("expr", {
+  #   grid::grid.text(paste0('Factor ', factor_select,' Top Genes'),
+  #                   y = unit(1, "npc") + unit(2, "mm"), just = "bottom",
+  #                   gp = gpar(fontsize = 20, fontface = "bold"))
+  # })
 
   container$plots$donor_sig_genes[[as.character(factor_select)]] <- myhmap
   return(container)
@@ -846,13 +842,13 @@ plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype, ctyp
 #'
 #' @param tucker_res1 list The container$tucker_res from first decomposition
 #' @param tucker_res2 list The container$tucker_res from first decomposition
-#' @param decomp_names character Names of the two decompositions that will go 
+#' @param decomp_names character Names of the two decompositions that will go
 #' on the axes of the heatmap
-#' @param meta_anno1 matrix The result of calling get_meta_associations() 
-#' corresponding to the first decomposition, which is stored in 
+#' @param meta_anno1 matrix The result of calling get_meta_associations()
+#' corresponding to the first decomposition, which is stored in
 #' container$meta_associations
-#' @param meta_anno2 matrix The result of calling get_meta_associations() 
-#' corresponding to the second decomposition, which is stored in 
+#' @param meta_anno2 matrix The result of calling get_meta_associations()
+#' corresponding to the second decomposition, which is stored in
 #' container$meta_associations
 #' @param use_text logical If TRUE, then displays correlation coefficients in cells
 #' (default=TRUE)
@@ -863,24 +859,24 @@ compare_decompositions <- function(tucker_res1,tucker_res2,decomp_names,meta_ann
   # ensure donors in same order
   tr1 <- tucker_res1[[1]]
   tr2 <- tucker_res2[[1]]
-  
+
   # get donors present in both decompositions
   donors_use <- intersect(rownames(tr1),rownames(tr2))
   tr1 <- tr1[donors_use,]
   tr2 <- tr2[donors_use,]
-  
+
   res_cor <- cor(tr1,tr2)
   rownames(res_cor) <- sapply(1:ncol(tr1),function(x){paste0('Factor',as.character(x))})
   colnames(res_cor) <- sapply(1:ncol(tr2),function(x){paste0('Factor',as.character(x))})
-  
+
   res_orig <- res_cor
-  
+
   # order max vals along the diagonal
   mx_dimension <- which(dim(res_cor)==max(dim(res_cor)))
   if (length(mx_dimension)>1) {
     mx_dimension <- 1
   }
-  
+
   if (mx_dimension==1) {
     # order columns by max value in column
     col_maxes <- apply(abs(res_cor), 2, function(x) max(x, na.rm = TRUE))
@@ -891,7 +887,7 @@ compare_decompositions <- function(tucker_res1,tucker_res2,decomp_names,meta_ann
       res_tmp <- res_cor[j:nrow(res_cor),,drop=FALSE]
       res_tmp <- res_tmp[new_row_order,,drop=FALSE]
       res_cor[j:nrow(res_cor),] <- res_tmp
-      rownames(res_cor)[j:nrow(res_cor)] <- rownames(res_tmp) 
+      rownames(res_cor)[j:nrow(res_cor)] <- rownames(res_tmp)
     }
   } else if (mx_dimension==2) {
     # order rows by max value in row
@@ -903,10 +899,10 @@ compare_decompositions <- function(tucker_res1,tucker_res2,decomp_names,meta_ann
       res_tmp <- res_cor[,j:ncol(res_cor),drop=FALSE]
       res_tmp <- res_tmp[,new_col_order,drop=FALSE]
       res_cor[,j:ncol(res_cor)] <- res_tmp
-      colnames(res_cor)[j:ncol(res_cor)] <- colnames(res_tmp) 
+      colnames(res_cor)[j:ncol(res_cor)] <- colnames(res_tmp)
     }
   }
-  
+
   col_fun = colorRamp2(c(-1, 0, 1), c("blue", "white", "red"))
   new_row_order <- match(rownames(res_cor),rownames(res_orig))
   new_col_order <- match(colnames(res_cor),colnames(res_orig))
@@ -938,21 +934,21 @@ compare_decompositions <- function(tucker_res1,tucker_res2,decomp_names,meta_ann
                         grid::grid.text(sprintf("%.2f", res_orig[i, j]), x, y, gp = gpar(fontsize = 10))
                       }
                     })
-  
+
   ## now to get loadings comparison with same factor ordering
   # ensure genes in same order
   tr1 <- tucker_res1[[2]]
   tr2 <- tucker_res2[[2]]
-  
+
   # get gene_ctype combos present in both decompositions
   gc_use <- intersect(colnames(tr1),colnames(tr2))
   tr1 <- t(tr1[,gc_use])
   tr2 <- t(tr2[,gc_use])
-  
+
   res_cor <- cor(tr1,tr2)
   rownames(res_cor) <- sapply(1:ncol(tr1),function(x){paste0('Factor',as.character(x))})
   colnames(res_cor) <- sapply(1:ncol(tr2),function(x){paste0('Factor',as.character(x))})
-  
+
   loadings_hmap <- Heatmap(res_cor, name = "Loadings Pearson r",
                     cluster_columns = FALSE,
                     cluster_rows = FALSE,
@@ -977,10 +973,10 @@ compare_decompositions <- function(tucker_res1,tucker_res2,decomp_names,meta_ann
                         grid::grid.text(sprintf("%.2f", res_cor[i, j]), x, y, gp = gpar(fontsize = 10))
                       }
                     })
-  
+
   hmlist <- list(dscores_hmap,loadings_hmap)
   hmlist <- dscores_hmap + loadings_hmap
-  
+
   draw(hmlist, padding = unit(c(2, 2, 10, 2), "mm")) # add space for titles
   decorate_heatmap_body("Pearson r", {
     grid::grid.text("Donor Scores Comparison", y = unit(1, "npc") + unit(2, "mm"), just = "bottom")
@@ -998,64 +994,65 @@ compare_decompositions <- function(tucker_res1,tucker_res2,decomp_names,meta_ann
 #' for each cell type as well as results and plots from all analyses
 #' @param meta_var character The meta data variable to compare groups for
 #'
-#' @return a figure of comparison plots (one for each factor)
+#' @return a figure of comparison plots (one for each factor) placed in
+#' container$plots$indv_meta_scores_associations
 #' @export
 plot_scores_by_meta <- function(container,meta_var) {
   dscores <- container[["tucker_results"]][[1]]
-  
+
   meta <- container$scMinimal_full$metadata[,c('donors',meta_var)]
   meta <- unique(meta)
   rownames(meta) <- meta$donors
   meta$donors <- NULL
   meta_vals <- as.character(unique(meta[[meta_var]]))
-  
+
   # make all columns of meta to be factors
   for (i in 1:ncol(meta)) {
     meta[,i] <- as.factor(unlist(meta[,i]))
   }
-  
+
   all_plots <- list()
   all_pvals <- data.frame(matrix(nrow=0,ncol=4))
   all_dat <- data.frame(matrix(nrow=0,ncol=3))
-  
+
   for (j in 1:ncol(dscores)) {
     f <- dscores[,j]
-    
+
     # limit rows of meta to those in dscores
     meta <- meta[names(f),,drop=FALSE]
-    
+
     tmp <- as.data.frame(cbind(f,meta,rep(j,nrow(meta))))
-    
+
     # get p-value by t-test for each group comparison (pairwise)
-    g_compare <- combn(meta_vals,2)
+    g_compare <- utils::combn(meta_vals,2)
     for (i in 1:ncol(g_compare)) {
       g1 <- g_compare[1,i]
       g2 <- g_compare[2,i]
-      t_res <- t.test(tmp[tmp[[meta_var]]==g1,1], tmp[tmp[[meta_var]]==g2,1], 
+      t_res <- stats::t.test(tmp[tmp[[meta_var]]==g1,1], tmp[tmp[[meta_var]]==g2,1],
                       alternative = "two.sided",var.equal = FALSE)
       pval <- t_res$p.value
       all_pvals <- rbind(all_pvals,c(j,'dscore',g1,g2,pval))
       all_dat <- rbind(all_dat,tmp)
     }
   }
-  
+
   colnames(all_pvals) <- c('myfactor','.y.','group1','group2','p.adj')
   all_pvals$myfactor <- as.factor(all_pvals$myfactor)
   all_pvals$group1 <- as.character(all_pvals$group1)
   all_pvals$group2 <- as.character(all_pvals$group2)
-  
-  
+
+
   colnames(all_dat) <- c('dscore','Status','myfactor')
   all_dat$myfactor <- as.factor(all_dat$myfactor)
-  
+
   # apply fdr correction
   all_pvals$p.adj <- p.adjust(all_pvals$p.adj,method='fdr')
-  
+
   # write p-vals as text
   all_pvals$p.adj <- sapply(all_pvals$p.adj,function(x) {
     paste0('p = ',as.character(round(x,digits=5)))
   })
-  
+
   for (j in 1:ncol(dscores)) {
     tmp_dat <- all_dat[all_dat$myfactor==j,]
     tmp_pvals <- all_pvals[all_pvals$myfactor==j,,drop=FALSE]
@@ -1065,18 +1062,18 @@ plot_scores_by_meta <- function(container,meta_var) {
                    dotsize = 2.5, binwidth = .005) +
       # geom_boxplot() +
       ggpubr::stat_pvalue_manual(
-        tmp_pvals, 
+        tmp_pvals,
         y.position = max(tmp$f)+.2, step.increase = .1,
         label = "p.adj"
       ) +
       ylab('Score') +
       ggtitle(paste0('Factor ',as.character(j))) +
       theme(plot.title = element_text(hjust = 0.5)) +
-      scale_y_continuous(expand = expansion(mult = c(0, 0.25)))
-    
+      scale_y_continuous(expand = expansion(mult = c(.15, 0.25)))
+
     all_plots[[j]] <- p
   }
-  
+
   if (ncol(dscores) >= 5) {
     nc <- 5
     nr <- ceiling(ncol(dscores) / 5)
@@ -1085,9 +1082,83 @@ plot_scores_by_meta <- function(container,meta_var) {
     nr <- 1
   }
   p_final <- ggpubr::ggarrange(plotlist=all_plots, nrow = nr, ncol = nc)
-    
-  return(p_final)
+
+  container$plots$indv_meta_scores_associations <- p_final
+
+  return(container)
 }
 
+
+#' Create UMAP for donor distances
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param color_by_factor numeric Number of factor to color donors by. Can be a
+#' vector of multiple factor numbers to make several plots. (default=NULL)
+#' @param color_by_meta character Names of meta variables to color donors by.
+#' Can be a vector of multiple names to make several plots. (default=NULL)
+#' @param n_col numeric The number of columns to orde the figure into (default=1)
+#'
+#' @return the project container with the figure in container$plots$dscores_umap
+#' @export
+plot_donor_umap <- function(container,color_by_factor=NULL, color_by_meta=NULL, n_col=1) {
+
+  dscores <- container$tucker_results[[1]]
+  um <- as.data.frame(umap::umap(dscores)$layout)
+  colnames(um) <- c('UMAP1','UMAP2')
+
+  all_plots <- list()
+  if (!is.null(color_by_factor)) {
+    for (i in 1:length(color_by_factor)) {
+      fact <- color_by_factor[i]
+      c_vals <- container$tucker_results[[1]][,fact]
+      tmp <- as.data.frame(cbind(um,c_vals))
+      p <- ggplot(tmp,aes(x=UMAP1, y=UMAP2, color=c_vals)) +
+        geom_point() +
+        scale_color_gradient2(midpoint = 0, low = "blue", mid = "white",
+                              high = "red", space = "Lab" ) +
+        xlab('') +
+        ylab('') +
+        ggtitle(paste0("Factor ",as.character(fact))) +
+        theme(plot.title = element_text(hjust = 0.5))
+
+      all_plots[[i]] <- p
+    }
+
+    fig <- cowplot::plot_grid(plotlist=all_plots,ncol=n_col,scale = 0.95)
+
+  } else if (!is.null(color_by_meta)) {
+    for (i in 1:length(color_by_meta)) {
+      mv <- color_by_meta[i]
+      meta <- container$scMinimal_full$metadata[,c('donors',mv)]
+      meta <- unique(meta)
+      rownames(meta) <- meta$donors
+      meta$donors <- NULL
+      c_vals <- meta[rownames(dscores),]
+      tmp <- as.data.frame(cbind(um,c_vals))
+      p <- ggplot(tmp,aes(x=UMAP1, y=UMAP2, color=c_vals)) +
+        geom_point() +
+        xlab('') +
+        ylab('') +
+        ggtitle(mv) +
+        theme(plot.title = element_text(hjust = 0.5))
+
+      all_plots[[i]] <- p
+    }
+
+    fig <- cowplot::plot_grid(plotlist=all_plots,ncol=n_col,scale = 0.95)
+
+  } else {
+    fig <- ggplot(tmp,aes(x=UMAP1, y=UMAP2)) +
+      geom_point()
+  }
+
+
+
+  container$plots$dscores_umap <- fig
+
+  return(container)
+
+}
 
 

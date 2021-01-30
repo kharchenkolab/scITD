@@ -6,23 +6,27 @@ utils::globalVariables(c("donor_rank", "min_sig"))
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
+#' @param ranks numeric The number of donor, gene, and cell type ranks, respectively,
+#' to decompose to using Tucker decomposition.
 #' @param n_fibers numeric The number of fibers the randomly shuffle in each iteration
 #' (default=100)
 #' @param n_iter numeric The number of shuffling iterations to complete (default=500)
+#' @param tucker_type character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
+#' with sparsity constraints (default='regular')
+#' @param rotation_type character Set to 'ica' to perform ICA rotation on resulting donor factor
+#' matrix and loadings. Otherwise set to 'varimax' to perform varimax rotation. (default='ica')
 #'
 #' @return the project container with adjusted pvalues in container$gene_score_associations
 #' @export
-run_jackstraw <- function(container, n_fibers=100, n_iter=500) {
+run_jackstraw <- function(container, ranks, n_fibers=100, n_iter=500,
+                          tucker_type='regular', rotation_type='ica') {
   # set random seed
   RNGkind("L'Ecuyer-CMRG")
   set.seed(container$experiment_params$rand_seed)
 
   # extract needed inputs from experiment parameters
   ncores <- container$experiment_params$ncores
-  ranks <- container$experiment_params$ranks
-  tucker_type <- container$experiment_params$tucker_type
-  rotation_type <- container$experiment_params$rotation_type
-  
+
   fstats_shuffled <- mclapply(1:n_iter, function(x) {
     # extract tensor data as we dont want to overwrite container
     tensor_data <- container$tensor_data
@@ -198,11 +202,20 @@ get_fstats_pvals <- function(fstats_real, fstats_shuffled) {
 
 
 #' Evaluate the minimum number for significant genes in any factor for a given number of
-#' donor factors extracted by tucker.
+#' factors extracted by tucker.
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses. Should have
 #' @param donor_rank_range numeric Range of possible number of donor factors to use.
+#' @param gene_ranks numeric The number of gene ranks to use in the decomposition
+#' @param ctype_ranks numeric The number of cell type ranks to use in the decomposition
+#' @param tucker_type character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
+#' with sparsity constraints (default='regular')
+#' @param rotation_type character Set to 'ica' to perform ICA rotation on resulting donor factor
+#' matrix and loadings. Otherwise set to 'varimax' to perform varimax rotation. (default='ica')
+#' @param n_fibers numeric The number of fibers the randomly shuffle in each iteration
+#' (default=100)
+#' @param n_iter numeric The number of shuffling iterations to complete (default=500)
 #' @param thresh numeric Pvalue threshold for significant genes in calculating the
 #' number of significant genes identified per factor. (default=0.05)
 #'
@@ -210,21 +223,19 @@ get_fstats_pvals <- function(fstats_real, fstats_shuffled) {
 #' each decomposition with varying number of donor factors located in
 #' container$plots$min_sig_genes
 #' @export
-get_min_sig_genes <- function(container,donor_rank_range,thresh=0.05) {
-  if (is.null(container$experiment_params$ranks)) {
-    stop("Need to set decomposition ranks first. Use set_experiment_params()")
-  } else {
-    ranks <- container$experiment_params$ranks
-  }
-  gene_ranks <- ranks[2]
-  ctype_ranks <- ranks[3]
+get_min_sig_genes <- function(container, donor_rank_range, gene_ranks,
+                              ctype_ranks, tucker_type='regular',
+                              rotation_type='ica', n_fibers=100, n_iter=500,
+                              thresh=0.05) {
 
   min_per_decomp <- data.frame(matrix(ncol=2,nrow=0))
   colnames(min_per_decomp) <- c('donor_rank','min_sig')
   for (i in donor_rank_range) {
-    container <- run_tucker_ica(container, c(i,gene_ranks,ctype_ranks), shuffle=F)
-    container <- set_experiment_params(container, ranks = c(i,gene_ranks,ctype_ranks))
-    container <- run_jackstraw(container,n_iter = 200)
+    container <- run_tucker_ica(container, c(i,gene_ranks,ctype_ranks),
+                                tucker_type=tucker_type, rotation_type=rotation_type)
+    container <- run_jackstraw(container, ranks=c(i,gene_ranks,ctype_ranks),
+                               n_fibers=n_fibers, n_iter=n_iter,
+                               tucker_type=tucker_type, rotation_type=rotation_type)
 
     padj <- container$gene_score_associations
     padj_factors <- sapply(names(padj),function(x) {
@@ -242,9 +253,6 @@ get_min_sig_genes <- function(container,donor_rank_range,thresh=0.05) {
     colnames(tmp) <- colnames(min_per_decomp)
     min_per_decomp <- rbind(min_per_decomp,tmp)
   }
-
-  # reset ranks to original setting
-  container <- set_experiment_params(container, ranks = ranks)
 
   # plot results
   p <- ggplot(min_per_decomp, aes(x=donor_rank,y=min_sig)) +

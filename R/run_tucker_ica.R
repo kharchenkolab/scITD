@@ -4,54 +4,34 @@
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
 #' @param ranks numeric The number of donor, gene, and cell type ranks, respectively,
-#' to decompose to using Tucker decomposition. If NULL, uses ranks in container$experiment_params
-#' field. (default=NULL)
-#' @param batch_var character A batch variable from metadata to remove (default=NULL)
-#' @param shuffle logical If TRUE, randomly shuffles cell to donor linkages, resulting in a random
-#' tensor (default=FALSE)
+#' to decompose to using Tucker decomposition.
+#' @param tucker_type character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
+#' with sparsity constraints (default='regular')
+#' @param rotation_type character Set to 'ica' to perform ICA rotation on resulting donor factor
+#' matrix and loadings. Otherwise set to 'varimax' to perform varimax rotation. (default='ica')
 #'
 #' @return container with results of the decomposition in container$tucker_results
 #' @export
-run_tucker_ica <- function(container, ranks=NULL, batch_var=NULL, shuffle=FALSE) {
+run_tucker_ica <- function(container, ranks, tucker_type='regular', rotation_type='ica') {
 
-  # check that var_scale_power has been set if scale_var is TRUE
-  if (container$experiment_params$scale_var && is.null(container$experiment_params$var_scale_power)) {
-    stop("Need to set variance scaling power parameter, var_scale_power. Use set_experiment_params()")
+  if (is.null(container$tensor_data)) {
+    stop("need to run form_tensor() first")
   }
-  
-  # check that tucker_type and rotation_type parameters have been set
-  if (is.null(container$experiment_params$tucker_type)  ) {
-    stop("Need to set tucker_type parameter in experiment params first. Use set_experiment_params()")
-  } else {
-    tucker_type <- container$experiment_params$tucker_type
-  }
-  
-  if (is.null(container$experiment_params$rotation_type)  ) {
-    stop("Need to set rotation_type parameter in experiment params first. Use set_experiment_params()")
-  } else {
-    rotation_type <- container$experiment_params$rotation_type
-  }
-
-  if (!is.null(ranks)) {
-    # set ranks param in experiment params if specified here
-    container <- set_experiment_params(container, ranks = ranks)
-  } else {
-    # make sure ranks parameter has been set
-    if (is.null(container$experiment_params$ranks)) {
-      stop("Need to set ranks parameter.")
-    }
-    ranks <- container$experiment_params$ranks
-  }
-  
-  # form the tensor for specified cell types
-  container <- collapse_by_donors(container, shuffle=shuffle)
-  container <- form_tensor(container, batch_var=batch_var)
 
   # run tucker with ica on the tensor
   tensor_data <- container$tensor_data
-  tucker_res <- tucker_ica_helper(tensor_data, ranks, tucker_type,
-                                  rotation_type)
+  tucker_res <- tucker_ica_helper(tensor_data, ranks, tucker_type, rotation_type)
   container$tucker_results <- tucker_res
+
+  # reorder factors by explained variance
+  explained_variances <- c()
+  for (i in 1:ranks[1]) {
+    exp_var <- get_factor_exp_var(container,i)
+    explained_variances[i] <- exp_var
+  }
+  container$tucker_results[[1]] <- container$tucker_results[[1]][,order(explained_variances,decreasing=TRUE)]
+  container$tucker_results[[2]] <- container$tucker_results[[2]][order(explained_variances,decreasing=TRUE),]
+  container$exp_var <- explained_variances[order(explained_variances,decreasing=TRUE)]
 
   return(container)
 }
@@ -73,6 +53,7 @@ run_tucker_ica <- function(container, ranks=NULL, batch_var=NULL, shuffle=FALSE)
 #' element and loadings matrix in second element
 #' @export
 tucker_ica_helper <- function(tensor_data, ranks, tucker_type, rotation_type) {
+
   # extract tensor and labels
   donor_nm <- tensor_data[[1]]
   gene_nm  <- tensor_data[[2]]
@@ -102,7 +83,7 @@ tucker_ica_helper <- function(tensor_data, ranks, tucker_type, rotation_type) {
     # rotate donors matrix
     if (rotation_type == 'ica') {
       donor_mat <- ica::icafast(donor_mat,ranks[1],center=FALSE,alg='def')$S
-      
+
       # make all vectors length 1 as ICA didn't preserve this
       all_rss <- c()
       for (j in 1:ncol(donor_mat)) {
@@ -128,8 +109,58 @@ tucker_ica_helper <- function(tensor_data, ranks, tucker_type, rotation_type) {
 }
 
 
+#' Get explained variance for each cell type for one factor
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param factor_use numeric The factor to investigate
+#'
+#' @return explained variance for each cell type in a list
+get_factor_exp_var <- function(container, factor_use) {
+  tnsr <- rTensor::as.tensor(container$tensor_data[[4]])
+  donor_mat <- container$tucker_results[[1]]
+  ldngs <- container$tucker_results[[2]]
 
 
+  recon <- donor_mat[,factor_use,drop=FALSE] %*% ldngs[factor_use,,drop=FALSE]
+  recon_tnsr <- rTensor::k_fold(recon,m=1,modes=tnsr@modes)
+
+  # calculate error from using just a single factor
+  unexp_var <- (rTensor::fnorm(recon_tnsr - tnsr)**2) / (rTensor::fnorm(tnsr)**2)
+  exp_var <- (1 - unexp_var) * 100
+
+  return(exp_var)
+}
+
+#' Get explained variance for each cell type for one factor
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param factor_use numeric The factor to get variance explained for
+#' @param ctype character The cell type to get variance explained for
+#'
+#' @return explained variance for each cell type in a list
+get_ctype_exp_var <- function(container, factor_use, ctype) {
+  tnsr <- rTensor::as.tensor(container$tensor_data[[4]])
+  donor_mat <- container$tucker_results[[1]]
+  ldngs <- container$tucker_results[[2]]
+
+
+  ctype_ndx <- which(container$tensor_data[[3]]==ctype)
+  recon1 <- donor_mat[,factor_use,drop=FALSE] %*% ldngs[factor_use,,drop=FALSE]
+  recon1 <- rTensor::k_fold(recon1,m=1,modes=tnsr@modes)
+
+  # The reconstruction should be the original tensor with reconstruction for the one ctype
+  recon2 <- tnsr
+  recon2[,,ctype_ndx] <- recon2[,,ctype_ndx] - recon1[,,ctype_ndx]
+
+
+  # calculate error from using just a single factor
+  unexp_var <- (rTensor::fnorm(recon2)**2) / (rTensor::fnorm(tnsr)**2)
+  exp_var <- (1 - unexp_var) * 100
+
+  return(exp_var)
+}
 
 
 

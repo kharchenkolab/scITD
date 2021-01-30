@@ -21,7 +21,7 @@ for each cell type as well as results and plots from all analyses}
 
 \item{factor_select}{numeric The factor of interest}
 
-\item{method}{character The method of gsea to use. Can either be "fgsea", 
+\item{method}{character The method of gsea to use. Can either be "fgsea",
 "fgsea_special or "hypergeometric". (default="fgsea")}
 
 \item{thresh}{numeric Pvalue significance threshold to use. Will include gene sets in

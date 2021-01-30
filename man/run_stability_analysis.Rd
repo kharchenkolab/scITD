@@ -5,16 +5,59 @@
 \title{Compute stability of Tucker decomposition by comparing results to those computed
 on the original dataset downsampled randomly}
 \usage{
-run_stability_analysis(container, downsample_ratio = 0.9, n_iter = 500)
+run_stability_analysis(
+  container,
+  ranks,
+  downsample_ratio = 0.9,
+  n_iter = 500,
+  norm_method = "trim",
+  scale_factor = 10000,
+  batch_var = NULL,
+  scale_var = TRUE,
+  var_scale_power = 0.5,
+  tucker_type = "regular",
+  rotation_type = "ica"
+)
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
 for each cell type as well as results and plots from all analyses}
 
+\item{ranks}{numeric The number of donor, gene, and cell type ranks, respectively,
+to decompose to using Tucker decomposition.}
+
 \item{downsample_ratio}{numeric A decimal between 0-1 that indicates the fraction
 of cells to retain in the subsampled datasets (default=0.9)}
 
 \item{n_iter}{numeric The number of downsampling iterations to run (default=500)}
+
+\item{norm_method}{character The normalization method to use on the pseudobulked
+count data. Set to 'regular' to do standard normalization of dividing by
+library size. Set to 'trim' to use edgeR trim-mean normalization, whereby counts
+are divided by library size times a normalization factor. (default='trim')}
+
+\item{scale_factor}{numeric The number that gets multiplied by fractional counts
+during normalization of the pseudobulked data (default=10000)}
+
+\item{batch_var}{character A batch variable from metadata to remove (default=NULL)}
+
+\item{scale_var}{logical TRUE to scale the gene expression variance across donors
+for each cell type. If FALSE then all genes are scaled to unit variance across
+donors for each cell type. (default=TRUE)}
+
+\item{var_scale_power}{numeric Exponent of normalized variance that is
+used for variance scaling. Variance for each gene
+is initially set to unit variance across donors (for a given cell type).
+Variance for each gene is then scaled by multiplying the unit scaled values
+by each gene's normalized variance (where the effect of the mean-variance
+dependence is taken into account) to the exponent specified here.
+If NULL, uses var_scale_power from container$experiment_params. (default=.5)}
+
+\item{tucker_type}{character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
+with sparsity constraints (default='regular')}
+
+\item{rotation_type}{character Set to 'ica' to perform ICA rotation on resulting donor factor
+matrix and loadings. Otherwise set to 'varimax' to perform varimax rotation. (default='ica')}
 }
 \value{
 the container with a plot of the results in container$plots$stability_plot

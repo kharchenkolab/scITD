@@ -67,7 +67,7 @@ genes for all cell types. (default=NULL)}
 
 \item{show_xlab}{logical If TRUE, displays the xlabel 'genes' (default=TRUE)}
 
-\item{show_var_explained}{logical If TRUE then shows an anottation with the explained variance
+\item{show_var_explained}{logical If TRUE then shows an anotation with the explained variance
 for each cell type (default=TRUE)}
 
 \item{reset_other_factor_plots}{logical Set to TRUE to set all other loadings plots to NULL.
@@ -77,7 +77,7 @@ Useful if run get_all_lds_factor_plots but then only want to show one or two plo
 }
 \value{
 container with the plot put in container$plots$all_lds_plots and the legend put in
-container$plots$all_legends. Use draw(<hmap obj>,annotation_legend_list = <hmap legend obj>) 
+container$plots$all_legends. Use draw(<hmap obj>,annotation_legend_list = <hmap legend obj>)
 to re-render the plot with legend
 }
 \description{

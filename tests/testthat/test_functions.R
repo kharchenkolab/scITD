@@ -1,3 +1,4 @@
+
 library(scITD)
 library(testthat)
 library(Matrix)
@@ -12,11 +13,14 @@ test_that("colMeanVars() functionality", {
   expect_equal(result, expected_result)
 })
 
-test_that("get_ctype_data() functionality", {
-  expected_result <- test_container$scMinimal_ctype[['CD4+ T']]$data_sparse
-  test_container$scMinimal_ctype <- NULL
-  test_container <- get_ctype_data(test_container,donor_min_cells = 0)
-  result <- test_container$scMinimal_ctype[['CD4+ T']]$data_sparse
+test_that("form_tensor() functionality", {
+  expected_result <- test_container$scMinimal_ctype[['CD4+ T']]$pseudobulk
+  test_container$pseudobulk <- NULL
+  test_container <- form_tensor(test_container, donor_min_cells=0, gene_min_cells=0,
+                                norm_method='trim', scale_factor=10000,
+                                vargenes_method='norm_var', vargenes_thresh=500,
+                                scale_var = TRUE, var_scale_power = 1.5)
+  result <- test_container$scMinimal_ctype[['CD4+ T']]$pseudobulk
   expect_equal(result, expected_result)
 })
 
@@ -24,9 +28,8 @@ test_that("run_tucker_ica() functionality", {
   expected_result <- test_container$tucker_results
   test_container$tucker_results <- NULL
   test_container <- run_tucker_ica(test_container, ranks=c(2,4,2),
-                                   shuffle=FALSE)
+                                   tucker_type = 'regular', rotation_type = 'ica')
   result <- test_container$tucker_results
   expect_equal(result, expected_result)
 })
-
 

@@ -17,16 +17,6 @@ colMeanVars <- function(sY, rowSel, ncores = 1L) {
     .Call('_scITD_colMeanVars', PACKAGE = 'scITD', sY, rowSel, ncores)
 }
 
-#' calculates factor-stratified means for each column
-#'
-#' @param sY sparse matrix Gene by cell matrix of counts
-#' @param rowSel factor The donor that each cell is from
-#' @param numCells numeric Total number of cells belonging to each donor
-#' @export
-get_means <- function(sY, rowSel, numCells) {
-    .Call('_scITD_get_means', PACKAGE = 'scITD', sY, rowSel, numCells)
-}
-
 #' calculates factor-stratified sums for each column
 #'
 #' @param sY sparse matrix Gene by cell matrix of counts
@@ -34,15 +24,5 @@ get_means <- function(sY, rowSel, numCells) {
 #' @export
 get_sums <- function(sY, rowSel) {
     .Call('_scITD_get_sums', PACKAGE = 'scITD', sY, rowSel)
-}
-
-#' calculates factor-stratified means for each column
-#'
-#' @param sY sparse matrix Gene by cell matrix of counts
-#' @param rowSel factor The donor that each cell is from
-#' @param numCells numeric Total number of cells belonging to each donor
-#' @export
-get_vars <- function(sY, rowSel, numCells) {
-    .Call('_scITD_get_vars', PACKAGE = 'scITD', sY, rowSel, numCells)
 }
 

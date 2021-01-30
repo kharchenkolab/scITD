@@ -13,7 +13,8 @@ for each cell type as well as results and plots from all analyses}
 \item{meta_var}{character The meta data variable to compare groups for}
 }
 \value{
-a figure of comparison plots (one for each factor)
+a figure of comparison plots (one for each factor) placed in
+container$plots$indv_meta_scores_associations
 }
 \description{
 Plot dotplots for each factor to compare donor scores between meta groups

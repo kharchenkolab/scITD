@@ -9,7 +9,8 @@ plot_donor_props(
   donor_scores,
   significance,
   ctype_mapping = NULL,
-  stat_type
+  stat_type = "adj_pval",
+  n_col = 2
 )
 }
 \arguments{
@@ -19,10 +20,12 @@ plot_donor_props(
 
 \item{significance}{numeric F-Statistics as output from compute_associations()}
 
-\item{ctype_mapping}{character The cell types corresponding with columns of donor_props}
+\item{ctype_mapping}{character The cell types corresponding with columns of donor_props (default=NULL)}
 
 \item{stat_type}{character Either "fstat" to get F-Statistics, "adj_rsq" to get adjusted
-R-squared values, or "adj_pval" to get adjusted pvalues.}
+R-squared values, or "adj_pval" to get adjusted pvalues (default='adj_pval')}
+
+\item{n_col}{numeric The number of columns to organize the plots into (default=2)}
 }
 \value{
 plots of donor proportions for each cell type vs donor factor scores for each factor

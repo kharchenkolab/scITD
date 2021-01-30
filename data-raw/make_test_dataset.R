@@ -1,7 +1,7 @@
 
-pbmc_counts <- readRDS('/home/jmitchel/data/van_der_wijst/pbmc_counts.rds')
+pbmc_counts <- readRDS('/home/jmitchel/data/van_der_wijst/pbmc_counts_v2.rds')
 
-pbmc_meta <- readRDS('/home/jmitchel/data/van_der_wijst/pbmc_meta.rds')
+pbmc_meta <- readRDS('/home/jmitchel/data/van_der_wijst/pbmc_meta_v2.rds')
 
 feature.names <- readRDS('/home/jmitchel/data/van_der_wijst/genes.rds')
 
@@ -31,17 +31,23 @@ baby_counts_rand <- matrix(sample.int(15, size = ncol(baby_counts)*nrow(baby_cou
 colnames(baby_counts_rand) <- colnames(baby_counts)
 rownames(baby_counts_rand) <- rownames(baby_counts)
 
-test_scMinimal <- instantiate_scMinimal(count_data=baby_counts_rand, meta_data=baby_meta)
-test_container <- make_new_container(test_scMinimal,
-                                     ctypes_use = c("CD4+ T", "CD8+ T"),
-                                     scale_var = TRUE,
-                                     var_scale_power = 1.25,
-                                     tucker_type = 'regular', rotation_type = 'ica',
-                                     ncores = 30, rand_seed = 10)
+
+baby_counts_rand <- Matrix(baby_counts_rand, sparse = TRUE)
 
 
-test_container <- get_ctype_data(test_container,donor_min_cells = 0)
-test_container <- run_tucker_ica(test_container, ranks=c(2,4,2), shuffle=FALSE)
+param_list <- initialize_params(ctypes_use = c("CD4+ T", "CD8+ T"),
+                                ncores = 10, rand_seed = 10)
+
+test_container <- make_new_container(count_data=baby_counts_rand, meta_data=baby_meta,
+                                     params=param_list)
+
+test_container <- form_tensor(test_container, donor_min_cells=0, gene_min_cells=0,
+                              norm_method='trim', scale_factor=10000,
+                              vargenes_method='norm_var', vargenes_thresh=500,
+                              scale_var = TRUE, var_scale_power = 1.5)
+
+test_container <- run_tucker_ica(test_container, ranks=c(2,4,2),
+                                 tucker_type = 'regular', rotation_type = 'ica')
 
 save(test_container,file='/home/jmitchel/scITD/data/test_container.RData',compress = "xz")
 

@@ -4,18 +4,27 @@
 \alias{instantiate_scMinimal}
 \title{Create an scMinimal object}
 \usage{
-instantiate_scMinimal(data_sparse = NULL, count_data = NULL, meta_data)
+instantiate_scMinimal(
+  count_data,
+  meta_data,
+  metadata_cols = NULL,
+  metadata_col_nm = NULL
+)
 }
 \arguments{
-\item{data_sparse}{sparseMatrix Matrix of normalized, log-transformed
-counts with genes as rows and cells as columns (default=NULL)}
-
 \item{count_data}{sparseMatrix Matrix of raw counts with genes as rows
-and cells as columns (default=NULL)}
+and cells as columns}
 
 \item{meta_data}{data.frame Metadata with cells as rows and variables
 as columns. Number of rows in metadata should equal number of columns
-in data_sparse}
+in count matrix.}
+
+\item{metadata_cols}{character The names of the metadata columns to use
+(default=NULL)}
+
+\item{metadata_col_nm}{character New names for the selected metadata columns
+if wish to change their names. If NULL, then the preexisting column names are
+used. (default=NULL)}
 }
 \value{
 scMinimal object
