@@ -55,8 +55,10 @@ get_subtype_prop_associations <- function(container, max_res, stat_type,
     for (r in cluster_res) {
       print(r)
       # run clustering
+      # subclusts <- get_subclusters(container,ct,r,min_cells_group=min_cells_group,
+      #                              small_clust_action='merge')
       subclusts <- get_subclusters(container,ct,r,min_cells_group=min_cells_group,
-                                   small_clust_action='merge')
+                                   small_clust_action='remove')
       subclusts <- subclusts + 1 # moves subcluster index from 0 to 1
       subc_all[[ct]][[paste0('res:',as.character(r))]] <- subclusts
 
@@ -399,135 +401,18 @@ compute_associations <- function(donor_balances, donor_scores, stat_type) {
 }
 
 
-#' Gets cell subtype plots including an embedding, a factor association plot, and
-#' a heatmap of differentially expressed genes between subtypes
+#' Get a figure showing cell subtype proportion associations with each factor. Combines
+#' this plot with subtype UMAPs and differential expression heatmaps.
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
-#' @param ctype character The cell type for which subtypes are to be investigated
-#' @param res numeric The clustering resolution that was used to generate
-#' the clustering
-#' @param factor_use numeric The factor to plot scores for
+#' @param all_ctypes character A vector of the cell types to include
+#' @param all_res numeric A vector of resolutions matching the all_ctypes parameter
 #'
-#' @return The embedding plot for the cell type
+#' @return the figure placed in the slot container$plots$subc_fig. Note that this
+#' function runs better if the number of cores in the conos object in
+#' container$embedding has n.cores set to a relatively small value < 10.
 #' @export
-get_subclust_plots <- function(container,ctype,res,factor_use) {
-
-  con <- container[["embedding"]]
-  resolution_name <- paste0('res:',as.character(res))
-  subclusts <- container$subclusters[[ctype]][[resolution_name]]
-
-  # append large cell type name to subclusters
-  subclusts <- sapply(subclusts,function(x){paste0(ctype,'_',x)})
-
-  # save original embedding
-  orig_embed <- con[["embedding"]]
-
-  # save original cluster labels
-  orig_clusts <- con$clusters$leiden$groups
-
-  # limit cells in subclusts to those that we actually have scores for
-  donor_scores <- container$tucker_results[[1]]
-  donor_vec <- container$scMinimal_full$metadata[names(subclusts),'donors']
-  subclusts <- subclusts[donor_vec %in% rownames(donor_scores)]
-  con$clusters$leiden$groups <- as.factor(subclusts)
-  con[["embedding"]] <- orig_embed[names(subclusts),]
-
-  # get IQR so can remove outliers
-  qt_x <- stats::quantile(con[["embedding"]][,1], c(.25,.75))
-  qt_y <- stats::quantile(con[["embedding"]][,2], c(.25,.75))
-  iqr_x <- qt_x[2] - qt_x[1]
-  iqr_y <- qt_y[2] - qt_y[1]
-  outlier_up_lim_x <- qt_x[2] + 2 * iqr_x
-  outlier_down_lim_x <- qt_x[1] - 2 * iqr_x
-  outlier_up_lim_y <- qt_y[2] + 2 * iqr_y
-  outlier_down_lim_y <- qt_y[1] - 2 * iqr_y
-
-  subc_embed_plot <- con$plotGraph()
-  subc_embed_plot <- subc_embed_plot +
-    ggtitle(paste0(ctype,' Subclusters')) +
-    xlab('UMAP 1') +
-    ylab('UMAP 2') +
-    xlim(outlier_down_lim_x,outlier_up_lim_x) +
-    ylim(outlier_down_lim_y,outlier_up_lim_y) +
-    theme(plot.title = element_text(hjust = 0.5),
-          axis.title.y = element_text(size = rel(.8)),
-          axis.title.x = element_text(size = rel(.8)))
-
-  # make subtype association plot
-  subclusts_num <- sapply(subclusts,function(x){as.numeric(strsplit(x,split="_")[[1]][[2]])})
-  scMinimal <- container$scMinimal_ctype[[ctype]]
-  sub_meta_tmp <- scMinimal$metadata[names(subclusts),]
-
-  # get donor proportions of subclusters
-  donor_props <- compute_donor_props(subclusts_num,sub_meta_tmp)
-
-  subtype_associations <- get_indv_subtype_associations(container,donor_props,factor_use)
-
-  # get directionality of associations
-  for (i in 1:length(subtype_associations)) {
-    subc_name <- names(subtype_associations)[i]
-    subc_name <- strsplit(subc_name,split="_")[[1]][1]
-
-    # top top and bottom percentile of donor score
-    scores_eval <- donor_scores[,factor_use]
-    cutoffs <- stats::quantile(scores_eval, c(.25, .75))
-    donors_low <- names(scores_eval)[scores_eval < cutoffs[1]]
-    donors_high <- names(scores_eval)[scores_eval > cutoffs[2]]
-
-    donors_high_props <- donor_props[donors_high,subc_name]
-    donors_low_props <- donor_props[donors_low,subc_name]
-
-    donors_high_props_mean <- mean(donors_high_props)
-    donors_low_props_mean <- mean(donors_low_props)
-
-    subtype_associations[i] <- -log10(subtype_associations[i])
-
-    if (donors_high_props_mean < donors_low_props_mean) {
-      subtype_associations[i] <- subtype_associations[i] * -1
-    }
-
-  }
-
-  # plot enrichment results - use pval cutoff line, make up red and down blue
-  subtype_names <- sapply(1:length(subtype_associations),function(x){
-    paste0(ctype,"_",x)})
-  tmp <- data.frame(cbind(subtype_names,subtype_associations))
-  subc_assoc_plot <- ggplot(tmp,aes(x=subtype_names,y=as.numeric(subtype_associations),
-                      fill = as.numeric(subtype_associations)>0)) +
-    geom_bar(stat='identity') +
-    scale_fill_manual(values = c("lightblue", "firebrick")) +
-    ylab('-log10(Adj. P-Value)') +
-    xlab('') +
-    geom_hline(yintercept=0, linetype="solid", color = "black") +
-    geom_hline(yintercept=-log10(.05), linetype="dashed", color = "red") +
-    geom_hline(yintercept=log10(.05), linetype="dashed", color = "red") +
-    ggtitle(paste0("Subcluster-Factor ",factor_use," Associations")) +
-    theme_bw() +
-    theme(legend.position = "none", axis.title.y = element_text(size = rel(.8)),
-          plot.title = element_text(hjust = 0.5))
-
-  # get subtype DE results heamap
-  myde <- con$getDifferentialGenes(groups=as.factor(subclusts),append.auc=TRUE,z.threshold=0,upregulated.only=TRUE)
-  subc_de_hmap <- plotDEheatmap_conos(con, groups=as.factor(subclusts), de=myde, container,
-                                 row.label.font.size=8)
-
-  # make heatmap into a grob
-  subc_hmap_grob <- grid::grid.grabExpr(draw(subc_de_hmap,annotation_legend_side = "bottom"))
-
-  # store results in container
-  container$plots$subc_plots[[paste0(ctype,"_",resolution_name)]] <- list(subc_embed_plot,
-                                                                 subc_assoc_plot,
-                                                                 subc_hmap_grob)
-
-  # reset the embedding and clusters
-  con$clusters$leiden$groups <- orig_clusts
-  con[["embedding"]] <- orig_embed
-  container$embedding <- con
-
-  return(container)
-}
-
 get_subclust_enr_fig <- function(container,all_ctypes,all_res) {
   # make heatmap of enrichment significance pvalues
   enr_hmap <- get_subclust_enr(container,all_ctypes,all_res,1:ncol(container$tucker_results[[1]]))
@@ -556,6 +441,16 @@ get_subclust_enr_fig <- function(container,all_ctypes,all_res) {
 
 }
 
+#' Title
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param all_ctypes character A vector of the cell types to include
+#' @param all_res numeric A vector of resolutions matching the all_ctypes parameter
+#' @param all_factors numerc A vector of the factors to compute associations for
+#'
+#' @return the association heatmap object
+#' @export
 get_subclust_enr <- function(container,all_ctypes,all_res,all_factors) {
 
   res_df <- data.frame(matrix(ncol=length(all_factors),nrow=0))
@@ -588,7 +483,6 @@ get_subclust_enr <- function(container,all_ctypes,all_res,all_factors) {
       paste0(ctype,"_",x)})
 
     hmap_groupings <- c(hmap_groupings, rep(ctype,length(unique(subclusts))))
-    hmap_groupings <- factor(hmap_groupings,levels=all_ctypes)
 
     for (factor_use in all_factors) {
       subtype_associations <- get_indv_subtype_associations(container,donor_props,factor_use)
@@ -624,6 +518,8 @@ get_subclust_enr <- function(container,all_ctypes,all_res,all_factors) {
     res_df <- rbind(res_df,tmp_df)
   }
 
+  hmap_groupings <- factor(hmap_groupings,levels=all_ctypes)
+
   # get mask of the signs
   neg_vals <- res_df < 0
 
@@ -657,16 +553,26 @@ get_subclust_enr <- function(container,all_ctypes,all_res,all_factors) {
   return(p)
 }
 
-get_subclust_de_hmaps <- function(container,all_ctypes,all_res,all_factors) {
+#' Title
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param all_ctypes character A vector of the cell types to include
+#' @param all_res numeric A vector of resolutions matching the all_ctypes parameter
+#'
+#' @return a list of the DE heatmaps as grob objects
+#' @export
+get_subclust_de_hmaps <- function(container,all_ctypes,all_res) {
   all_plots <- list()
+  con <- container$embedding
 
   for (j in 1:length(all_ctypes)) {
-
     ctype <- all_ctypes[j]
+    print(ctype)
     res <- all_res[j]
     ct_res <- paste0(ctype,':',as.character(res))
     resolution_name <- paste0('res:',as.character(res))
-    if (is.null(container$plots[[resolution_name]])) {
+    if (is.null(container$plots$subtype_de[[ct_res]])) {
       subclusts <- container$subclusters[[ctype]][[resolution_name]]
 
       # append large cell type name to subclusters
@@ -677,19 +583,35 @@ get_subclust_de_hmaps <- function(container,all_ctypes,all_res,all_factors) {
       donor_vec <- container$scMinimal_full$metadata[names(subclusts),'donors']
       subclusts <- subclusts[donor_vec %in% rownames(donor_scores)]
 
+      # save original embedding
+      orig_embed <- con[["embedding"]]
+
+      # save original cluster labels
+      orig_clusts <- con$clusters$leiden$groups
+
+      con$clusters$leiden$groups <- as.factor(subclusts)
+      con[["embedding"]] <- orig_embed[names(subclusts),]
+
       # get subtype DE results heamap
       myde <- con$getDifferentialGenes(groups=as.factor(subclusts),append.auc=TRUE,z.threshold=0,upregulated.only=TRUE)
+      # subc_de_hmap <- plotDEheatmap_conos(con, groups=as.factor(subclusts), de=myde, container,
+      #                                     row.label.font.size=8, min.auc=.55)
       subc_de_hmap <- plotDEheatmap_conos(con, groups=as.factor(subclusts), de=myde, container,
-                                          row.label.font.size=8, min.auc=.7)
+                                          row.label.font.size=8)
 
       # make heatmap into a grob
       subc_hmap_grob <- grid::grid.grabExpr(draw(subc_de_hmap,annotation_legend_side = "bottom"))
 
       # store the plot
-      container$plots[[ct_res]] <- subc_hmap_grob
+      container$plots$subtype_de[[ct_res]] <- subc_hmap_grob
       all_plots[[j]] <- subc_hmap_grob
+
+      # restore embedding
+      con$clusters$leiden$groups <- orig_clusts
+      con[["embedding"]] <- orig_embed
+
     } else {
-      all_plots[[j]] <- container$plots[[ct_res]]
+      all_plots[[j]] <- container$plots$subtype_de[[ct_res]]
     }
   }
 
@@ -818,6 +740,7 @@ get_subclust_umap <- function(container,all_ctypes,all_res,n_col=3) {
     plots_store[[ct_res]] <- subc_embed_plot
 
     # reset to original embedding
+    con$clusters$leiden$groups <- orig_clusts
     con[["embedding"]] <- orig_embed
   }
   container$subc_umaps <- plots_store
@@ -885,84 +808,6 @@ get_all_subclust_plots <- function(container,ctypes,res,factors) {
     container <- get_subclust_plots(container=container,ctype=ct,res=r,factor_use=f)
   }
   return(container)
-}
-
-#' Render a figure of all subcluster plots
-#'
-#' @param container environment Project container that stores sub-containers
-#' for each cell type as well as results and plots from all analyses
-#'
-#' @export
-render_subtype_plots <- function(container) {
-
-  num_subfig_cols <- length(container$plots$subc_plots)
-
-  select_grobs <- function(lay) {
-    id <- unique(c(t(lay)))
-    id[!is.na(id)]
-  }
-
-  hlay <- c()
-  gs <- list()
-  for (j in 1:num_subfig_cols) {
-    # create single list of plots in right order
-    # start by aligning first two plots for the cell type
-    subc_embed_plot <- container$plots$subc_plots[[j]][[1]]
-    subc_assoc_plot <- container$plots$subc_plots[[j]][[2]]
-
-    # align these two plots
-    ggplots_combined <- ggpubr::ggarrange(subc_embed_plot,subc_assoc_plot,
-                                          ncol = 1,align='v')
-
-    # set up layout for figure positioning
-    start_ndx <- ((j-1)*2) + 1
-    col_lay <- rbind(c(rep(start_ndx,26),NA),c(NA,NA,rep(start_ndx+1,24),NA))
-    hlay <- cbind(hlay,col_lay)
-
-    # store plots for layout
-    gs[[start_ndx]] <- ggplots_combined
-    gs[[start_ndx+1]] <- container$plots$subc_plots[[j]][[3]]
-
-  }
-
-  gridExtra::grid.arrange(grobs=gs, layout_matrix=hlay)
-
-}
-
-
-#' Render a figure of all subcluster plots
-#'
-#' @param container environment Project container that stores sub-containers
-#' for each cell type as well as results and plots from all analyses
-#'
-#' @export
-render_subtype_plots_v2 <- function(container) {
-
-  n_subtypes <- length(container[["plots"]][["subc_plots"]])
-  grob_lst <- list()
-  ndx <- 1
-  for (j in 1:3) {
-    for (i in 1:n_subtypes) {
-      grob_lst[[ndx]] <- container[["plots"]][["subc_plots"]][[i]][[j]]
-      ndx <- ndx + 1
-    }
-  }
-
-  # fig <- cowplot::plot_grid(plotlist=grob_lst,
-  #                           ncol=n_subtypes,
-  #                           scale = 0.9, align = "v")
-
-
-  r1 <- grob_lst[1:n_subtypes]
-  f1 <- cowplot::plot_grid(plotlist=r1, ncol=n_subtypes, scale = 0.9)
-  r2 <- grob_lst[(n_subtypes+1):(2*n_subtypes)]
-  f2 <- cowplot::plot_grid(plotlist=r2, ncol=n_subtypes, scale = 0.9)
-  r3 <- grob_lst[((2*n_subtypes)+1):(3*n_subtypes)]
-  f3 <- cowplot::plot_grid(plotlist=r3, ncol=n_subtypes)
-
-  fig <- cowplot::plot_grid(f1,f2,f3,ncol=1, align = "v", rel_heights=c(.25,.25,.4))
-
-  return(fig)
 }
 
 
