@@ -430,10 +430,10 @@ get_subclust_enr_fig <- function(container,all_ctypes,all_res) {
     all_umaps[[j]] <- container$subc_umaps[[ct_res]]
   }
 
-  r1 <- cowplot::plot_grid(plotlist=all_umaps,nrow=1,scale = 0.95)
-  r2 <- cowplot::plot_grid(plotlist=de_hmaps,nrow=1,scale = 0.95)
+  r1 <- cowplot::plot_grid(plotlist=all_umaps,nrow=1,scale = 0.97)
+  r2 <- cowplot::plot_grid(plotlist=de_hmaps,nrow=1)
 
-  fig <- cowplot::plot_grid(r1,r2,enr_hmap,ncol=1,rel_heights=c(1,1.6,1))
+  fig <- cowplot::plot_grid(r1,r2,enr_hmap,ncol=1,rel_heights=c(1,1.65,1))
 
   container$plots$subc_fig <- fig
 
@@ -540,7 +540,7 @@ get_subclust_enr <- function(container,all_ctypes,all_res,all_factors) {
     paste0('Factor',x)
   })
 
-  col_fun = colorRamp2(c(-10, log10(.05), 0, -log10(.05), 10), c("blue",  "white", "white", "white", "red"))
+  col_fun = colorRamp2(c(-8, log10(.05), 0, -log10(.05), 8), c("blue",  "white", "white", "white", "red"))
 
   p <- Heatmap(as.matrix(res_df_adj), name='enr',
           cluster_columns = FALSE,
@@ -549,7 +549,7 @@ get_subclust_enr <- function(container,all_ctypes,all_res,all_factors) {
           row_names_gp = gpar(fontsize = 10),
           col = col_fun, column_split = hmap_groupings,
           border=TRUE, row_names_side='left',
-          cluster_column_slices=FALSE, column_gap = unit(5, "mm"))
+          cluster_column_slices=FALSE, column_gap = unit(8, "mm"))
   return(p)
 }
 
@@ -1220,7 +1220,25 @@ plotDEheatmap_conos <- function(con,groups,container,de=NULL,min.auc=NULL,min.sp
     ha <- ComplexHeatmap::Heatmap(x, name='expression', row_title=" ", row_title_gp = gpar(fontsize = 50), col=pal, row_labels=convert_gn(container,rownames(x)), cluster_rows=FALSE, cluster_columns=FALSE, show_row_names=is.null(labeled.gene.subset), show_column_names=FALSE, top_annotation=ha , left_annotation=ra, border=border,  show_heatmap_legend=show_heatmap_legend, row_names_gp = grid::gpar(fontsize = row.label.font.size), column_split=groups[colnames(x)], row_split=rannot[,1], row_gap = unit(split.gap, "mm"), column_gap = unit(split.gap, "mm"), ...);
   } else {
     ha <- ComplexHeatmap::Heatmap(x, name='expression', col=pal,
-                                  row_labels=convert_gn(container,rownames(x)), row_title=" ", row_title_gp = gpar(fontsize = 50), cluster_rows=FALSE, cluster_columns=FALSE, show_row_names=is.null(labeled.gene.subset), show_column_names=FALSE, top_annotation=ha , left_annotation=ra, border=border,  show_heatmap_legend=show_heatmap_legend, row_names_gp = grid::gpar(fontsize = row.label.font.size), ...);
+                                  row_labels=convert_gn(container,rownames(x)),
+                                  row_title=" ", row_title_gp = gpar(fontsize = 50),
+                                  cluster_rows=FALSE, cluster_columns=FALSE,
+                                  show_row_names=is.null(labeled.gene.subset),
+                                  show_column_names=FALSE, top_annotation=ha,
+                                  left_annotation=ra, border=border,
+                                  show_heatmap_legend=show_heatmap_legend,
+                                  row_names_gp = grid::gpar(fontsize = row.label.font.size), ...);
+    # ha <- ComplexHeatmap::Heatmap(x, name='expression', col=pal,
+    #                               row_labels=convert_gn(container,rownames(x)),
+    #                               row_title=" ", row_title_gp = gpar(fontsize = 50),
+    #                               cluster_rows=FALSE, cluster_columns=FALSE,
+    #                               show_row_names=is.null(labeled.gene.subset),
+    #                               show_column_names=FALSE, top_annotation=ha,
+    #                               left_annotation=ra, border=border,
+    #                               show_heatmap_legend=show_heatmap_legend,
+    #                               width = unit(15, "cm"),
+    #                               height = unit(15, "cm"),
+    #                               row_names_gp = grid::gpar(fontsize = row.label.font.size), ...);
   }
   if(!is.null(labeled.gene.subset)) {
     if(is.numeric(labeled.gene.subset)) {

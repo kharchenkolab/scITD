@@ -296,7 +296,7 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
                      right_annotation = gene_callouts, top_annotation=var_annot,
                      show_heatmap_legend = FALSE,
                      width = unit(8, "cm"),
-                     height = unit(8, "cm"))
+                     height = unit(14, "cm"))
 
   # turn off heatmap message saying callouts require pdf view or zoom view
   ht_opt$message = FALSE
@@ -680,14 +680,6 @@ plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype,
                                  additional_meta=NULL) {
   ## add catch in case they havent run jackstraw yet...
 
-  # # temporarily remove variance scaling
-  # orig_scale_decision <- container$experiment_params$scale_var
-  # container <- set_experiment_params(container, scale_var = FALSE)
-  #
-  # # form the tensor for specified cell types
-  # container <- collapse_by_donors(container, shuffle=FALSE)
-  # container <- form_tensor(container)
-
   # extract tensor information
   tensor_data <- container$tensor_data
   donor_nm <- tensor_data[[1]]
@@ -752,6 +744,9 @@ plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype,
   colnames(donor_unfold) <- gn_ctype_cnames
   rownames(donor_unfold) <- donor_nm
 
+  ## testing out scaling the data to unit variance
+  donor_unfold <- scale(donor_unfold)
+
   # subset data to just genes to plot
   donor_unfold_sub <- donor_unfold[,genes_plot]
   donor_unfold_sub <- t(donor_unfold_sub)
@@ -777,10 +772,18 @@ plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype,
 
     # make all columns of meta to be factors
     for (i in 1:ncol(meta)) {
-      meta[,i] <- as.factor(unlist(meta[,i]))
+      meta[,i] <- factor(unlist(meta[,i]),levels=unique(unlist(meta[,i]))[order(unique(unlist(meta[,i])))])
     }
 
-    ta <- ComplexHeatmap::HeatmapAnnotation(df = meta, show_annotation_name=TRUE)
+    set.seed(30)
+    if (length(levels(meta)) < 3) {
+      mycol <- RColorBrewer::brewer.pal(n = 3, name = "Paired")
+    } else {
+      mycol <- RColorBrewer::brewer.pal(n = length(levels(meta)), name = "Paired")
+    }
+    names(mycol) <- levels(meta)
+    ta <- ComplexHeatmap::HeatmapAnnotation(df = meta, show_annotation_name=TRUE,
+                                            col = list(df = mycol))
   } else {
     ta <- NULL
   }
@@ -801,10 +804,206 @@ plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype,
   ct_show <- sapply(rownames(donor_unfold_sub),function(x){
     strsplit(x,split="_")[[1]][[2]]
   })
-  ct_show <- as.factor(ct_show)
+  ct_show <- factor(ct_show,levels=ctypes_use)
+
+  set.seed(10)
+  mycol <- RColorBrewer::brewer.pal(n = length(ctypes_use), name = "Accent")
+  names(mycol) <- ctypes_use
 
   ct_annot <- ComplexHeatmap::rowAnnotation(cell_types=anno_simple(ct_show),
-                                            show_annotation_name=FALSE)
+                                            show_annotation_name=FALSE,
+                                            col = list(cell_types = mycol))
+
+  # create the hmap
+  col_fun = colorRamp2(c(min(donor_unfold_sub), 0, max(donor_unfold_sub)), c("blue", "white", "red"))
+
+  myhmap <- Heatmap(donor_unfold_sub, name = "expr",
+                    cluster_columns = FALSE,
+                    cluster_rows = TRUE,
+                    cluster_row_slices=FALSE,
+                    column_names_gp = gpar(fontsize = 8),
+                    row_names_gp = gpar(fontsize = 10),
+                    col = col_fun, bottom_annotation=ha, row_split = ct_show,
+                    row_labels=rn_show,border=TRUE, show_column_names=show_donor_labels,
+                    left_annotation=ct_annot, show_row_dend = FALSE,
+                    column_title = paste0('Factor ',as.character(factor_select)),
+                    column_title_gp = gpar(fontsize = 20),
+                    column_title_side = "top",
+                    top_annotation=ta)
+
+  container$plots$donor_sig_genes[[as.character(factor_select)]] <- myhmap
+  return(container)
+}
+
+
+#' Generate heatmap showing top genes in each cell type significantly associated
+#' with a given factor
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param factor_select numeric The factor to query
+#' @param top_n_per_ctype numeric Vector of the number of top genes from each cell type
+#' to plot
+#' @param ctypes_use character The cell types for which to get the top genes to make
+#' callouts for. If NULL then uses all cell types. (default=NULL)
+#' @param show_donor_labels logical Set to TRUE to display donor labels (default=FALSE)
+#' @param additional_meta character Another meta variable to plot (default=NULL)
+#'
+#' @return the project container with the plot in the slot
+#' container$plots$donor_sig_genes$Factor#
+#' @export
+plot_donor_sig_genes_v2 <- function(container, factor_select, top_n_per_ctype,
+                                 ctypes_use=NULL, show_donor_labels=FALSE,
+                                 additional_meta=NULL) {
+  ## add catch in case they havent run jackstraw yet...
+
+  # extract tensor information
+  tensor_data <- container$tensor_data
+  donor_nm <- tensor_data[[1]]
+  gene_nm  <- tensor_data[[2]]
+  ctype_nm  <- tensor_data[[3]]
+  tnsr <- tensor_data[[4]]
+
+  # get the loadings matrix
+  ldngs <- container$tucker_results[[2]]
+
+  # break down a factor from the loadings matrix
+  genes <- sapply(colnames(ldngs),function(x){strsplit(x,split=":")[[1]][2]})
+  ctypes <- sapply(colnames(ldngs),function(x){strsplit(x,split=":")[[1]][1]})
+
+  sr_col <- ldngs[factor_select,]
+
+  tmp_casted_num <- reshape_loadings(sr_col,genes,ctypes)
+
+  # extract the genes to show
+  if (is.null(ctypes_use)) {
+    ctypes <- container$experiment_params$ctypes_use
+  } else {
+    ctypes <- ctypes_use
+  }
+  sig_vecs <- get_significance_vectors(container,factor_select,ctypes)
+  genes_plot <- c()
+  ct_in_hmap <- c()
+  for (i in 1:length(ctypes)) {
+    ct <- ctypes[i]
+    if (length(top_n_per_ctype)==1) {
+      top_n <- top_n_per_ctype
+    } else {
+      top_n <- top_n_per_ctype[i]
+    }
+
+    # get significant genes for the ctype
+    ct_sig_genes <- sig_vecs[[ct]]
+    ct_sig_genes <- ct_sig_genes[ct_sig_genes<0.05]
+
+    # get top loading genes of the significant ones
+    ct_sig_loadings <- tmp_casted_num[names(ct_sig_genes),ct]
+
+    # ## testing not using gene significance
+    # ct_sig_loadings <- tmp_casted_num[,ct]
+
+    ct_sig_loadings <- ct_sig_loadings[order(abs(ct_sig_loadings),decreasing=TRUE)]
+    ct_top_genes <- names(ct_sig_loadings)[1:top_n]
+    ct_top_genes <- sapply(ct_top_genes,function(x) {paste0(x,"_",ct)})
+    genes_plot <- c(genes_plot,ct_top_genes)
+    ct_in_hmap <- c(ct_in_hmap, rep(ct,top_n))
+  }
+
+  ct_in_hmap <- factor(ct_in_hmap)
+
+  # unfold tensor along donor mode
+  donor_unfold <- rTensor::k_unfold(rTensor::as.tensor(tnsr),1)@data
+
+  gn_ctype_cnames <- c()
+  for (ct in ctype_nm) {
+    for (gn in gene_nm) {
+      gn_ctype_cnames <- c(gn_ctype_cnames,paste0(gn,"_",ct))
+    }
+  }
+
+  colnames(donor_unfold) <- gn_ctype_cnames
+  rownames(donor_unfold) <- donor_nm
+
+  ## testing out scaling the data to unit variance
+  donor_unfold <- scale(donor_unfold)
+
+  # subset data to just genes to plot
+  donor_unfold_sub <- donor_unfold[,genes_plot]
+  donor_unfold_sub <- t(donor_unfold_sub)
+
+  # reorder donors by their score for the factor
+  donor_scores <- container$tucker_results[[1]]
+  donor_scores_fact <- donor_scores[,factor_select]
+  dsc_ord <- order(donor_scores_fact)
+  donor_unfold_sub <- donor_unfold_sub[,dsc_ord]
+  donor_scores <- donor_scores[dsc_ord,]
+
+  colnames(donor_scores) <- sapply(1:ncol(donor_scores), function(x) {
+    paste0('Factor',as.character(x))
+  })
+  col_fun2 = circlize::colorRamp2(c(min(donor_scores), 0, max(donor_scores)), c("purple", "white", "green"))
+  dscores_hmap <- Heatmap(as.matrix(t(donor_scores)),name='dscores',
+                          cluster_columns = FALSE,
+                          cluster_rows = FALSE,
+                          show_row_names = TRUE,
+                          show_column_names = FALSE,
+                          col = col_fun2, border = TRUE,
+                          height = unit(3.5, "cm"),
+                          column_title = 'Donors',
+                          column_title_side = "bottom")
+
+
+  if (!is.null(additional_meta)) {
+    meta <- container$scMinimal_full$metadata[,c('donors',additional_meta)]
+    meta <- unique(meta)
+    rownames(meta) <- meta$donors
+    meta$donors <- NULL
+    meta <- meta[colnames(donor_unfold_sub),,drop=FALSE]
+
+    # make all columns of meta to be factors
+    for (i in 1:ncol(meta)) {
+      meta[,i] <- as.factor(unlist(meta[,i]))
+    }
+
+    set.seed(30)
+    if (length(levels(meta)) < 3) {
+      mycol <- RColorBrewer::brewer.pal(n = 3, name = "Paired")
+    } else {
+      mycol <- RColorBrewer::brewer.pal(n = length(levels(meta)), name = "Paired")
+    }
+    names(mycol) <- levels(meta)
+    ta <- ComplexHeatmap::HeatmapAnnotation(df = meta, show_annotation_name=TRUE,
+                                            col = list(df = mycol))
+
+  } else {
+    ta <- NULL
+  }
+
+
+
+  # rename genes
+  rownames(donor_unfold_sub) <- sapply(rownames(donor_unfold_sub),function(x) {
+    gn <- strsplit(x,split="_")[[1]][1]
+    ct <- strsplit(x,split="_")[[1]][2]
+    gn <- convert_gn(container,gn)
+    return(paste0(gn,"_",ct))
+  })
+
+  rn_show <- sapply(rownames(donor_unfold_sub),function(x){
+    strsplit(x,split="_")[[1]][[1]]
+  })
+  ct_show <- sapply(rownames(donor_unfold_sub),function(x){
+    strsplit(x,split="_")[[1]][[2]]
+  })
+  ct_show <- factor(ct_show,levels=ctypes_use)
+
+  set.seed(10)
+  mycol <- RColorBrewer::brewer.pal(n = length(ctypes_use), name = "Accent")
+  names(mycol) <- ctypes_use
+
+  ct_annot <- ComplexHeatmap::rowAnnotation(cell_types=anno_simple(ct_show),
+                                            show_annotation_name=FALSE,
+                                            col = list(cell_types = mycol))
 
   # create the hmap
   col_fun = colorRamp2(c(min(donor_unfold_sub), 0, max(donor_unfold_sub)), c("blue", "white", "red"))
@@ -814,23 +1013,15 @@ plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype,
                     cluster_rows = TRUE,
                     column_names_gp = gpar(fontsize = 8),
                     row_names_gp = gpar(fontsize = 10),
-                    col = col_fun, bottom_annotation=ha, row_split = ct_show,
+                    col = col_fun, row_split = ct_show,
                     row_labels=rn_show,border=TRUE, show_column_names=show_donor_labels,
                     left_annotation=ct_annot,show_row_dend = FALSE,
-                    column_title = 'Donors',
-                    column_title_gp = gpar(fontsize = 10),
-                    column_title_side = "bottom",
-                    top_annotation=ta)
+                    top_annotation=ta,
+                    column_title = paste0('Factor ',as.character(factor_select)),
+                    column_title_gp = gpar(fontsize = 20),
+                    column_title_side = "top")
 
-  # # reset scale variance decision
-  # container <- set_experiment_params(container, scale_var = orig_scale_decision)
-
-  # draw(myhmap, padding = unit(c(2, 2, 10, 2), "mm")) # add space for titles
-  # decorate_heatmap_body("expr", {
-  #   grid::grid.text(paste0('Factor ', factor_select,' Top Genes'),
-  #                   y = unit(1, "npc") + unit(2, "mm"), just = "bottom",
-  #                   gp = gpar(fontsize = 20, fontface = "bold"))
-  # })
+  myhmap <- myhmap %v% dscores_hmap
 
   container$plots$donor_sig_genes[[as.character(factor_select)]] <- myhmap
   return(container)
@@ -1006,6 +1197,10 @@ plot_scores_by_meta <- function(container,meta_var) {
   meta$donors <- NULL
   meta_vals <- as.character(unique(meta[[meta_var]]))
 
+  if (sum(is.na(meta_vals))>0) {
+    meta_vals <- meta_vals[!is.na(meta_vals)]
+  }
+
   # make all columns of meta to be factors
   for (i in 1:ncol(meta)) {
     meta[,i] <- as.factor(unlist(meta[,i]))
@@ -1058,8 +1253,8 @@ plot_scores_by_meta <- function(container,meta_var) {
     tmp_pvals <- all_pvals[all_pvals$myfactor==j,,drop=FALSE]
     p <- ggplot(tmp_dat,aes(x=Status,y=dscore)) +
       geom_violin() +
-      geom_dotplot(binaxis = 'y', stackdir = 'center', method = 'histodot',
-                   dotsize = 2.5, binwidth = .005) +
+      # geom_dotplot(binaxis = 'y', stackdir = 'center', method = 'histodot',
+      #              dotsize = 2.5, binwidth = .005) +
       # geom_boxplot() +
       ggpubr::stat_pvalue_manual(
         tmp_pvals,
@@ -1089,6 +1284,7 @@ plot_scores_by_meta <- function(container,meta_var) {
 }
 
 
+
 #' Create UMAP for donor distances
 #'
 #' @param container environment Project container that stores sub-containers
@@ -1101,7 +1297,7 @@ plot_scores_by_meta <- function(container,meta_var) {
 #'
 #' @return the project container with the figure in container$plots$dscores_umap
 #' @export
-plot_donor_umap <- function(container,color_by_factor=NULL, color_by_meta=NULL, n_col=1) {
+plot_donor_umap <- function(container, color_by_factor=NULL, color_by_meta=NULL, n_col=1) {
 
   dscores <- container$tucker_results[[1]]
   um <- as.data.frame(umap::umap(dscores)$layout)
@@ -1111,9 +1307,9 @@ plot_donor_umap <- function(container,color_by_factor=NULL, color_by_meta=NULL, 
   if (!is.null(color_by_factor)) {
     for (i in 1:length(color_by_factor)) {
       fact <- color_by_factor[i]
-      c_vals <- container$tucker_results[[1]][,fact]
-      tmp <- as.data.frame(cbind(um,c_vals))
-      p <- ggplot(tmp,aes(x=UMAP1, y=UMAP2, color=c_vals)) +
+      score <- container$tucker_results[[1]][,fact]
+      tmp <- as.data.frame(cbind(um,score))
+      p <- ggplot(tmp,aes(x=UMAP1, y=UMAP2, color=score)) +
         geom_point() +
         scale_color_gradient2(midpoint = 0, low = "blue", mid = "white",
                               high = "red", space = "Lab" ) +
@@ -1134,9 +1330,9 @@ plot_donor_umap <- function(container,color_by_factor=NULL, color_by_meta=NULL, 
       meta <- unique(meta)
       rownames(meta) <- meta$donors
       meta$donors <- NULL
-      c_vals <- meta[rownames(dscores),]
-      tmp <- as.data.frame(cbind(um,c_vals))
-      p <- ggplot(tmp,aes(x=UMAP1, y=UMAP2, color=c_vals)) +
+      score <- meta[rownames(dscores),]
+      tmp <- as.data.frame(cbind(um,score))
+      p <- ggplot(tmp,aes(x=UMAP1, y=UMAP2, color=score)) +
         geom_point() +
         xlab('') +
         ylab('') +
