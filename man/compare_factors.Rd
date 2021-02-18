@@ -21,7 +21,7 @@ for each cell type as well as results and plots from all analyses}
 \item{direction}{character Vector specifying the directions to compare for each
 factor. Can either be 'up' or 'down' for each factor.}
 
-\item{compare_type}{character Set to either 'same' or 'different' to get 
+\item{compare_type}{character Set to either 'same' or 'different' to get
 genes that are significant in both or only significant in one or the other,
 respectively.}
 

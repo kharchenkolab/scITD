@@ -10,7 +10,8 @@ plot_donor_matrix(
   cluster_by_meta = NULL,
   show_donor_ids = FALSE,
   add_meta_associations = FALSE,
-  show_var_explained = TRUE
+  show_var_explained = TRUE,
+  donors_sel = NULL
 )
 }
 \arguments{
@@ -32,6 +33,9 @@ plot_meta_associations() (default=FALSE)}
 
 \item{show_var_explained}{logical Set to TRUE to display the explained variance for
 each factor (default=TRUE)}
+
+\item{donors_sel}{character A vector of a subset of donors to include in the plot
+(default=NULL)}
 }
 \value{
 the project container with the plot in container$plots$donor_matrix

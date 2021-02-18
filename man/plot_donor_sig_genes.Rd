@@ -11,7 +11,8 @@ plot_donor_sig_genes(
   top_n_per_ctype,
   ctypes_use = NULL,
   show_donor_labels = FALSE,
-  additional_meta = NULL
+  additional_meta = NULL,
+  add_genes = NULL
 )
 }
 \arguments{
@@ -29,6 +30,8 @@ callouts for. If NULL then uses all cell types. (default=NULL)}
 \item{show_donor_labels}{logical Set to TRUE to display donor labels (default=FALSE)}
 
 \item{additional_meta}{character Another meta variable to plot (default=NULL)}
+
+\item{add_genes}{character Additional genes to plot for all ctypes (default=NULL)}
 }
 \value{
 the project container with the plot in the slot

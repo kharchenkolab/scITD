@@ -2,7 +2,7 @@
 % Please edit documentation in R/get_prop_associations.R
 \name{get_subclust_de_hmaps}
 \alias{get_subclust_de_hmaps}
-\title{Title}
+\title{Get list of cell subtype differential expression heatmaps}
 \usage{
 get_subclust_de_hmaps(container, all_ctypes, all_res)
 }
@@ -18,5 +18,5 @@ for each cell type as well as results and plots from all analyses}
 a list of the DE heatmaps as grob objects
 }
 \description{
-Title
+Get list of cell subtype differential expression heatmaps
 }

@@ -88,14 +88,16 @@ compare_factors <- function(container, f_compare, direction, compare_type,
     # remove rows that are all not DE both
     res <- res[rowSums(res>0)>0,]
 
+    container$factor_comparison <- as.matrix(res)
+
     res[res==0] <- "not DE both"
     res[res==1] <- "DE both"
 
     # colors = structure(c('white','red'), names = c("1", "2"))
     colors = structure(c('white','red'), names = c("not DE both", "DE both"))
 
-    if (nrow(res) > 100) {
-      callout_ndx <- sample(1:nrow(res),100)
+    if (nrow(res) > 75) {
+      callout_ndx <- sample(1:nrow(res),75)
       gene_callouts <- rownames(res)[callout_ndx]
       myannot <- rowAnnotation(callouts = anno_mark(at = callout_ndx, which='row',
                                                     labels = gene_callouts))
@@ -162,6 +164,8 @@ compare_factors <- function(container, f_compare, direction, compare_type,
     # remove rows that are all not DE both
     res <- res[rowSums(res!=0)>0,]
 
+    container$factor_comparison <- as.matrix(res)
+
     res[res==0] <- "DE both/neither"
     res[res==1] <- paste0("DE Factor ",f1)
     res[res==-1] <- paste0("DE Factor ",f2)
@@ -170,8 +174,8 @@ compare_factors <- function(container, f_compare, direction, compare_type,
                                                           paste0("DE Factor ",f1),
                                                           paste0("DE Factor ",f2)))
 
-    if (nrow(res) > 150) {
-      callout_ndx <- sample(1:nrow(res),150)
+    if (nrow(res) > 75) {
+      callout_ndx <- sample(1:nrow(res),75)
       gene_callouts <- rownames(res)[callout_ndx]
       myannot <- rowAnnotation(callouts = anno_mark(at = callout_ndx, which='row',
                                                     labels = gene_callouts))
@@ -198,7 +202,62 @@ compare_factors <- function(container, f_compare, direction, compare_type,
 
 
 
+get_compare_go_enrich <- function(container,ctype,direc,db_use='GO') {
+  comp <- container$factor_comparison
+  comp <- as.data.frame(comp)
 
+  sig_genes <- rownames(comp)[comp[[ctype]]==direc]
+
+  all_genes <- container$tensor_data[[2]]
+
+  m_df <- data.frame()
+  for (db in db_use) {
+    if (db == "GO") {
+      # select the GO Biological Processes group of gene sets
+      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
+                                          category = "C5", subcategory = "BP"))
+    } else if (db == "Reactome") {
+      # select the Reactome gene sets
+      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
+                                          category = "C2", subcategory = "CP:REACTOME"))
+    } else if (db == "KEGG") {
+      # select the KEGG gene sets
+      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
+                                          category = "C2", subcategory = "CP:KEGG"))
+    } else if (db == "BioCarta") {
+      # select the BioCarts gene sets
+      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
+                                          category = "C2", subcategory = "CP:BIOCARTA"))
+    }
+  }
+
+  my_pathways = split(m_df$gene_symbol, f = m_df$gs_name)
+  pvals <- c()
+  for (i in 1:length(my_pathways)) {
+    pth <- my_pathways[[i]]
+    pth_name <- names(my_pathways)[i]
+
+    # A: total num genes in pathway in tmp_casted_num
+    pth_in_df <- pth[which(pth %in% all_genes)]
+    num_pth_in_df <- length(pth_in_df)
+
+    # if set is too small continue
+    if (num_pth_in_df < 15) {
+      next
+    }
+
+    # B: number of genes from A in sig_genes
+    num_in_sig <- sum(pth_in_df %in% sig_genes)
+
+    # compute pvalue
+    pval <- stats::phyper(num_in_sig-1, num_pth_in_df, length(all_genes) - num_pth_in_df,
+                          length(sig_genes), lower.tail = FALSE)
+    pvals[pth_name] <- pval
+  }
+  padj <- p.adjust(pvals,method='fdr')
+
+  return(padj)
+}
 
 
 

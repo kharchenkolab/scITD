@@ -62,11 +62,12 @@ Suggests:
     rlang,
     conos,
     pagoda2,
-    edgeR
+    edgeR,
+    simplifyEnrichment
 RoxygenNote: 7.1.1
 LinkingTo: Rcpp, RcppArmadillo, RcppProgress
 NeedsCompilation: yes
 Remotes:
     kharchenkolab/pagoda2,
     kharchenkolab/conos,
-    jokergoo/ComplexHeatmap
+    jokergoo/ComplexHeatmap,

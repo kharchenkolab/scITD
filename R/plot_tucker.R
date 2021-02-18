@@ -17,12 +17,14 @@
 #' plot_meta_associations() (default=FALSE)
 #' @param show_var_explained logical Set to TRUE to display the explained variance for
 #' each factor (default=TRUE)
+#' @param donors_sel character A vector of a subset of donors to include in the plot
+#' (default=NULL)
 #'
 #' @return the project container with the plot in container$plots$donor_matrix
 #' @export
 plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL,
                               show_donor_ids=FALSE, add_meta_associations=FALSE,
-                              show_var_explained=TRUE) {
+                              show_var_explained=TRUE, donors_sel=NULL) {
 
   # check that Tucker has been run
   if (is.null(container$tucker_results)) {
@@ -65,6 +67,9 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL,
   }
 
   if (is.null(meta_vars)) {
+    if (!is.null(donors_sel)) {
+      donor_mat <- donor_mat[donors_sel,]
+    }
     myhmap <- Heatmap(as.matrix(donor_mat), name = "score",
                       cluster_columns = FALSE,show_column_dend = FALSE,
                       cluster_rows = TRUE, show_row_dend = FALSE,
@@ -99,6 +104,11 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL,
       do_row_clust <- FALSE
     } else {
       do_row_clust <- TRUE
+    }
+
+    if (!is.null(donors_sel)) {
+      donor_mat <- donor_mat[donors_sel,]
+      meta <- meta[donors_sel,]
     }
 
     myhmap <- Heatmap(as.matrix(donor_mat), name = "score",cluster_columns = FALSE,
@@ -671,13 +681,14 @@ render_multi_plots <- function(container,data_type,max_cols=3) {
 #' callouts for. If NULL then uses all cell types. (default=NULL)
 #' @param show_donor_labels logical Set to TRUE to display donor labels (default=FALSE)
 #' @param additional_meta character Another meta variable to plot (default=NULL)
+#' @param add_genes character Additional genes to plot for all ctypes (default=NULL)
 #'
 #' @return the project container with the plot in the slot
 #' container$plots$donor_sig_genes$Factor#
 #' @export
 plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype,
                                  ctypes_use=NULL, show_donor_labels=FALSE,
-                                 additional_meta=NULL) {
+                                 additional_meta=NULL, add_genes=NULL) {
   ## add catch in case they havent run jackstraw yet...
 
   # extract tensor information
@@ -724,6 +735,9 @@ plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype,
 
     ct_sig_loadings <- ct_sig_loadings[order(abs(ct_sig_loadings),decreasing=TRUE)]
     ct_top_genes <- names(ct_sig_loadings)[1:top_n]
+    if (!is.null(add_genes)) {
+      ct_top_genes <- unique(c(ct_top_genes,add_genes))
+    }
     ct_top_genes <- sapply(ct_top_genes,function(x) {paste0(x,"_",ct)})
     genes_plot <- c(genes_plot,ct_top_genes)
     ct_in_hmap <- c(ct_in_hmap, rep(ct,top_n))
@@ -1356,5 +1370,50 @@ plot_donor_umap <- function(container, color_by_factor=NULL, color_by_meta=NULL,
   return(container)
 
 }
+
+
+
+
+plot_dscore_enr <- function(container,factor_use,meta_var) {
+  meta <- unique(container$scMinimal_full$metadata[,c('donors',meta_var)])
+  rownames(meta) <- meta$donors
+
+  meta_vals <- unlist(unique(as.character(meta[,meta_var])))
+  mypaths <- list()
+  for (i in 1:length(meta_vals)) {
+    mypaths[[meta_vals[i]]] <- rownames(meta)[meta[,meta_var]==meta_vals[i]]
+  }
+
+  myranks <- container$tucker_results[[1]][,factor_use]
+
+  fgseaRes <- fgsea(pathways = mypaths,
+                    stats    = myranks,
+                    minSize  = 0,
+                    maxSize  = 5000)
+
+  print(fgseaRes)
+
+  plt_lst <- list()
+  for (i in 1:length(meta_vals)) {
+    plt <- plotEnrichment(mypaths[[meta_vals[i]]],
+                              myranks) + labs(title=paste0(meta_vals[i],' - Factor ',as.character(factor_use)))
+    plt <- plt +
+      annotate(geom="text",  x=Inf, y=Inf, hjust=1,vjust=1, col="black",
+               label=paste0('adj pval: ',
+                            round(fgseaRes[fgseaRes$pathway==meta_vals[i],'padj'],digits=4)))
+
+    plt_lst[[i]] <- plt
+  }
+
+  fig <- cowplot::plot_grid(plotlist=plt_lst,nrow=1)
+  return(fig)
+}
+
+
+
+
+
+
+
 
 
