@@ -1,6 +1,6 @@
 
 
-get_LR_interact<- function(container,lr_pairs,factor_select) {
+get_LR_interact <- function(container,lr_pairs,factor_select) {
 
   # make sure lr_pairs are unique
   lr_pairs <- unique(lr_pairs)
@@ -113,6 +113,12 @@ get_LR_interact<- function(container,lr_pairs,factor_select) {
 # lr_pairs df needs to have ligands in first column and receptors in second. If multiple receptors required, then
 # each receptor should be separated by an underscore
 prep_LR_interact <- function(container, lr_pairs, norm_method, scale_factor, var_scale_power, batch_var) {
+  # store original pseudobulk matrices because they will be altered
+  orig_pb <- list()
+  for (ct in container$experiment_params$ctypes_use) {
+    orig_pb[[ct]] <- container$scMinimal_ctype[[ct]]$pseudobulk
+  }
+
   container <- get_pseudobulk(container)
   container <- normalize_pseudobulk(container, method=norm_method, scale_factor=scale_factor)
 
@@ -138,281 +144,40 @@ prep_LR_interact <- function(container, lr_pairs, norm_method, scale_factor, var
   }
 
   # need to save pseudobulked normalized data before scaling!!
-  saved_pb <- list()
+  no_scale_pb_extra <- list()
   for (ct in container$experiment_params$ctypes_use) {
-    saved_pb[[ct]] <- container$scMinimal_ctype[[ct]]$pseudobulk
+    no_scale_pb_extra[[ct]] <- container$scMinimal_ctype[[ct]]$pseudobulk
   }
-  container$no_scale_pb <- saved_pb
+  container$no_scale_pb_extra <- no_scale_pb_extra
 
   container <- scale_variance(container,var_scale_power=var_scale_power)
 
   container <- apply_combat(container,batch_var=batch_var)
+
+  # put new scaled pb data with added genes separate slot
+  scale_pb_extra <- list()
+  for (ct in container$experiment_params$ctypes_use) {
+    scale_pb_extra[[ct]] <- container$scMinimal_ctype[[ct]]$pseudobulk
+  }
+  container$scale_pb_extra <- scale_pb_extra
+
+  # restore original pseudobulk data in its correct slot
+  for (ct in container$experiment_params$ctypes_use) {
+    container$scMinimal_ctype[[ct]]$pseudobulk <- orig_pb[[ct]]
+  }
 
   # Choose a set of soft-thresholding powers
   powers = c(c(1:10), seq(from = 12, to=20, by=2))
   for (ct in container$experiment_params$ctypes_use) {
     print(ct)
 
-    datExpr <- container$scMinimal_ctype[[ct]]$pseudobulk
+    datExpr <- container$scale_pb_extra[[ct]]
 
     # Call the network topology analysis function
     sft <- pickSoftThreshold(datExpr, powerVector = powers, verbose = 5)
   }
   return(container)
 }
-
-# see line 2051 lupus analysis v2 for prep of new lr_pairs
-sft_thresh <- c(3,3,2,2,2,2,2)
-compute_LR_interact <- function(container, lr_pairs, sft_thresh, factor_select, sig_thresh=0.05) {
-  ctypes_use <- container$experiment_params$ctypes_use
-  dsc <- container$tucker_results[[1]][,factor_select]
-
-  # get list of ligands with associated expression with the factor
-  all_lig <- unique(lr_pairs[,1])
-  sig_vecs <- get_significance_vectors(container,factor_select,ctypes_use)
-  sig_df <- t(as.data.frame(do.call(rbind, sig_vecs)))
-  all_lig_mask <- all_lig %in% rownames(sig_df)
-  ligs_use <- all_lig[all_lig_mask]
-  ct_sig_ligs <- list()
-  for (ct in ctypes_use) {
-    ct_sig_ligs[[ct]] <- c()
-    for (l in ligs_use) {
-      if (sig_df[l,ct] < sig_thresh) {
-        ct_sig_ligs[[ct]] <- c(ct_sig_ligs[[ct]],l)
-      }
-    }
-  }
-
-  # for all newly added ligands (ones not in sig_df but in pseudbulk) need to compute
-  # lm pvalues to get significance
-  lig_rest <- colnames(container$scMinimal_ctype[[1]]$pseudobulk)[!(colnames(container$scMinimal_ctype[[1]]$pseudobulk) %in% rownames(sig_df))]
-  lig_rest <- lig_rest[lig_rest %in% all_lig]
-  for (ct in ctypes_use) {
-    pb <- container$scMinimal_ctype[[ct]]$pseudobulk
-    for (l in lig_rest) {
-      tmp <- as.data.frame(cbind(dsc,pb[names(dsc),l]))
-      colnames(tmp) <- c('dsc','expr')
-      lmres <- lm(dsc~expr,data=tmp)
-      lmres <- summary(lmres)
-      pval <- stats::pf(lmres$fstatistic[1],lmres$fstatistic[2],lmres$fstatistic[3],lower.tail=FALSE)
-      if (pval < (sig_thresh/length(lig_rest))) { # using bonferroni correction here
-      # if (pval < sig_thresh) {
-        print(l)
-        print(ct)
-        print('')
-        ct_sig_ligs[[ct]] <- c(ct_sig_ligs[[ct]],l)
-      }
-    }
-  }
-
-  ligs_test <- unlist(ct_sig_ligs)
-  ligs_test <- unique(ligs_test)
-
-  # make vector thats inverse of ct_sig_ligs, so lig_ct (ct where it's expressed)
-  ligs_ct_test <- lapply(ligs_test,function(x){
-    combos <- c()
-    for (ct in ctypes_use) {
-      if (x %in% ct_sig_ligs[[ct]]) {
-        combos <- c(combos,paste0(x,'_',ct))
-      }
-    }
-    return(combos)
-  })
-  ligs_ct_test <- unlist(ligs_ct_test)
-  myres <- NULL
-  aovres <- NULL
-  mod_fact_r_all <- list()
-  for (i in 1:length(ctypes_use)) {
-    ct <- ctypes_use[i]
-
-    # check if receptor is expressed in the ctype (for each associated ligand)
-    no_scale_pb <- container$no_scale_pb[[ct]]
-
-    rec_pres <- c()
-    for (lig in ligs_ct_test) {
-      # get top nth percentile of donors expressing the ligand
-      ligand <- strsplit(lig,split='_')[[1]][[1]]
-      ct_exp <- strsplit(lig,split='_')[[1]][[2]]
-      lig_ct_exp <- container$scMinimal_ctype[[ct_exp]]$pseudobulk[,ligand]
-      nth_quantile <- quantile(lig_ct_exp, probs = c(.75))
-      d_above <- names(lig_ct_exp)[lig_ct_exp > nth_quantile]
-
-      rec_groups <- lr_pairs[lr_pairs[,1]==ligand,2]
-      for (r in rec_groups) {
-        r_comps <- strsplit(r,split='_')[[1]]
-        # if all receptor components are in expression matrix...
-        if (sum(r_comps %in% colnames(no_scale_pb))==length(r_comps)) {
-          # how many of top donors have 0 expression for any receptor componenet
-          mysum <- sum(rowSums(no_scale_pb[d_above,r_comps,drop=FALSE]==0) > 0)
-          if (mysum==0) {
-            rec_pres <- c(rec_pres,paste0(lig,'_',r))
-          }
-        }
-      }
-    }
-
-    # make or add to df for storing results
-    if (is.null(myres)) {
-      myres <- data.frame(matrix(ncol=0,nrow=length(rec_pres)))
-      rownames(myres) <- rec_pres
-      aovres <- data.frame(matrix(1,ncol=0,nrow=length(rec_pres)))
-      rownames(aovres) <- rec_pres
-    } else {
-      rec_already_in <- rec_pres %in% rownames(myres)
-      if (sum(rec_already_in)!=length(rec_pres)) {
-        l_ct_r_add <- rec_pres[!rec_already_in]
-        nr_cur <- nrow(myres)
-        from <- nr_cur + 1
-        to <- nr_cur + length(l_ct_r_add)
-        myres[from:to,] <- 0
-        rownames(myres)[from:to] <- l_ct_r_add
-        aovres[from:to,] <- 1
-        rownames(aovres)[from:to] <- l_ct_r_add
-      }
-    }
-
-    datExpr <- container$scMinimal_ctype[[ct]]$pseudobulk
-    cor <- WGCNA::cor # use cor() from wgcna
-    net <- WGCNA::blockwiseModules(datExpr, power = sft_thresh[i], maxBlockSize = 10000,
-                           TOMType = "unsigned", minModuleSize = 15,
-                           reassignThreshold = 0, mergeCutHeight = 0.25,
-                           numericLabels = TRUE, pamRespectsDendro = FALSE,
-                           saveTOMs = FALSE,
-                           verbose = 3)
-    cor <- stats::cor # reset cor function
-
-    MEs <- net$MEs
-    col_ndx <- sapply(colnames(MEs),function(x) {
-      as.numeric(strsplit(x,split='ME')[[1]][[2]])
-    })
-    MEs <- MEs[,order(col_ndx)]
-    MEs[,1] <- NULL
-    for (j in 1:ncol(MEs)) {
-      ME <- MEs[,j]
-      names(ME) <- rownames(MEs)
-
-      # calculate significance of association with factor as well as Rsq
-      tmp <- as.data.frame(cbind(dsc[names(ME)],ME))
-      colnames(tmp) <- c('dsc','eg')
-      lmres <- lm(dsc~eg,data=tmp)
-      lmres <- summary(lmres)
-      pval <- stats::pf(lmres$fstatistic[1],lmres$fstatistic[2],lmres$fstatistic[3],lower.tail=FALSE)
-      mod_fact_r <- cor(dsc[names(ME)],ME)
-      mod_fact_r_all[[paste0(ct,'_',j)]] <- mod_fact_r
-
-      ## if significant...
-      if (pval < sig_thresh) { # should add bonferroni correction here too
-        # add module column to results df if not already there
-        if (!(paste0(ct,'_',j) %in% colnames(myres))) {
-          myres[,ncol(myres)+1] <- 0
-          colnames(myres)[ncol(myres)] <- paste0(ct,'_',j)
-          aovres[,ncol(aovres)+1] <- 1
-          colnames(aovres)[ncol(aovres)] <- paste0(ct,'_',j)
-        }
-
-        # calculate r with significant ligands (that have receptor(s) all present in the ctype)
-        for (l_ct_r in rec_pres) {
-          l_ct_r_splt <- strsplit(l_ct_r,split='_')[[1]]
-          ligand <- l_ct_r_splt[[1]]
-          ligand_ct <- l_ct_r_splt[[2]]
-          rec <- l_ct_r_splt[3:length(l_ct_r_splt)]
-          lig_exp <- container$scMinimal_ctype[[ligand_ct]]$pseudobulk[,ligand]
-          lig_mod_cor <- cor(lig_exp[names(ME)],ME)
-          myres[l_ct_r,paste0(ct,'_',j)] <- lig_mod_cor
-
-          # test whether receptor levels help with prediction
-          tmp <- as.data.frame(cbind(lig_exp[names(ME)],ME,datExpr[names(ME),rec]))
-          colnames(tmp)[1:2] <- c('lig','eg')
-          colnames(tmp)[3:ncol(tmp)] <- sapply(1:length(rec),function(x) {
-            paste0('rec_',x)
-          })
-          lm1 <- lm(eg~lig,data=tmp)
-          base_formula <- 'eg ~ lig'
-          for (k in 1:length(rec)) {
-            base_formula <- paste0(base_formula,' + rec_',k)
-          }
-          base_formula <- as.formula(base_formula)
-          lm2 <- lm(base_formula,data=tmp)
-          anova_res <- anova(lm1,lm2)
-          anova_pval <- anova_res$`Pr(>F)`[2]
-          if (ligand %in% rec && ligand_ct == ct) {
-            aovres[l_ct_r,paste0(ct,'_',j)] <- 1
-          } else {
-            aovres[l_ct_r,paste0(ct,'_',j)] <- anova_pval
-          }
-        }
-      }
-    }
-  }
-  lig_dsc_cor_all <- list()
-  for (i in 1:nrow(myres)) {
-    l_ct_r <- rownames(myres)[i]
-    l_ct_r_splt <- strsplit(l_ct_r,split='_')[[1]]
-    ligand <- l_ct_r_splt[[1]]
-    ligand_ct <- l_ct_r_splt[[2]]
-    lig_exp <- container$scMinimal_ctype[[ligand_ct]]$pseudobulk[,ligand]
-    lig_dsc_cor <- cor(dsc[names(lig_exp)],lig_exp)
-    lig_dsc_cor_all[[l_ct_r]] <- lig_dsc_cor
-  }
-  lig_dsc_cor_all <- unlist(lig_dsc_cor_all)
-  mod_fact_r_all <- unlist(mod_fact_r_all)
-  mod_fact_r_all <- mod_fact_r_all[colnames(myres)]
-
-  # plot results for the factor!
-  # dont forget to adjust aov pvals and take -log10
-  aovres <- as.matrix(aovres)
-  aovres2 <- c(aovres)
-  aovres2 <- p.adjust(aovres2,method='fdr')
-  aovres2 <- matrix(aovres2,nrow=nrow(aovres),ncol=ncol(aovres))
-  colnames(aovres2) <- colnames(aovres)
-  rownames(aovres2) <- rownames(aovres)
-  aovres2 <- -log10(aovres2)
-
-  hc <- hclust(dist(myres))
-  hc <- hc[["order"]]
-  vc <- hclust(dist(t(myres)))
-  vc <- vc[["order"]]
-
-  col_fun = colorRamp2(c(-1, 0, 1), c("blue", "white", "red"))
-  la <- ComplexHeatmap::rowAnnotation(lig_dsc_cor = lig_dsc_cor_all,col=list(lig_dsc_cor=col_fun),
-                                    show_annotation_name=FALSE)
-  ta <- ComplexHeatmap::HeatmapAnnotation(mod_dsc_cor = mod_fact_r_all,col=list(mod_dsc_cor=col_fun),
-                                          show_annotation_name=FALSE)
-  myhmap1 <- Heatmap(as.matrix(myres), name='ligand-mod cor',
-                    row_names_side='left', column_names_side='top',
-                    show_row_dend=FALSE,
-                    show_column_dend=FALSE,
-                    column_names_gp = gpar(fontsize = 8),
-                    row_names_gp = gpar(fontsize = 8),
-                    col=col_fun,
-                    left_annotation=la, top_annotation=ta,
-                    row_order=hc, column_order=vc,
-                    border=TRUE)
-
-  col_fun2 = colorRamp2(c(0, -log10(.05), max(aovres2)), c("white", "white", "green"))
-  col_fun2 = colorRamp2(c(0, -log10(.05), 5), c("white", "white", "green"))
-  myhmap2 <- Heatmap(aovres2, name='rec_sig',
-                     column_names_side='top',
-                     show_row_dend=FALSE,
-                     show_column_dend=FALSE,
-                     column_names_gp = gpar(fontsize = 8),
-                     row_names_gp = gpar(fontsize = 8),
-                     col=col_fun2,
-                     cluster_columns = FALSE,
-                     cluster_rows = FALSE,
-                     show_row_names=FALSE,
-                     row_order=hc, column_order=vc,
-                     border=TRUE)
-  hmlist <- myhmap1 + myhmap2
-
-}
-
-# need to reset data by rerunning tensor formation with the given parameters
-
-
-
-
-
 
 sft_thresh <- c(3,3,2,2,2,2,2)
 get_gene_modules <- function(container,sft_thresh) {
@@ -422,7 +187,7 @@ get_gene_modules <- function(container,sft_thresh) {
   for (i in 1:length(ctypes_use)) {
     ct <- ctypes_use[i]
     # get scaled expression data for the cell type
-    datExpr <- container$scMinimal_ctype[[ct]]$pseudobulk
+    datExpr <- container$scale_pb_extra[[ct]]
 
     # get gene modules
     net <- WGCNA::blockwiseModules(datExpr, power = sft_thresh[i], maxBlockSize = 10000,
@@ -449,7 +214,7 @@ get_gene_modules <- function(container,sft_thresh) {
 }
 
 # see line 2051 lupus analysis v2 for prep of new lr_pairs
-compute_LR_interact_v2 <- function(container, lr_pairs, factor_select, sig_thresh=0.05) {
+compute_LR_interact <- function(container, lr_pairs, factor_select, sig_thresh=0.05) {
   ctypes_use <- container$experiment_params$ctypes_use
   dsc <- container$tucker_results[[1]][,factor_select]
 
@@ -471,11 +236,11 @@ compute_LR_interact_v2 <- function(container, lr_pairs, factor_select, sig_thres
 
   # for all newly added ligands (ones not in sig_df but in pseudbulk) need to compute
   # lm pvalues to get significance
-  lig_rest <- colnames(container$scMinimal_ctype[[1]]$pseudobulk)[!(colnames(container$scMinimal_ctype[[1]]$pseudobulk) %in% rownames(sig_df))]
+  lig_rest <- colnames(container$scale_pb_extra[[1]])[!(colnames(container$scale_pb_extra[[1]]) %in% rownames(sig_df))]
   lig_rest <- lig_rest[lig_rest %in% all_lig]
   tmp_ct_pvals <- list()
   for (ct in ctypes_use) {
-    pb <- container$scMinimal_ctype[[ct]]$pseudobulk
+    pb <- container$scale_pb_extra[[ct]]
     for (l in lig_rest) {
       tmp <- as.data.frame(cbind(dsc,pb[names(dsc),l]))
       colnames(tmp) <- c('dsc','expr')
@@ -518,14 +283,14 @@ compute_LR_interact_v2 <- function(container, lr_pairs, factor_select, sig_thres
     ct <- ctypes_use[i]
 
     # check if receptor is expressed in the ctype (for each associated ligand)
-    no_scale_pb <- container$no_scale_pb[[ct]]
+    no_scale_pb_extra <- container$no_scale_pb_extra[[ct]]
 
     rec_pres <- c()
     for (lig in ligs_ct_test) {
       # get top nth percentile of donors expressing the ligand
       ligand <- strsplit(lig,split='_')[[1]][[1]]
       ct_exp <- strsplit(lig,split='_')[[1]][[2]]
-      lig_ct_exp <- container$scMinimal_ctype[[ct_exp]]$pseudobulk[,ligand]
+      lig_ct_exp <- container$scale_pb_extra[[ct_exp]][,ligand]
       nth_quantile <- quantile(lig_ct_exp, probs = c(.75))
       d_above <- names(lig_ct_exp)[lig_ct_exp > nth_quantile]
 
@@ -533,9 +298,9 @@ compute_LR_interact_v2 <- function(container, lr_pairs, factor_select, sig_thres
       for (r in rec_groups) {
         r_comps <- strsplit(r,split='_')[[1]]
         # if all receptor components are in expression matrix...
-        if (sum(r_comps %in% colnames(no_scale_pb))==length(r_comps)) {
+        if (sum(r_comps %in% colnames(no_scale_pb_extra))==length(r_comps)) {
           # how many of top donors have 0 expression for any receptor componenet
-          mysum <- sum(rowSums(no_scale_pb[d_above,r_comps,drop=FALSE]==0) > 0)
+          mysum <- sum(rowSums(no_scale_pb_extra[d_above,r_comps,drop=FALSE]==0) > 0)
           if (mysum==0) {
             rec_pres <- c(rec_pres,paste0(lig,'_',r))
           }
@@ -611,10 +376,10 @@ compute_LR_interact_v2 <- function(container, lr_pairs, factor_select, sig_thres
         ligand <- l_ct_r_splt[[1]]
         ligand_ct <- l_ct_r_splt[[2]]
         rec <- l_ct_r_splt[3:length(l_ct_r_splt)]
-        lig_exp <- container$scMinimal_ctype[[ligand_ct]]$pseudobulk[,ligand]
+        lig_exp <- container$scale_pb_extra[[ligand_ct]][,ligand]
         lig_mod_cor <- cor(lig_exp[names(ME)],ME)
         myres[l_ct_r,ct_mod] <- lig_mod_cor
-        rec_exp <- container$scMinimal_ctype[[ct]]$pseudobulk[,rec,drop=FALSE]
+        rec_exp <- container$scale_pb_extra[[ct]][,rec,drop=FALSE]
 
 
         # test whether receptor levels help with prediction
@@ -647,7 +412,7 @@ compute_LR_interact_v2 <- function(container, lr_pairs, factor_select, sig_thres
     l_ct_r_splt <- strsplit(l_ct_r,split='_')[[1]]
     ligand <- l_ct_r_splt[[1]]
     ligand_ct <- l_ct_r_splt[[2]]
-    lig_exp <- container$scMinimal_ctype[[ligand_ct]]$pseudobulk[,ligand]
+    lig_exp <- container$scale_pb_extra[[ligand_ct]][,ligand]
     lig_dsc_cor <- cor(dsc[names(lig_exp)],lig_exp)
     lig_dsc_cor_all[[l_ct_r]] <- lig_dsc_cor
   }
