@@ -1,118 +1,32 @@
 
 
-get_LR_interact <- function(container,lr_pairs,factor_select) {
-
-  # make sure lr_pairs are unique
-  lr_pairs <- unique(lr_pairs)
-
-  ctypes_use <- container$experiment_params$ctypes_use
-
-  # extract significance of all genes in all ctypes and put in list
-  sig_vectors <- get_significance_vectors(container,
-                                          factor_select, ctypes_use)
-  # convert list to df
-  sig_df <- t(as.data.frame(do.call(rbind, sig_vectors)))
-
-  # set 0 pvals to the min nonzero pval and take -log10
-  min_nonz <- min(sig_df[sig_df!=0])
-  sig_df[sig_df==0] <- min_nonz
-  sig_df <- -log10(sig_df)
-
-  # sign sig_df by loading
-  ldngs <- container$tucker_results[[2]]
-  genes <- sapply(colnames(ldngs),function(x){strsplit(x,split=":")[[1]][2]})
-  ctypes <- sapply(colnames(ldngs),function(x){strsplit(x,split=":")[[1]][1]})
-  sr_col <- ldngs[factor_select,]
-  tmp_casted_num <- reshape_loadings(sr_col,genes,ctypes)
-  tmp_casted_num <- tmp_casted_num[rownames(sig_df),colnames(sig_df)]
-  neg_mask <- tmp_casted_num < 0
-  sig_df[neg_mask] <- sig_df[neg_mask] * -1
-
-  # loop through lr pairs
-  perms <- c()
-  for (ct1 in ctypes_use) {
-    for (ct2 in ctypes_use) {
-      perms <- c(perms,paste0(ct1,"_",ct2))
-    }
-  }
-  myres <- data.frame(matrix(nrow=0,ncol=length(perms)))
-  colnames(myres) <- perms
-  rndx <- 0
-  for (i in 1:nrow(lr_pairs)) {
-    lr <- lr_pairs[i,]
-    lig <- lr[[1]]
-    rec <- lr[[2]]
-    if (lig %in% rownames(sig_df) && rec %in% rownames(sig_df)) {
-      rndx <- rndx + 1
-      for (j in 1:ncol(sig_df)) {
-        v1 <- sig_df[lig,j]
-        for (k in 1:ncol(sig_df)) {
-          v2 <- sig_df[rec,k]
-          cn <- paste0(colnames(sig_df)[j],'_',colnames(sig_df)[k])
-          if (v1 * v2 > 0) {
-            vs <- c(v1,v2)
-            if (vs[1]==vs[2]) {
-              min_ndx <- 1
-            } else {
-              min_ndx <- which(abs(vs)==min(abs(vs)))
-            }
-            is_neg <- vs[min_ndx] < 0
-            if (length(is_neg)>1) {
-              print(is_neg)
-              print(vs)
-            }
-            if (is_neg) {
-              myres[rndx,cn] <- -1 * min(abs(vs))
-            } else {
-              myres[rndx,cn] <- min(abs(vs))
-            }
-          } else {
-            myres[rndx,cn] <- 0
-          }
-          rownames(myres)[rndx] <- paste0(lig,'_',rec)
-        }
-      }
-    }
-  }
-
-  # remove rows lr pairs where all nonsignificant
-  sig_mask <- abs(myres) > -log10(.01)
-  ndx_keep <- rowSums(sig_mask) > 0
-  myres <- myres[ndx_keep,]
-
-  col_fun = colorRamp2(c(-max(abs(myres)), log10(.05), 0, -log10(.05), max(myres)), c("blue", "white", "white", "white", "red"))
-  hmap <- Heatmap(as.matrix(myres), name='log10(fdr)\nsigned',
-                  col=col_fun,
-                  show_row_dend = FALSE,
-                  show_column_dend = FALSE,
-                  border=TRUE,
-                  row_names_side='left',
-                  row_title='LR Pairs (ligand_receptor)',
-                  column_title='Expressing Cell Type',
-                  column_title_side = "bottom",
-                  row_names_gp = gpar(fontsize = 8),
-                  column_names_gp = gpar(fontsize = 8))
-
-  draw(hmap, padding = unit(c(2, 2, 10, 2), "mm")) # add space for titles
-  decorate_heatmap_body("log10(fdr)\nsigned", {
-    grid::grid.text(paste0("Factor ",factor_select,' LR Pairs'), y = unit(1, "npc") + unit(2, "mm"), just = "bottom")
-  })
-
-  return(hmap)
-}
-
-
-
-# starting with ligands that were significantly variable and present in subsetted dataset
-# if not getting very many hits I can incorporate more in later on
-# need to access pseudobulked data that hasn't been scaled to set a threshold for receptor presence
-# if we don't have a requirement for receptors to be overexpressed then I should incorporate new
-# ones in even if not significantly variable
-# will need to have scaled/batch corrected values for the receptors to test whether their values
-# help with prediction of target module response
-# lr_pairs df needs to have ligands in first column and receptors in second. If multiple receptors required, then
-# each receptor should be separated by an underscore
-prep_LR_interact <- function(container, lr_pairs, norm_method, scale_factor, var_scale_power, batch_var) {
+#' Prep data for LR analysis and get soft thresholds to use for gene modules
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param lr_pairs data.frame Data of ligand-receptor pairs. First column should
+#' be ligands and second column should be one or more receptors separated by an
+#' underscore such as receptor1_receptor2 in the case that multiple receptors are
+#' required for signaling.
+#' @param norm_method character The normalization method to use on the pseudobulked
+#' count data. Set to 'regular' to do standard normalization of dividing by
+#' library size. Set to 'trim' to use edgeR trim-mean normalization, whereby counts
+#' are divided by library size times a normalization factor. (default='trim')
+#' @param scale_factor numeric The number that gets multiplied by fractional counts
+#' during normalization of the pseudobulked data (default=10000)
+#' @param var_scale_power numeric Exponent of normalized variance that is
+#' used for variance scaling. Variance for each gene
+#' is initially set to unit variance across donors (for a given cell type).
+#' Variance for each gene is then scaled by multiplying the unit scaled values
+#' by each gene's normalized variance (where the effect of the mean-variance
+#' dependence is taken into account) to the exponent specified here.
+#' If NULL, uses var_scale_power from container$experiment_params. (default=.5)
+#' @param batch_var character A batch variable from metadata to remove (default=NULL)
+#'
+#' @return The project container now including more ligands and receptors
+#' @export
+prep_LR_interact <- function(container, lr_pairs, norm_method='trim', scale_factor=10000,
+                             var_scale_power=.5, batch_var=NULL) {
   # store original pseudobulk matrices because they will be altered
   orig_pb <- list()
   for (ct in container$experiment_params$ctypes_use) {
@@ -152,7 +66,9 @@ prep_LR_interact <- function(container, lr_pairs, norm_method, scale_factor, var
 
   container <- scale_variance(container,var_scale_power=var_scale_power)
 
-  container <- apply_combat(container,batch_var=batch_var)
+  if (!is.null(batch_var)) {
+    container <- apply_combat(container,batch_var=batch_var)
+  }
 
   # put new scaled pb data with added genes separate slot
   scale_pb_extra <- list()
@@ -179,7 +95,15 @@ prep_LR_interact <- function(container, lr_pairs, norm_method, scale_factor, var
   return(container)
 }
 
-sft_thresh <- c(3,3,2,2,2,2,2)
+#' Get WGCNA gene modules for each cell type
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param sft_thresh numeric A vector indicating the soft threshold to use for
+#' each cell type. Length should be the same as container$experiment_params$ctypes_use
+#'
+#' @return The project container with gene modules added
+#' @export
 get_gene_modules <- function(container,sft_thresh) {
   ctypes_use <- container$experiment_params$ctypes_use
   cor <- WGCNA::cor # use cor() from wgcna
@@ -213,8 +137,21 @@ get_gene_modules <- function(container,sft_thresh) {
   return(container)
 }
 
-# see line 2051 lupus analysis v2 for prep of new lr_pairs
-compute_LR_interact <- function(container, lr_pairs, factor_select, sig_thresh=0.05) {
+#' Plot the LR interactions for one factor
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param lr_pairs data.frame Data of ligand-receptor pairs. First column should
+#' be ligands and second column should be one or more receptors separated by an
+#' underscore such as receptor1_receptor2 in the case that multiple receptors are
+#' required for signaling.
+#' @param factor_select numeric The factor to get associated LR-modules for
+#' @param sig_thresh numeric The p-value significance threshold to use for module-
+#' factor associations and ligand-factor associations
+#'
+#' @return The project container with the plt added in container$plots$lr_analysis$factor_num
+#' @export
+compute_LR_interact <- function(container, lr_pairs, factor_select, sig_thresh=0.05, percentile_exp_rec=.75) {
   ctypes_use <- container$experiment_params$ctypes_use
   dsc <- container$tucker_results[[1]][,factor_select]
 
@@ -291,7 +228,7 @@ compute_LR_interact <- function(container, lr_pairs, factor_select, sig_thresh=0
       ligand <- strsplit(lig,split='_')[[1]][[1]]
       ct_exp <- strsplit(lig,split='_')[[1]][[2]]
       lig_ct_exp <- container$scale_pb_extra[[ct_exp]][,ligand]
-      nth_quantile <- quantile(lig_ct_exp, probs = c(.75))
+      nth_quantile <- quantile(lig_ct_exp, probs = c(percentile_exp_rec))
       d_above <- names(lig_ct_exp)[lig_ct_exp > nth_quantile]
 
       rec_groups <- lr_pairs[lr_pairs[,1]==ligand,2]
@@ -458,23 +395,145 @@ compute_LR_interact <- function(container, lr_pairs, factor_select, sig_thresh=0
                      show_row_dend=FALSE,
                      show_column_dend=FALSE,
                      column_names_gp = gpar(fontsize = 8),
-                     row_names_gp = gpar(fontsize = 8),
+                     row_names_gp = gpar(fontsize = 6),
                      col=col_fun2,
                      cluster_columns = FALSE,
                      cluster_rows = FALSE,
                      show_row_names=FALSE,
                      row_order=hc, column_order=vc,
+                     top_annotation=ta,
                      border=TRUE)
   hmlist <- myhmap1 + myhmap2
 
+  container$plots$lr_analysis[[paste0('Factor',factor_select)]] <- hmlist
+
+  return(container)
 }
 
 
 
 
+get_module_enr <- function(container,ctype,mod_select,db_use='GO',adjust_pval=TRUE) {
+  mod_genes_all <- container$module_genes[[ctype]] #vector of cluster assignments for each gene
+  all_genes <- names(mod_genes_all)
+  total_num_genes <- length(all_genes)
+  mod_genes <- names(mod_genes_all)[mod_genes_all==mod_select]
 
+  m_df <- data.frame()
+  for (db in db_use) {
+    if (db == "GO") {
+      # select the GO Biological Processes group of gene sets
+      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
+                                          category = "C5", subcategory = "BP"))
+    } else if (db == "Reactome") {
+      # select the Reactome gene sets
+      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
+                                          category = "C2", subcategory = "CP:REACTOME"))
+    } else if (db == "KEGG") {
+      # select the KEGG gene sets
+      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
+                                          category = "C2", subcategory = "CP:KEGG"))
+    } else if (db == "BioCarta") {
+      # select the BioCarts gene sets
+      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
+                                          category = "C2", subcategory = "CP:BIOCARTA"))
+    } else if (db == "Hallmark") {
+      # select the BioCarts gene sets
+      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
+                                          category = "H"))
+    } else if (db == "TF") {
+      # select the BioCarts gene sets
+      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
+                                          category = "C3", subcategory = "TFT:GTRD"))
+      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
+                                          category = "C3", subcategory = "TFT:TFT_Legacy"))
+    } else if (db == "immuno") {
+      # select the BioCarts gene sets
+      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
+                                          category = "C7"))
+    } else if (db == "ctype") {
+      # select the BioCarts gene sets
+      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
+                                          category = "C8"))
+    }
+  }
 
+  my_pathways = split(m_df$gene_symbol, f = m_df$gs_name)
 
+  pvals <- c()
+  for (i in 1:length(my_pathways)) {
+    pth <- my_pathways[[i]]
+    pth_name <- names(my_pathways)[i]
+
+    # A: total num genes in pathway in tmp_casted_num
+    pth_in_df <- pth[which(pth %in% all_genes)]
+    num_pth_in_df <- length(pth_in_df)
+
+    # if set is too small continue
+    if (num_pth_in_df < 15) {
+      next
+    }
+
+    # B: number of genes from A in mod_genes
+    num_in_sig <- sum(pth_in_df %in% mod_genes)
+
+    # compute pvalue
+    pval <- stats::phyper(num_in_sig-1, num_pth_in_df, total_num_genes - num_pth_in_df,
+                          length(mod_genes), lower.tail = FALSE) # I double checked this is right
+    pvals[pth_name] <- pval
+  }
+
+  if (adjust_pval) {
+    pvals <- p.adjust(pvals,method='fdr')
+  }
+
+  return(pvals)
+}
+
+# make heatmap of dimensions gene sets x ct_modules
+plot_multi_module_enr <- function(container, ctypes, modules, sig_thresh=.05, db_use='TF') {
+  ct_mod <- sapply(1:length(ctypes), function(x) {paste0(ctypes[x],"_",modules[x])})
+
+  mod_res <- list()
+  for (i in 1:length(ctypes)) {
+    ct <- ctypes[i]
+    mymod <- modules[i]
+    mod_pvals <- get_module_enr(container, ct, mymod, db_use=db_use, adjust_pval=FALSE)
+    mod_res[[ct_mod[i]]] <- mod_pvals
+  }
+
+  # make and populate matrix of all pvals
+  myres <- data.frame(matrix(1,ncol=length(modules),nrow=length(mod_res[[1]])))
+  colnames(myres) <- ct_mod
+  rownames(myres) <- names(mod_res[[1]])
+  for (i in 1:length(mod_res)) {
+    mod_pv <- mod_res[[i]]
+    myres[names(mod_pv),names(mod_res)[i]] <- mod_pv
+  }
+
+  # adjust pvals
+  myres2 <- c(as.matrix(myres))
+  myres2 <- p.adjust(myres2,method='fdr')
+  myres2 <- matrix(myres2,ncol=length(modules),nrow=length(mod_res[[1]]))
+  rownames(myres2) <- rownames(myres)
+  colnames(myres2) <- colnames(myres)
+
+  # limit to just TF sets with a significant result
+  myres2 <- myres2[rowSums(myres2<sig_thresh)>0,]
+
+  # plot
+  col_fun <- colorRamp2(c(.05, 0), c("white", "green"))
+  myhmap <- Heatmap(myres2,name='adj pval',
+          show_row_dend=FALSE,
+          show_column_dend=FALSE,
+          col=col_fun,
+          row_names_gp = gpar(fontsize = 6),
+          border=TRUE,
+          row_names_side='left',
+          width = unit(5, "cm"))
+
+  return(myhmap)
+}
 
 
 

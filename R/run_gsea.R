@@ -634,6 +634,7 @@ plot_gsea_hmap_w_similarity <- function(container,factor_select,direc,thresh) {
   gs <- as.data.frame(unique(gs))
   rownames(gs) <- gs$gs_exact_source
   rlabs <- gs[rlabs,'gs_name']
+  rlabs_full <- rlabs
   rlabs[to_null] <- ''
 
   myhmap <- Heatmap(as.matrix(res_plot), name = paste0(direc,' pval'),
@@ -674,7 +675,47 @@ plot_gsea_hmap_w_similarity <- function(container,factor_select,direc,thresh) {
     grid.segments(0, 1 - x, 1, 1 - x, default.units = "npc", gp = gpar(col = "#404040"))
   })
 
+  # store cluster ordering and assignment if want to select later on
+  container$gsea_last_info <- list(res_plot,rlabs_full,cl,ordering)
+
   return(hm_list)
+}
+
+plot_gsea_sub <- function(container,factor_select,direc,thresh,clust_select) {
+  res_plot <- container$gsea_last_info[[1]]
+  rlabs <- container$gsea_last_info[[2]]
+  cl <- container$gsea_last_info[[3]]
+  ordering <- container$gsea_last_info[[4]]
+
+  # put full row names into df
+  rownames(res_plot) <- rlabs
+
+  # get GO gene set names present in the cluster of interest
+  go_keep <- rownames(res_plot)[which(cl==clust_select)]
+
+  # order res_plot by ordering
+  res_plot <- res_plot[ordering,]
+
+  # keep only GO sets in cluster of interest
+  res_plot_sub <- res_plot[rownames(res_plot) %in% go_keep,]
+
+  col_fun <- colorRamp2(c(thresh, 0), c("white", "blue"))
+
+  myhmap <- Heatmap(as.matrix(res_plot_sub), name = paste0(direc,' pval'),
+                    show_row_dend = FALSE, show_column_dend = FALSE,
+                    column_names_gp = gpar(fontsize = 10),
+                    col = col_fun,
+                    row_title_gp = gpar(fontsize = 12),
+                    column_title = paste0('Factor ',factor_select," ",direc,' gene sets, cluster ', clust_select),
+                    column_title_side = "top",
+                    column_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                    border=TRUE,
+                    width = unit(8, "cm"),
+                    row_names_side = "left",
+                    row_names_gp = gpar(fontsize = 6))
+
+  return(myhmap)
+
 }
 
 

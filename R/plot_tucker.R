@@ -12,9 +12,10 @@
 #' by. If NULL, donor clustering is done using donor scores. (default=NULL)
 #' @param show_donor_ids logical Set to TRUE to show donor id as row name on the
 #' heamap (default=FALSE)
-#' @param add_meta_associations logical If TRUE then vertically appends metadata
-#' associations heatmap, which should have been previously generated with
-#' plot_meta_associations() (default=FALSE)
+#' @param add_meta_associations character Adds meta data associations with each
+#' factor as top annotation. These should be generated first with
+#' plot_meta_associations(). Set to 'pval' if used 'pval' in plot_meta_associations(),
+#' otherwise set to 'rsq'. If NULL, no annotation is added. (default=NULL)
 #' @param show_var_explained logical Set to TRUE to display the explained variance for
 #' each factor (default=TRUE)
 #' @param donors_sel character A vector of a subset of donors to include in the plot
@@ -23,7 +24,7 @@
 #' @return the project container with the plot in container$plots$donor_matrix
 #' @export
 plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL,
-                              show_donor_ids=FALSE, add_meta_associations=FALSE,
+                              show_donor_ids=FALSE, add_meta_associations=NULL,
                               show_var_explained=TRUE, donors_sel=NULL) {
 
   # check that Tucker has been run
@@ -47,10 +48,18 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL,
     ba <- NULL
   }
 
-  if (add_meta_associations) {
-    col_fun_annot = colorRamp2(c(0, 1), c("white", "forest green"))
-    ta <- HeatmapAnnotation(rsq=t(container$meta_associations),col = list(rsq = col_fun_annot),
-                            border=TRUE,annotation_name_side = "right")
+  if (!is.null(add_meta_associations)) {
+    if (add_meta_associations=='rsq') {
+      col_fun_annot = colorRamp2(c(0, 1), c("white", "forest green"))
+      ta <- HeatmapAnnotation(rsq=t(container$meta_associations),col = list(rsq = col_fun_annot),
+                              border=TRUE,annotation_name_side = "right")
+    } else {
+      col_fun_annot = colorRamp2(c(0, -log10(.05), 5), c("white", "white", "forest green"))
+      logpv <- -log10(container$meta_associations)
+      ta <- HeatmapAnnotation(pval=t(logpv),col = list(pval = col_fun_annot),
+                              border=TRUE,annotation_name_side = "right")
+    }
+
   } else {
     ta <- NULL
   }
