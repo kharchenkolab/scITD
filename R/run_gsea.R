@@ -933,8 +933,54 @@ scale_fontsize = function(x, rg = c(1, 30), fs = c(4, 16)) {
 }
 
 
+# should be able to accommodate both up and down enriched gene sets
+plot_select_sets <- function(container, factor_select, direc, sets_plot, thresh=.05) {
+  factor_name <- paste0('Factor',as.character(factor_select))
 
 
+  gsea_res <- container[["gsea_res_full"]][[factor_name]]
+
+  res <- data.frame(matrix(1,ncol=length(gsea_res),nrow = length(sets_plot)))
+  colnames(res) <- names(gsea_res)
+  rownames(res) <- sets_plot
+
+  # populate res with pvalues
+  for (i in 1:length(sets_plot)) {
+    myset <- sets_plot[i]
+    for (j in 1:length(gsea_res)) {
+      ct <- names(gsea_res)[j]
+      myres <- gsea_res[[j]]
+      if (myset %in% myres$pathway) {
+        # see if NES is negative
+        is_neg <- myres$NES[myres$pathway==myset] < 0
+        if (is_neg) {
+          res[myset,ct] <- log10(myres$padj[myres$pathway==myset])
+        } else {
+          res[myset,ct] <- -log10(myres$padj[myres$pathway==myset])
+        }
+      }
+    }
+  }
+
+
+
+  col_fun <- colorRamp2(c(-8, log10(thresh), 0, -log10(thresh), 8), c("blue", "white", "white", "white", "red"))
+
+  myhmap <- Heatmap(as.matrix(res), name = 'signed -log10(padj)',
+                    cluster_rows = FALSE,
+                    cluster_columns = FALSE,
+                    show_row_dend = FALSE, show_column_dend = FALSE,
+                    column_names_gp = gpar(fontsize = 10),
+                    col = col_fun,
+                    row_title_gp = gpar(fontsize = 12),
+                    column_title = paste0('Factor ',factor_select,' select gene sets'),
+                    column_title_side = "top",
+                    column_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                    border=TRUE,
+                    width = unit(8, "cm"),
+                    row_names_side = "left",
+                    row_names_gp = gpar(fontsize = 10))
+}
 
 
 
