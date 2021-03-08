@@ -56,8 +56,8 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL,
     } else {
       col_fun_annot = colorRamp2(c(0, -log10(.05), 5), c("white", "white", "forest green"))
       logpv <- -log10(container$meta_associations)
-      ta <- HeatmapAnnotation(pval=t(logpv),col = list(pval = col_fun_annot),
-                              border=TRUE,annotation_name_side = "right")
+      ta <- HeatmapAnnotation('-log_10_pval'=t(logpv),col = list('-log_10_pval'=col_fun_annot),
+                              border=TRUE,annotation_name_side="right")
     }
 
   } else {
@@ -377,6 +377,9 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
 
   # save plot in the container
   container$plots$all_lds_plots[[as.character(factor_select)]] <- hm_list
+
+  # store matrix that generated the plot
+  container$plots$lds_plots_data[[as.character(factor_select)]] <- tmp_casted_num
 
   # save legend in container
   if (show_var_explained) {

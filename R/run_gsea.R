@@ -89,8 +89,8 @@ run_fgsea <- function(container, factor_select, sig_thresh, ctype, db_use="GO",
     }
   }
 
-  # my_pathways <- split(m_df$gene_symbol, f = m_df$gs_name)
-  my_pathways <- split(m_df$gene_symbol, f = m_df$gs_exact_source)
+  my_pathways <- split(m_df$gene_symbol, f = m_df$gs_name)
+  # my_pathways <- split(m_df$gene_symbol, f = m_df$gs_exact_source)
 
   fgsea_res <- fgsea::fgsea(pathways = my_pathways,
                             stats = exp_vals,
@@ -387,6 +387,8 @@ run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh
       up_sets_all[[ct]] <- up_sets
       down_sets_all[[ct]] <- down_sets
       set_union <- unique(c(set_union,main_paths))
+      # store fgsea_res for access later on
+      container$gsea_res_full[[paste0('Factor',factor_select)]][[ct]] <- fgsea_res
     } else if (method == 'hypergeometric') {
       gsea_res_up <- run_hypergeometric_gsea(container, factor_select=factor_select, ctype=ct,
                                              up_down='up', thresh=.1, db_use=db_use)
@@ -563,7 +565,8 @@ plot_gsea_hmap <- function(container,factor_select,thresh,set_union=NULL) {
 
 
 
-
+##### making versions of these functions that work with GO names instead of IDs
+#####
 
 #' Plot enriched gene sets from all cell types in a heatmap
 #'
@@ -592,6 +595,7 @@ plot_gsea_hmap_w_similarity <- function(container,factor_select,direc,thresh) {
   colnames(res) <- names(up_down_sets)
   rownames(res) <- all_sets
 
+  # populate res with pvalues
   for (i in 1:length(up_down_sets)) {
     ctype_res <- up_down_sets[[i]]
     ctype <- names(up_down_sets)[i]
@@ -600,6 +604,7 @@ plot_gsea_hmap_w_similarity <- function(container,factor_select,direc,thresh) {
     }
   }
 
+  # select only rows with at least one significant enrichment
   res_plot <- res[rowSums(res<thresh)>0,]
 
   if (nrow(res_plot) == 0) {
@@ -608,18 +613,18 @@ plot_gsea_hmap_w_similarity <- function(container,factor_select,direc,thresh) {
 
   tmp_names <- rownames(res_plot)
 
+  # convert from GO name to GO id for simplifyEnrichment
+  gs <- msigdbr::msigdbr(species = "Homo sapiens",category = "C5", subcategory = "BP")
+  gs <- gs[,c('gs_exact_source','gs_name')]
+  gs <- as.data.frame(unique(gs))
+  rownames(gs) <- gs$gs_name
+  tmp_names <- gs[tmp_names,'gs_exact_source']
+
   mat <- simplifyEnrichment::GO_similarity(tmp_names,ont='BP')
   cl <- simplifyEnrichment::binary_cut(mat)
-  # cl <- simplifyEnrichment::cluster_by_kmeans(mat)
   sim_hmap_res <- ht_clusters(mat, cl, word_cloud_grob_param = list(max_width = 80))
   sim_hmap <- sim_hmap_res[[1]]
   ordering <- sim_hmap_res[[2]]
-
-  # if (direc=='up') {
-  #   col_fun <- colorRamp2(c(thresh, 0), c("white", "red"))
-  # } else {
-  #   col_fun <- colorRamp2(c(thresh, 0), c("white", "blue"))
-  # }
 
   col_fun <- colorRamp2(c(thresh, 0), c("white", "blue"))
 
@@ -628,13 +633,6 @@ plot_gsea_hmap_w_similarity <- function(container,factor_select,direc,thresh) {
   ndx_no_lab <- c(1:nrow(res_plot))[!(1:nrow(res_plot) %in% ndx_lab)]
   to_null <- ordering[ndx_no_lab]
   rlabs <- rownames(res_plot)
-  # need to convert from GO_ID to gene set name
-  gs <- msigdbr::msigdbr(species = "Homo sapiens",category = "C5", subcategory = "BP")
-  gs <- gs[,c('gs_exact_source','gs_name')]
-  gs <- as.data.frame(unique(gs))
-  rownames(gs) <- gs$gs_exact_source
-  rlabs <- gs[rlabs,'gs_name']
-  rlabs_full <- rlabs
   rlabs[to_null] <- ''
 
   myhmap <- Heatmap(as.matrix(res_plot), name = paste0(direc,' pval'),
@@ -676,24 +674,27 @@ plot_gsea_hmap_w_similarity <- function(container,factor_select,direc,thresh) {
   })
 
   # store cluster ordering and assignment if want to select later on
-  container$gsea_last_info <- list(res_plot,rlabs_full,cl,ordering)
+  container$gsea_last_info <- list(res_plot,cl,ordering)
 
   return(hm_list)
 }
 
 plot_gsea_sub <- function(container,factor_select,direc,thresh,clust_select) {
   res_plot <- container$gsea_last_info[[1]]
-  rlabs <- container$gsea_last_info[[2]]
-  cl <- container$gsea_last_info[[3]]
-  ordering <- container$gsea_last_info[[4]]
+  cl <- container$gsea_last_info[[2]]
+  ordering <- container$gsea_last_info[[3]]
 
-  # put full row names into df
-  rownames(res_plot) <- rlabs
+  true_clust_order <- unique(cl[ordering])
+  for (i in 1:length(cl)) {
+    c_val <- cl[i]
+    new_c_val <- which(true_clust_order == c_val)
+    cl[i] <- new_c_val
+  }
 
   # get GO gene set names present in the cluster of interest
   go_keep <- rownames(res_plot)[which(cl==clust_select)]
 
-  # order res_plot by ordering
+  # order res_plot by semantic similarity
   res_plot <- res_plot[ordering,]
 
   # keep only GO sets in cluster of interest
@@ -717,8 +718,6 @@ plot_gsea_sub <- function(container,factor_select,direc,thresh,clust_select) {
   return(myhmap)
 
 }
-
-
 
 
 # == title
@@ -932,6 +931,34 @@ scale_fontsize = function(x, rg = c(1, 30), fs = c(4, 16)) {
   y[y > fs[2]] = fs[2]
   round(y)
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
