@@ -90,7 +90,7 @@ prep_LR_interact <- function(container, lr_pairs, norm_method='trim', scale_fact
     datExpr <- container$scale_pb_extra[[ct]]
 
     # Call the network topology analysis function
-    sft <- pickSoftThreshold(datExpr, powerVector = powers, verbose = 5)
+    sft <- WGCNA::pickSoftThreshold(datExpr, powerVector = powers, verbose = 5)
   }
   return(container)
 }

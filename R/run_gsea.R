@@ -86,6 +86,10 @@ run_fgsea <- function(container, factor_select, sig_thresh, ctype, db_use="GO",
       # select the BioCarts gene sets
       m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
                                           category = "C2", subcategory = "CP:BIOCARTA"))
+    } else if (db == "Hallmark") {
+      # select the BioCarts gene sets
+      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
+                                          category = "H"))
     }
   }
 
@@ -934,57 +938,187 @@ scale_fontsize = function(x, rg = c(1, 30), fs = c(4, 16)) {
 
 
 # should be able to accommodate both up and down enriched gene sets
-plot_select_sets <- function(container, factor_select, direc, sets_plot, thresh=.05) {
-  factor_name <- paste0('Factor',as.character(factor_select))
+plot_select_sets <- function(container, factors_all, sets_plot, thresh=.05, color_sets=NULL) {
+  hm_list <- NULL
+  for (factor_select in factors_all) {
+    factor_name <- paste0('Factor',as.character(factor_select))
 
 
-  gsea_res <- container[["gsea_res_full"]][[factor_name]]
+    gsea_res <- container[["gsea_res_full"]][[factor_name]]
 
-  res <- data.frame(matrix(1,ncol=length(gsea_res),nrow = length(sets_plot)))
-  colnames(res) <- names(gsea_res)
-  rownames(res) <- sets_plot
+    res <- data.frame(matrix(1,ncol=length(gsea_res),nrow = length(sets_plot)))
+    colnames(res) <- names(gsea_res)
+    rownames(res) <- sets_plot
 
-  # populate res with pvalues
-  for (i in 1:length(sets_plot)) {
-    myset <- sets_plot[i]
-    for (j in 1:length(gsea_res)) {
-      ct <- names(gsea_res)[j]
-      myres <- gsea_res[[j]]
-      if (myset %in% myres$pathway) {
-        # see if NES is negative
-        is_neg <- myres$NES[myres$pathway==myset] < 0
-        if (is_neg) {
-          res[myset,ct] <- log10(myres$padj[myres$pathway==myset])
-        } else {
-          res[myset,ct] <- -log10(myres$padj[myres$pathway==myset])
+    # populate res with pvalues
+    for (i in 1:length(sets_plot)) {
+      myset <- sets_plot[i]
+      for (j in 1:length(gsea_res)) {
+        ct <- names(gsea_res)[j]
+        myres <- gsea_res[[j]]
+        if (myset %in% myres$pathway) {
+          # see if NES is negative
+          is_neg <- myres$NES[myres$pathway==myset] < 0
+          if (is_neg) {
+            res[myset,ct] <- log10(myres$padj[myres$pathway==myset])
+          } else {
+            res[myset,ct] <- -log10(myres$padj[myres$pathway==myset])
+          }
         }
       }
     }
+
+    # order by ctypes use
+    res <- res[,container$experiment_params$ctypes_use]
+    col_fun <- colorRamp2(c(-3, log10(thresh), 0, -log10(thresh), 3), c("blue", "white", "white", "white", "red"))
+
+    nrn <- rownames(res)
+    # make set names multi line if too long!
+    for (j in 1:length(nrn)) {
+      nm <- nrn[j]
+      max_char <- nchar(nm)
+      if (nchar(nm) > 40) {
+        # cut at underscore
+        u_loc <- stringr::str_locate_all(pattern ='_', nm)[[1]]
+        ndx_chop <- max(u_loc[,'start'][u_loc[,'start'] < 40])
+        nrn[j] <- paste0(substr(nm,1,ndx_chop),'\n',substr(nm,ndx_chop+1,max_char))
+      }
+    }
+
+    # order columns the same as corresponding loadings plot
+    col_ordering <- colnames(container[["plots"]][["lds_plots_data"]][[as.character(factor_select)]])
+    res <- res[,col_ordering]
+    hm_legend <- Legend(col_fun = col_fun, title = "signed -log10(padj)",
+                              grid_height = unit(1, "mm"), grid_width = unit(3, "mm"),
+                              title_position = "leftcenter-rot")
+
+    myhmap <- Heatmap(as.matrix(res), name = 'signed -log10(padj)',
+                      cluster_rows = FALSE,
+                      cluster_columns = FALSE,
+                      show_row_dend = FALSE, show_column_dend = FALSE,
+                      column_names_gp = gpar(fontsize = 12),
+                      col = col_fun,
+                      row_labels = nrn,
+                      row_title_gp = gpar(fontsize = 12),
+                      column_title = 'Cell Types',
+                      column_title_side = "bottom",
+                      column_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                      row_title = 'Gene Sets',
+                      row_title_side = "left",
+                      border=TRUE,
+                      row_names_side = "right",
+                      row_names_gp = gpar(fontsize = 8, col = color_sets),
+                      show_heatmap_legend = FALSE,
+                      width = unit(10, "cm"),
+                      height = unit(5, "cm"))
+
+    hm_list <- hm_list + myhmap
   }
-
-
-
-  col_fun <- colorRamp2(c(-8, log10(thresh), 0, -log10(thresh), 8), c("blue", "white", "white", "white", "red"))
-
-  myhmap <- Heatmap(as.matrix(res), name = 'signed -log10(padj)',
-                    cluster_rows = FALSE,
-                    cluster_columns = FALSE,
-                    show_row_dend = FALSE, show_column_dend = FALSE,
-                    column_names_gp = gpar(fontsize = 10),
-                    col = col_fun,
-                    row_title_gp = gpar(fontsize = 12),
-                    column_title = paste0('Factor ',factor_select,' select gene sets'),
-                    column_title_side = "top",
-                    column_title_gp = gpar(fontsize = 12, fontface = "bold"),
-                    border=TRUE,
-                    width = unit(8, "cm"),
-                    row_names_side = "left",
-                    row_names_gp = gpar(fontsize = 10))
+  draw(hm_list,heatmap_legend_list = hm_legend,
+       heatmap_legend_side = 'left',
+       legend_grouping = "original")
+  return(list(hm_list,hm_legend))
 }
 
 
 
+# should be able to accommodate both up and down enriched gene sets
+plot_select_sets_v2 <- function(container, factors_all, sets_plot, thresh=.05, color_sets=NULL) {
+  hm_list <- NULL
+  for (factor_select in factors_all) {
+    factor_name <- paste0('Factor',as.character(factor_select))
 
+
+    gsea_res <- container[["gsea_res_full"]][[factor_name]]
+
+    res <- data.frame(matrix(1,ncol=length(gsea_res),nrow = length(sets_plot)))
+    colnames(res) <- names(gsea_res)
+    rownames(res) <- sets_plot
+
+    # populate res with pvalues
+    for (i in 1:length(sets_plot)) {
+      myset <- sets_plot[i]
+      for (j in 1:length(gsea_res)) {
+        ct <- names(gsea_res)[j]
+        myres <- gsea_res[[j]]
+        if (myset %in% myres$pathway) {
+          # see if NES is negative
+          is_neg <- myres$NES[myres$pathway==myset] < 0
+          if (is_neg) {
+            res[myset,ct] <- log10(myres$padj[myres$pathway==myset])
+          } else {
+            res[myset,ct] <- -log10(myres$padj[myres$pathway==myset])
+          }
+        }
+      }
+    }
+
+    nrn <- rownames(res)
+    # make set names multi line if too long!
+    for (j in 1:length(nrn)) {
+      nm <- nrn[j]
+      max_char <- nchar(nm)
+      if (nchar(nm) > 40) {
+        # cut at underscore
+        u_loc <- stringr::str_locate_all(pattern ='_', nm)[[1]]
+        ndx_chop <- max(u_loc[,'start'][u_loc[,'start'] < 40])
+        nrn[j] <- paste0(substr(nm,1,ndx_chop),'\n',substr(nm,ndx_chop+1,max_char))
+      }
+    }
+
+    # order columns the same as corresponding loadings plot
+    col_ordering <- colnames(container[["plots"]][["lds_plots_data"]][[as.character(factor_select)]])
+    res <- res[,col_ordering]
+
+    res_disc <- res
+    res_disc[res>0] <- 'enriched up'
+    res_disc[res<0] <- 'enriched down'
+    res_disc[abs(res)<(-log10(.05))] <- 'NS'
+    colors = structure(c('#FF3333','#3333FF','#E0E0E0'), names = c("enriched up", "enriched down", "NS"))
+
+
+    hm_legend1 <- Legend(labels = c("enriched up", "enriched down", "NS"), title = "enr direction", legend_gp = gpar(fill = c('#FF3333','#3333FF','#E0E0E0')))
+    hm_legend2 <- Legend(labels = c('padj < 0.05','padj < 0.01','padj < 0.001'), title = "significance", type = "points", pch = c("*","**","***"))
+    pd <- packLegend(hm_legend1, hm_legend2, direction = "vertical")
+
+    myhmap <- Heatmap(as.matrix(res_disc), name = 'signed -log10(padj)',
+                      cluster_rows = FALSE,
+                      cluster_columns = FALSE,
+                      show_row_dend = FALSE, show_column_dend = FALSE,
+                      column_names_gp = gpar(fontsize = 12),
+                      col = colors,
+                      row_labels = nrn,
+                      row_title_gp = gpar(fontsize = 12),
+                      column_title = 'Cell Types',
+                      column_title_side = "bottom",
+                      column_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                      row_title = 'Gene Sets',
+                      row_title_side = "left",
+                      border=TRUE,
+                      row_names_side = "right",
+                      row_names_gp = gpar(fontsize = 8, col = color_sets),
+                      show_heatmap_legend = FALSE,
+                      width = unit(10, "cm"),
+                      height = unit(3, "cm"),
+                      cell_fun = function(j, i, x, y, w, h, col) { # add text to each grid
+                        if (abs(res[i,j]) > -log10(.001)) {
+                          grid.text('***', x, y, gp = gpar(fontface='bold'))
+                        } else if (abs(res[i,j]) > -log10(.01)) {
+                          grid.text('**', x, y, gp = gpar(fontface='bold'))
+                        } else if (abs(res[i,j]) > -log10(.05)) {
+                          grid.text('**', x, y, gp = gpar(fontface='bold'))
+                        } else {
+                          grid.text('', x, y)
+                        }
+                      })
+
+    hm_list <- hm_list + myhmap
+  }
+  draw(hm_list,heatmap_legend_list = pd,
+       heatmap_legend_side = 'left',
+       legend_grouping = "original")
+  return(list(hm_list,pd))
+}
 
 
 

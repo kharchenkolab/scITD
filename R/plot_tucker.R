@@ -190,6 +190,12 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL,
 #' @param callout_ctypes character To use if gene_callouts is TRUE. Specifies which cell types
 #' to get gene callouts for. If NULL, then gets gene callouts for largest magnitude significant
 #' genes for all cell types. (default=NULL)
+#' @param le_set_callouts character Pass a vector of gene set names to show leading edge genes
+#' for a select set of gene sets (default=NULL)
+#' @param le_set_colormap character A named vector with names as gene sets and values as colors.
+#' If NULL, then selects first n colors of Set3 color palette. (default=NULL)
+#' @param le_set_num_per numeric The number of leading edge genes to show for each gene set (default=5)
+#' @param show_le_legend logical Set to TRUE to show the color map legend for leading edge genes (default=FALSE)
 #' @param show_xlab logical If TRUE, displays the xlabel 'genes' (default=TRUE)
 #' @param show_var_explained logical If TRUE then shows an anotation with the explained variance
 #' for each cell type (default=TRUE)
@@ -203,8 +209,11 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL,
 #' @export
 plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, nonsig_to_zero=FALSE, annot='none',
                                 pathways=NULL, sim_de_donor_group=NULL, sig_thresh=0.05, display_genes=FALSE,
-                                gene_callouts=FALSE, callout_n_gene_per_ctype=5, callout_ctypes=NULL, show_xlab=TRUE,
-                                show_var_explained=TRUE, reset_other_factor_plots=FALSE, draw_plot=TRUE) {
+                                gene_callouts=FALSE, callout_n_gene_per_ctype=5, callout_ctypes=NULL,
+                                le_set_callouts=NULL, le_set_colormap=NULL, le_set_num_per=5, show_le_legend=FALSE,
+                                show_xlab=TRUE, show_var_explained=TRUE, reset_other_factor_plots=FALSE,
+                                draw_plot=TRUE) {
+
   # check that Tucker has been run
   if (is.null(container$tucker_results)) {
     stop("Need to run run_tucker_ica() first.")
@@ -262,6 +271,44 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
     gene_callouts <- NULL
   }
 
+  if (!is.null(le_set_callouts)) {
+    # get leading edge genes to plot
+    le_genes <- get_leading_edge_genes(container, factor_select, gsets=le_set_callouts,
+                           num_genes_per=le_set_num_per)
+
+    # get colors for each gene by its gene set
+    if (is.null(le_set_colormap)) { # need to pick random colors if not specified
+      le_set_colormap <- RColorBrewer::brewer.pal(n = length(le_set_callouts), name = "Set3")
+      names(le_set_colormap) <- le_set_callouts
+    }
+    le_colors <- c()
+    for (i in 1:length(le_genes)) {
+      gs <- le_genes[i]
+      mycolor <- le_set_colormap[gs]
+      le_colors[i] <- mycolor
+    }
+
+    # get indices for each gene
+    le_ndx <- match(names(le_genes),rownames(tmp_casted_num))
+
+    gene_callouts <- rowAnnotation(callouts = anno_mark(at = le_ndx, which='row',
+                                                        labels = names(le_genes),
+                                                        labels_gp = gpar(col = le_colors, fontsize = 11),
+                                                        link_gp = gpar(lwd=1.25, col = le_colors),
+                                                        padding = unit(.75, "mm")))
+
+    # make legend if specified to do so
+    if (show_le_legend) {
+      le_legend <- Legend(labels = names(le_set_colormap),
+                          legend_gp = gpar(fill = le_set_colormap), title = "gene sets",
+             grid_height = unit(1, "mm"), grid_width = unit(3, "mm"))
+    }
+
+
+  } else {
+    gene_callouts <- NULL
+  }
+
   hm_legends <- list()
 
   if (show_var_explained) {
@@ -314,8 +361,8 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
                      row_labels = convert_gn(container,rownames(tmp_casted_num)),
                      right_annotation = gene_callouts, top_annotation=var_annot,
                      show_heatmap_legend = FALSE,
-                     width = unit(8, "cm"),
-                     height = unit(14, "cm"))
+                     width = unit(10, "cm"),
+                     height = unit(20, "cm")) #used to use w=8, h=14. or 10, 18
 
   # turn off heatmap message saying callouts require pdf view or zoom view
   ht_opt$message = FALSE
@@ -381,7 +428,7 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
   # store matrix that generated the plot
   container$plots$lds_plots_data[[as.character(factor_select)]] <- tmp_casted_num
 
-  # save legend in container
+  # pack and save legend in container
   if (show_var_explained) {
     pd <- packLegend(hm_legends[[1]], hm_legends[[2]], direction = "vertical")
   } else {
@@ -391,11 +438,18 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
 
   # optionally draw the plot
   if (draw_plot) {
-    draw(hm_list,annotation_legend_list = pd,
-         legend_grouping = "original",
-         newpage=FALSE)
-  }
+    if (show_le_legend) {
+      draw(hm_list,annotation_legend_list = pd,
+           legend_grouping = "original",
+           heatmap_legend_list = le_legend, heatmap_legend_side = "bottom",
+           newpage=FALSE)
+    } else {
+      draw(hm_list,annotation_legend_list = pd,
+           legend_grouping = "original",
+           newpage=FALSE)
+    }
 
+  }
 
   return(container)
 }
@@ -1423,7 +1477,76 @@ plot_dscore_enr <- function(container,factor_use,meta_var) {
 
 
 
+get_leading_edge_genes <- function(container,factor_select,gsets,num_genes_per=5) {
+  factor_name <- paste0('Factor',as.character(factor_select))
 
+  all_le <- list()
+  for (gs in gsets) {
+    # get ctypes where gs is significant
+    ct_sig <- c()
+    for (ct in container$experiment_params$ctypes_use) {
+      gsea_res <- container[["gsea_res_full"]][[factor_name]][[ct]]
+      padj <- gsea_res$padj[gsea_res$pathway==gs]
+      if (padj < 0.05) {
+        ct_sig <- c(ct_sig,ct)
+      }
+    }
+
+    # loop through cell types where gs is significant and get gene counts
+    g_counts <- list()
+    for (ct in ct_sig) {
+      gsea_res <- container[["gsea_res_full"]][[factor_name]][[ct]]
+      le_genes <- gsea_res$leadingEdge[gsea_res$pathway==gs][[1]]
+      for (g in le_genes) {
+        if (g %in% names(g_counts)) {
+          g_counts[[g]] <- g_counts[[g]] + 1
+        } else {
+          g_counts[[g]] <- 1
+        }
+      }
+    }
+    # unlist and order g_counts decreasing order
+    g_counts <- unlist(g_counts)
+    g_counts <- g_counts[order(g_counts,decreasing=TRUE)]
+
+    # if (length(ct_sig)==1) {
+    #   g_counts <- sample(g_counts)
+    # }
+    all_le[[gs]] <- g_counts
+  }
+
+  # ensure no genes are selected that are in multiple sets
+  final_le <- list()
+  for (i in 1:length(all_le)) {
+    g_counts <- all_le[[i]]
+    # g_counts <- sample(g_counts)
+    # print(g_counts)
+    track <- 0 #keeps track of number genes accepted as unique for the set
+    ndx <- 1
+    while (track < num_genes_per && ndx <= length(g_counts)) {
+      mygene <- names(g_counts)[ndx]
+
+      # test if gene in any other leading edge gene sets
+      is_unique <- TRUE
+      for (j in 1:length(all_le)) {
+        if (j != i) {
+          g_counts2 <- all_le[[j]]
+          if (mygene %in% names(g_counts2)) {
+            is_unique <- FALSE
+            break
+          }
+        }
+      }
+
+      if (is_unique) {
+        final_le[[mygene]] <- names(all_le)[i]
+        track <- track + 1
+      }
+      ndx <- ndx + 1
+    }
+  }
+  return(unlist(final_le))
+}
 
 
 
