@@ -362,7 +362,7 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
                      right_annotation = gene_callouts, top_annotation=var_annot,
                      show_heatmap_legend = FALSE,
                      width = unit(10, "cm"),
-                     height = unit(20, "cm")) #used to use w=8, h=14. or 10, 18
+                     height = unit(20, "cm")) #used to use w=10, h=20, or 6.75, 20 for combo fig
 
   # turn off heatmap message saying callouts require pdf view or zoom view
   ht_opt$message = FALSE

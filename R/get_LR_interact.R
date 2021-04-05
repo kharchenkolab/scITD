@@ -90,7 +90,7 @@ prep_LR_interact <- function(container, lr_pairs, norm_method='trim', scale_fact
     datExpr <- container$scale_pb_extra[[ct]]
 
     # Call the network topology analysis function
-    sft <- WGCNA::pickSoftThreshold(datExpr, powerVector = powers, verbose = 5)
+    sft <- WGCNA::pickSoftThreshold(datExpr, powerVector = powers, verbose = 5, networkType = "unsigned",)
   }
   return(container)
 }
@@ -113,10 +113,10 @@ get_gene_modules <- function(container,sft_thresh) {
     # get scaled expression data for the cell type
     datExpr <- container$scale_pb_extra[[ct]]
 
-    # get gene modules
+    # get gene modules, used to use cut height of .25
     net <- WGCNA::blockwiseModules(datExpr, power = sft_thresh[i], maxBlockSize = 10000,
-                                   TOMType = "unsigned", minModuleSize = 15,
-                                   reassignThreshold = 0, mergeCutHeight = 0.25,
+                                   TOMType = "unsigned", networkType = "unsigned", minModuleSize = 15,
+                                   reassignThreshold = 0, mergeCutHeight = 0.35,
                                    numericLabels = TRUE, pamRespectsDendro = FALSE,
                                    saveTOMs = FALSE,
                                    verbose = 3)
@@ -406,7 +406,7 @@ compute_LR_interact <- function(container, lr_pairs, factor_select, sig_thresh=0
   hmlist <- myhmap1 + myhmap2
 
   container$plots$lr_analysis[[paste0('Factor',factor_select)]] <- hmlist
-
+  container$lr_res_raw[[paste0('Factor',factor_select)]] <- myres
   return(container)
 }
 
@@ -522,12 +522,12 @@ plot_multi_module_enr <- function(container, ctypes, modules, sig_thresh=.05, db
   myres2 <- myres2[rowSums(myres2<sig_thresh)>0,]
 
   # plot
-  col_fun <- colorRamp2(c(.05, 0), c("white", "green"))
+  col_fun <- colorRamp2(c(.1, 0), c("white", "green"))
   myhmap <- Heatmap(myres2,name='adj pval',
           show_row_dend=FALSE,
           show_column_dend=FALSE,
           col=col_fun,
-          row_names_gp = gpar(fontsize = 6),
+          row_names_gp = gpar(fontsize = 8),
           border=TRUE,
           row_names_side='left',
           width = unit(5, "cm"))
@@ -537,7 +537,46 @@ plot_multi_module_enr <- function(container, ctypes, modules, sig_thresh=.05, db
 
 
 
+plot_mod_and_lig <- function(container,factor_select,mod_ct,mod,lig_ct,lig) {
 
+  dsc <- container$tucker_results[[1]][,factor_select]
+  lig_exp <- container$scMinimal_ctype[[lig_ct]]$pseudobulk[,lig]
+  MEs <- container[["module_eigengenes"]][[mod_ct]]
+  ME <- MEs[,mod]
+  names(ME) <- rownames(MEs)
+
+  tmp <- as.data.frame(cbind(dsc[names(ME)],ME,lig_exp[names(ME)]))
+  colnames(tmp) <- c('dsc','ME','lig_exp')
+
+  mycor1 <- cor(tmp$dsc,tmp$lig_exp)
+  p1 <- ggplot(tmp,aes(x=dsc,y=lig_exp)) +
+    geom_point() +
+    xlab(paste0('factor',factor_select,' donor score')) +
+    ylab(paste0(lig,' expression in ',lig_ct)) +
+    annotate(geom="text",  x=Inf, y=Inf, hjust=1,vjust=1, col="black",
+             label=paste0('pearson r = ',round(mycor1,digits=3)))
+
+  mycor2 <- cor(tmp$dsc,tmp$ME)
+  p2 <- ggplot(tmp,aes(x=dsc,y=ME)) +
+    geom_point() +
+    xlab(paste0('factor',factor_select,' donor score')) +
+    ylab(paste0(mod_ct,'_',mod,' module expression')) +
+    annotate(geom="text",  x=Inf, y=Inf, hjust=1,vjust=1, col="black",
+             label=paste0('pearson r = ',round(mycor2,digits=3)))
+
+  mycor3 <- cor(tmp$ME,tmp$lig_exp)
+  p3 <- ggplot(tmp,aes(x=lig_exp,y=ME)) +
+    geom_point() +
+    xlab(paste0(lig,' expression in ',lig_ct)) +
+    ylab(paste0(mod_ct,'_',mod,' module expression')) +
+    annotate(geom="text",  x=Inf, y=Inf, hjust=1,vjust=1, col="black",
+             label=paste0('pearson r = ',round(mycor3,digits=3)))
+
+  fig_top <- cowplot::plot_grid(plotlist=list(p1,p2), ncol=2)
+  fig_bot <- cowplot::plot_grid(plotlist=list(NULL,p3,NULL), ncol=3, rel_widths = c(.25, .5, .25))
+  fig <- cowplot::plot_grid(plotlist=list(fig_top,fig_bot), ncol=1)
+  return(fig)
+}
 
 
 
