@@ -342,7 +342,7 @@ norm_var_helper <- function(scMinimal) {
   var_pvals <- log(p.adjust(df$lp,method='fdr'))
   df$lp <- log(df$lp)
   n.cells <- nrow(donor_sum_counts)
-  scaled_var <- as.numeric(stats::qchisq(df$lp, n.cells-1, lower.tail = FALSE,log.p=TRUE)/n.cells)
+  scaled_var <- as.numeric(stats::qchisq(df$lp, n.cells-1, lower.tail = FALSE,log.p=TRUE)/n.cells) #gives same answer as inputting non-log pval and log.p=F
   names(scaled_var) <- colnames(donor_sum_counts)
   names(var_pvals) <- colnames(donor_sum_counts)
 

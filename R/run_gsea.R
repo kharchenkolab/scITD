@@ -38,6 +38,9 @@ run_fgsea <- function(container, factor_select, sig_thresh, ctype, db_use="GO",
     exp_transform <- tnsr_slice[,j] * donor_scores[rownames(tnsr_slice),factor_select]
     de_val <- sum(exp_transform)
 
+    # exp_transform <- tnsr_slice[,j] * donor_scores[rownames(tnsr_slice),factor_select]
+    # de_val <- abs(sum(exp_transform))
+
     # exp_transform <- tnsr_slice[,j] * (donor_scores[rownames(tnsr_slice),factor_select]**2)
     # mysigns <- donor_scores[rownames(tnsr_slice),factor_select] < 0
     # exp_transform[mysigns] <- exp_transform[mysigns] * -1
@@ -103,6 +106,14 @@ run_fgsea <- function(container, factor_select, sig_thresh, ctype, db_use="GO",
                             eps=0,
                             gseaParam=1,
                             nproc=container$experiment_params$ncores)
+  # fgsea_res <- fgsea::fgsea(pathways = my_pathways,
+  #                           stats = exp_vals,
+  #                           minSize=15,
+  #                           maxSize=500,
+  #                           eps=0,
+  #                           gseaParam=1,
+  #                           scoreType = "pos",
+  #                           nproc=container$experiment_params$ncores)
   # fgsea_res <- fgsea::fgsea(pathways = my_pathways,
   #                           stats = exp_vals,
   #                           minSize=15,
@@ -306,8 +317,8 @@ run_hypergeometric_gsea <- function(container, factor_select, ctype, up_down,
     }
   }
 
-  # my_pathways = split(m_df$gene_symbol, f = m_df$gs_name)
-  my_pathways <- split(m_df$gene_symbol, f = m_df$gs_exact_source)
+  my_pathways = split(m_df$gene_symbol, f = m_df$gs_name)
+  # my_pathways <- split(m_df$gene_symbol, f = m_df$gs_exact_source)
 
   pvals <- c()
   for (i in 1:length(my_pathways)) {
@@ -939,7 +950,7 @@ scale_fontsize = function(x, rg = c(1, 30), fs = c(4, 16)) {
 
 
 # should be able to accommodate both up and down enriched gene sets
-plot_select_sets <- function(container, factors_all, sets_plot, thresh=.05, color_sets=NULL) {
+plot_select_sets <- function(container, factors_all, sets_plot, thresh=.05, color_sets=NULL, cl_rows=FALSE) {
   hm_list <- NULL
   for (factor_select in factors_all) {
     factor_name <- paste0('Factor',as.character(factor_select))
@@ -981,6 +992,7 @@ plot_select_sets <- function(container, factors_all, sets_plot, thresh=.05, colo
         nrn[j] <- paste0(substr(nm,1,ndx_chop),'\n',substr(nm,ndx_chop+1,max_char))
       }
     }
+    rownames(res) <- nrn
 
     # order columns the same as corresponding loadings plot
     col_ordering <- colnames(container[["plots"]][["lds_plots_data"]][[as.character(factor_select)]])
@@ -992,10 +1004,17 @@ plot_select_sets <- function(container, factors_all, sets_plot, thresh=.05, colo
     res_disc[abs(res)<(-log10(.05))] <- 'NS'
     colors = structure(c('#FF3333','#3333FF','#E0E0E0'), names = c("enriched up", "enriched down", "NS"))
 
-
     hm_legend1 <- Legend(labels = c("enriched up", "enriched down", "NS"), title = "enr direction", legend_gp = gpar(fill = c('#FF3333','#3333FF','#E0E0E0')))
     hm_legend2 <- Legend(labels = c('padj < 0.05','padj < 0.01','padj < 0.001'), title = "significance", type = "points", pch = c("*","**","***"))
     pd <- packLegend(hm_legend1, hm_legend2, direction = "vertical")
+
+    # cluster rows if specified
+    if (cl_rows) {
+      clust_ord <- hclust(dist(res), method = "single")$order
+      res <- res[clust_ord,]
+      res_disc <- res_disc[clust_ord,]
+      color_sets <- color_sets[clust_ord]
+    }
 
     # height should depend on number of sets
     myheight <- (3/5) * nrow(res)
@@ -1005,7 +1024,6 @@ plot_select_sets <- function(container, factors_all, sets_plot, thresh=.05, colo
                       show_row_dend = FALSE, show_column_dend = FALSE,
                       column_names_gp = gpar(fontsize = 12),
                       col = colors,
-                      row_labels = nrn,
                       row_title_gp = gpar(fontsize = 12),
                       column_title = 'Cell Types',
                       column_title_side = "bottom",

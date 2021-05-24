@@ -131,10 +131,12 @@ update_params <- function(container, ctypes_use=NULL,
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
+#' @param y_gene character Gene name to use for identifying male donors (default='RPS4Y1')
+#' @param x_gene character Gene name to use for identifying female donors (default='XIST')
 #'
 #' @return the scMinimal object with sex metadata added to the metadata
 #' @export
-identify_sex_metadata <- function(container) {
+identify_sex_metadata <- function(container,y_gene='RPS4Y1',x_gene='XIST') {
   scMinimal <- container$scMinimal_full
 
   dge_sparse <- t(scMinimal$count_data)
@@ -150,8 +152,8 @@ identify_sex_metadata <- function(container) {
   # convert rownames to gene symbols using provided mapping
   gn_names <- convert_gn(container, colnames(d_sums))
 
-  y_ndx <- which(gn_names == 'RPS4Y1')
-  x_ndx <- which(gn_names == 'XIST')
+  y_ndx <- which(gn_names == y_gene)
+  x_ndx <- which(gn_names == x_gene)
   y_mean <- mean(d_sums[,y_ndx])
   x_mean <- mean(d_sums[,x_ndx])
 

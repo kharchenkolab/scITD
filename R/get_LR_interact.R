@@ -120,6 +120,13 @@ get_gene_modules <- function(container,sft_thresh) {
                                    numericLabels = TRUE, pamRespectsDendro = FALSE,
                                    saveTOMs = FALSE,
                                    verbose = 3)
+    # net <- WGCNA::blockwiseModules(datExpr, power = sft_thresh[i], maxBlockSize = 10000,
+    #                                TOMType = "unsigned", networkType = "unsigned", minModuleSize = 15,
+    #                                reassignThreshold = 0, mergeCutHeight = 0.25,
+    #                                numericLabels = TRUE, pamRespectsDendro = FALSE,
+    #                                saveTOMs = FALSE,
+    #                                verbose = 3)
+
     MEs <- net$MEs
     col_ndx <- sapply(colnames(MEs),function(x) {
       as.numeric(strsplit(x,split='ME')[[1]][[2]])
@@ -148,10 +155,15 @@ get_gene_modules <- function(container,sft_thresh) {
 #' @param factor_select numeric The factor to get associated LR-modules for
 #' @param sig_thresh numeric The p-value significance threshold to use for module-
 #' factor associations and ligand-factor associations
+#' @param percentile_exp_rec numeric The percentile above which donors expressing the
+#' ligand all must be expressing the receptor (default=.75)
+#' @param show_rec_sig logical Set to TRUE to append a heatmap showing the significance
+#' of using the receptor expression in predicting module expression (default=TRUE)
 #'
 #' @return The project container with the plt added in container$plots$lr_analysis$factor_num
 #' @export
-compute_LR_interact <- function(container, lr_pairs, factor_select, sig_thresh=0.05, percentile_exp_rec=.75) {
+compute_LR_interact <- function(container, lr_pairs, factor_select, sig_thresh=0.05,
+                                percentile_exp_rec=.75, show_rec_sig=TRUE) {
   ctypes_use <- container$experiment_params$ctypes_use
   dsc <- container$tucker_results[[1]][,factor_select]
 
@@ -339,6 +351,13 @@ compute_LR_interact <- function(container, lr_pairs, factor_select, sig_thresh=0
         } else {
           aovres[l_ct_r,ct_mod] <- anova_pval
         }
+
+        # ensure receptors not in target module
+        tmp <- container$module_genes[[ct]]
+        tmp_mod <- tmp[tmp==mod]
+        if (sum(rec %in% names(tmp_mod))>0) {
+          aovres[l_ct_r,ct_mod] <- 1
+        }
       }
     }
   }
@@ -403,7 +422,12 @@ compute_LR_interact <- function(container, lr_pairs, factor_select, sig_thresh=0
                      row_order=hc, column_order=vc,
                      top_annotation=ta,
                      border=TRUE)
-  hmlist <- myhmap1 + myhmap2
+
+  if (show_rec_sig) {
+    hmlist <- myhmap1 + myhmap2
+  } else {
+    hmlist <- myhmap1
+  }
 
   container$plots$lr_analysis[[paste0('Factor',factor_select)]] <- hmlist
   container$lr_res_raw[[paste0('Factor',factor_select)]] <- myres
@@ -447,6 +471,13 @@ get_module_enr <- function(container,ctype,mod_select,db_use='GO',adjust_pval=TR
                                           category = "C3", subcategory = "TFT:GTRD"))
       m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
                                           category = "C3", subcategory = "TFT:TFT_Legacy"))
+
+      # limit it to just sets ending in 'TARGET_GENES'
+      target_gene_label <- sapply(m_df$gs_name, function(x) {
+        return(grepl('TARGET_GENES', x, fixed = TRUE))
+      })
+      m_df <- m_df[target_gene_label,]
+
     } else if (db == "immuno") {
       # select the BioCarts gene sets
       m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
@@ -521,16 +552,44 @@ plot_multi_module_enr <- function(container, ctypes, modules, sig_thresh=.05, db
   # limit to just TF sets with a significant result
   myres2 <- myres2[rowSums(myres2<sig_thresh)>0,]
 
+  nrn <- rownames(myres2)
+  # make set names multi line if too long!
+  for (j in 1:length(nrn)) {
+    nm <- nrn[j]
+    max_char <- nchar(nm)
+    if (nchar(nm) > 55) {
+      # cut at underscore
+      u_loc <- stringr::str_locate_all(pattern ='_', nm)[[1]]
+      ndx_chop <- max(u_loc[,'start'][u_loc[,'start'] < 55])
+      nrn[j] <- paste0(substr(nm,1,ndx_chop),'\n',substr(nm,ndx_chop+1,max_char))
+    }
+  }
+  rownames(myres2) <- nrn
+
   # plot
   col_fun <- colorRamp2(c(.1, 0), c("white", "green"))
+  # myhmap <- Heatmap(myres2,name='adj pval',
+  #         show_row_dend=FALSE,
+  #         show_column_dend=FALSE,
+  #         col=col_fun,
+  #         row_names_gp = gpar(fontsize = 6),
+  #         border=TRUE,
+  #         row_names_side='right',
+  #         width = unit(6, "cm"),
+  #         column_title = 'Co-expression Modules',
+  #         column_title_gp = gpar(fontsize = 12),
+  #         column_title_side = "bottom")
   myhmap <- Heatmap(myres2,name='adj pval',
-          show_row_dend=FALSE,
-          show_column_dend=FALSE,
-          col=col_fun,
-          row_names_gp = gpar(fontsize = 8),
-          border=TRUE,
-          row_names_side='left',
-          width = unit(5, "cm"))
+                    show_row_dend=FALSE,
+                    show_column_dend=FALSE,
+                    col=col_fun,
+                    row_names_gp = gpar(fontsize = 6.5),
+                    border=TRUE,
+                    row_names_side='right',
+                    column_title = 'Co-expression Modules',
+                    column_title_gp = gpar(fontsize = 12),
+                    column_title_side = "bottom",
+                    clustering_method_rows = "single")
 
   return(myhmap)
 }
@@ -551,7 +610,7 @@ plot_mod_and_lig <- function(container,factor_select,mod_ct,mod,lig_ct,lig) {
   mycor1 <- cor(tmp$dsc,tmp$lig_exp)
   p1 <- ggplot(tmp,aes(x=dsc,y=lig_exp)) +
     geom_point() +
-    xlab(paste0('factor',factor_select,' donor score')) +
+    xlab(paste0('Factor',factor_select,' donor score')) +
     ylab(paste0(lig,' expression in ',lig_ct)) +
     annotate(geom="text",  x=Inf, y=Inf, hjust=1,vjust=1, col="black",
              label=paste0('pearson r = ',round(mycor1,digits=3)))
@@ -559,7 +618,7 @@ plot_mod_and_lig <- function(container,factor_select,mod_ct,mod,lig_ct,lig) {
   mycor2 <- cor(tmp$dsc,tmp$ME)
   p2 <- ggplot(tmp,aes(x=dsc,y=ME)) +
     geom_point() +
-    xlab(paste0('factor',factor_select,' donor score')) +
+    xlab(paste0('Factor ',factor_select,' donor score')) +
     ylab(paste0(mod_ct,'_',mod,' module expression')) +
     annotate(geom="text",  x=Inf, y=Inf, hjust=1,vjust=1, col="black",
              label=paste0('pearson r = ',round(mycor2,digits=3)))

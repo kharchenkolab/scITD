@@ -63,6 +63,7 @@ get_subtype_prop_associations <- function(container, max_res, stat_type,
       subc_all[[ct]][[paste0('res:',as.character(r))]] <- subclusts
 
       num_subclusts <- length(unique(subclusts))
+
       if (num_subclusts > 1) {
         sub_meta_tmp <- scMinimal$metadata[names(subclusts),]
 
@@ -297,7 +298,7 @@ reduce_dimensions <- function(container, integration_var) {
   con$buildGraph()
 
   # make umap embedding
-  con$embedGraph(method="UMAP", min.dist=0.01, spread=15, n.cores=ncores, min.prob.lower=1e-3)
+  con$embedGraph(method="UMAP", min.dist=0.01, spread=15, min.prob.lower=1e-3)
 
   # assign ctype names to the cells
   con$findCommunities(method=conos::leiden.community, resolution=1)
@@ -386,34 +387,34 @@ compute_associations <- function(donor_balances, donor_scores, stat_type) {
                                              paste(colnames(donor_balances),collapse=" + ")))
     }
 
-    # # run lm
-    # lmres <- stats::lm(prop_model, data=tmp)
-    #
-    # # extract regression statistic
-    # if (stat_type == 'fstat') {
-    #   reg_stat <- summary(lmres)$fstatistic[[1]]
-    # } else if (stat_type == 'adj_rsq') {
-    #   reg_stat <- summary(lmres)$adj.r.squared
-    # } else if (stat_type == 'adj_pval') {
-    #   x <- summary(lmres)
-    #   reg_stat <- stats::pf(x$fstatistic[1],x$fstatistic[2],x$fstatistic[3],lower.tail=FALSE)
-    # }
-
-    if (ncol(donor_balances)==1) {
+    if (rowSums(donor_balances)[1]==1) { # tests if table has proportions
       # testing out beta regression
       breg <- betareg::betareg(prop_model, data = tmp)
       tmp <- summary(breg)
       reg_stat <- tmp$coefficients$mean['dscore','Pr(>|z|)']
-    } else {
-      # run robust regression
-      lmres <- MASS::rlm(prop_model, data=tmp, maxit = 200)
-      lmres <- sfsmisc::f.robftest(lmres)
+    } else { # if no proportions, then table has balances instead
+      # # run robust regression
+      # lmres <- MASS::rlm(prop_model, data=tmp, maxit = 200)
+      # lmres <- sfsmisc::f.robftest(lmres)
+      #
+      # # extract regression statistic
+      # if (stat_type == 'fstat') {
+      #   reg_stat <- lmres$statistic
+      # } else if (stat_type == 'adj_pval') {
+      #   reg_stat <- lmres$p.value
+      # }
+
+      # use lm
+      lmres <- stats::lm(prop_model, data=tmp)
 
       # extract regression statistic
       if (stat_type == 'fstat') {
-        reg_stat <- lmres$statistic
+        reg_stat <- summary(lmres)$fstatistic[[1]]
+      } else if (stat_type == 'adj_rsq') {
+        reg_stat <- summary(lmres)$adj.r.squared
       } else if (stat_type == 'adj_pval') {
-        reg_stat <- lmres$p.value
+        x <- summary(lmres)
+        reg_stat <- stats::pf(x$fstatistic[1],x$fstatistic[2],x$fstatistic[3],lower.tail=FALSE)
       }
     }
 
@@ -675,6 +676,7 @@ get_subclust_enr_dotplot <- function(container,ctype,res,subtype,factor_use) {
     ylim(0,1) +
     labs(color = "Status") +
     ggtitle(paste0(ctype,'_',as.character(subtype),' Proportions')) +
+    theme_bw() +
     theme(plot.title = element_text(hjust = 0.5))
   return(p)
 }
@@ -986,13 +988,13 @@ plot_donor_props <- function(donor_props, donor_scores, significance,
 
     p <- ggplot(tmp2, aes(x=dscore,y=donor_proportion,color=cell_types)) +
       # stat_summary(fun.data=mean_cl_normal) +
-      geom_smooth(method='rlm', formula= y~x) +
+      geom_smooth(method='lm', formula= y~x) +
       ggtitle(paste0("Factor ",as.character(f))) +
-      theme(plot.title = element_text(hjust = 0.5)) +
       labs(color = "Cell Type") +
       xlab("Donor Factor Score") +
       ylab("Cell Type Proportion") +
-      theme(legend.position="bottom") +
+      theme_bw() +
+      theme(plot.title = element_text(hjust = 0.5),legend.position="bottom") +
       annotate(geom="text",  x=Inf, y=Inf, hjust=1,vjust=1, col="black",
                label=paste0(plot_stat_name,': ',round(significance[f],digits=round_digits)))
 
@@ -1053,6 +1055,7 @@ plot_subclust_associations <- function(res,n_col=2) {
       ylab(y_axis_name) +
       labs(color = "Cell Type") +
       ggtitle(factor_name) +
+      theme_bw() +
       theme(plot.title = element_text(hjust = 0.5),
             legend.position="bottom")
 
@@ -1063,7 +1066,7 @@ plot_subclust_associations <- function(res,n_col=2) {
 
     # if plotting -log10 pvals draw significance line
     if (stat_type == 'adj_pval') {
-      p <- p + geom_hline(yintercept=-log10(.05), linetype="dashed", color = "red")
+      p <- p + geom_hline(yintercept=-log10(.01), linetype="dashed", color = "red")
     }
 
     legend <- cowplot::get_legend(

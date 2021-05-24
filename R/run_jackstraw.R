@@ -50,6 +50,13 @@ run_jackstraw <- function(container, ranks, n_fibers=100, n_iter=500,
   # compute actual F statistics for all real fibers
   fstats_real <- get_real_fstats(container, ncores)
 
+  # # temporary testing getting regular pvalues
+  # pvals_adj <- fstats_real
+  # names(pvals_adj) <- names(fstats_real)
+  # names(pvals_adj) <- sapply(names(pvals_adj),function(x){
+  #   substr(x,1,nchar(x)-6)
+  # })
+
   # calculate p-value by counting how many null F stats greater
   pvals_adj <- get_fstats_pvals(fstats_real, fstats_shuffled)
   names(pvals_adj) <- names(fstats_real)
@@ -158,6 +165,11 @@ get_real_fstats <- function(container, ncores) {
         colnames(df_test) <- c('fiber','factor')
         lmres <- lm(factor~fiber,df_test)
         fstat <- summary(lmres)$fstatistic[[1]]
+
+        # # testing getting pval instead of fstat
+        # x <- summary(lmres)
+        # fstat <- stats::pf(x$fstatistic[1],x$fstatistic[2],x$fstatistic[3],lower.tail=FALSE)
+
         gene_res[[ctype]][[as.character(k)]] <- fstat
       }
     }

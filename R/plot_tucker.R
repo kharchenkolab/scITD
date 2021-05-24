@@ -190,6 +190,7 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL,
 #' @param callout_ctypes character To use if gene_callouts is TRUE. Specifies which cell types
 #' to get gene callouts for. If NULL, then gets gene callouts for largest magnitude significant
 #' genes for all cell types. (default=NULL)
+#' @param specific_callouts character A vector of gene names to show callouts for (default=NULL)
 #' @param le_set_callouts character Pass a vector of gene set names to show leading edge genes
 #' for a select set of gene sets (default=NULL)
 #' @param le_set_colormap character A named vector with names as gene sets and values as colors.
@@ -209,7 +210,7 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL,
 #' @export
 plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, nonsig_to_zero=FALSE, annot='none',
                                 pathways=NULL, sim_de_donor_group=NULL, sig_thresh=0.05, display_genes=FALSE,
-                                gene_callouts=FALSE, callout_n_gene_per_ctype=5, callout_ctypes=NULL,
+                                gene_callouts=FALSE, callout_n_gene_per_ctype=5, callout_ctypes=NULL, specific_callouts=NULL,
                                 le_set_callouts=NULL, le_set_colormap=NULL, le_set_num_per=5, show_le_legend=FALSE,
                                 show_xlab=TRUE, show_var_explained=TRUE, reset_other_factor_plots=FALSE,
                                 draw_plot=TRUE) {
@@ -265,13 +266,15 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
   }
 
   if (gene_callouts) {
-    gene_callouts <- get_callouts_annot(container, tmp_casted_num, factor_select, sig_thresh,
-                       top_n_per_ctype=callout_n_gene_per_ctype, ctypes=callout_ctypes)
-  } else {
-    gene_callouts <- NULL
-  }
-
-  if (!is.null(le_set_callouts)) {
+    if (!is.null(specific_callouts)) {
+      ndx <- match(specific_callouts,rownames(tmp_casted_num))
+      gene_callouts <- rowAnnotation(callouts = anno_mark(at = ndx, which='row',
+                                                    labels = specific_callouts))
+    } else {
+      gene_callouts <- get_callouts_annot(container, tmp_casted_num, factor_select, sig_thresh,
+                                          top_n_per_ctype=callout_n_gene_per_ctype, ctypes=callout_ctypes)
+    }
+  } else if (!is.null(le_set_callouts)) {
     # get leading edge genes to plot
     le_genes <- get_leading_edge_genes(container, factor_select, gsets=le_set_callouts,
                            num_genes_per=le_set_num_per)
@@ -340,8 +343,9 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
   #   col_fun = colorRamp2(c(-color_lim, 0, color_lim), c("blue", "white", "red"))
   # }
 
-  # color_lim <- stats::quantile(as.matrix(abs(tmp_casted_num)), c(.9999))
-  color_lim <- stats::quantile(as.matrix(abs(tmp_casted_num)), c(.99))
+  # color_lim <- stats::quantile(as.matrix(abs(tmp_casted_num)), c(.9999999))
+  # color_lim <- stats::quantile(as.matrix(abs(tmp_casted_num)), c(.99))
+  color_lim <- stats::quantile(as.matrix(abs(tmp_casted_num)), c(.95))
   col_fun = colorRamp2(c(-color_lim, 0, color_lim), c("blue", "white", "red"))
 
 
@@ -349,7 +353,21 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
                             grid_height = unit(1, "mm"), grid_width = unit(3, "mm"),
                             title_position = "leftcenter-rot")
 
-  # 'median' clustering method works well
+  # # 'median' clustering method works well
+  # hm_list <- Heatmap(tmp_casted_num, show_row_dend = FALSE, show_column_dend = FALSE,
+  #                    name = "loading", show_row_names = display_genes,
+  #                    column_names_gp = gpar(fontsize = 12), cluster_columns = FALSE,
+  #                    clustering_method_rows = "median",
+  #                    row_names_side = "left", col=col_fun,
+  #                    column_title = paste0('Factor ', factor_select),
+  #                    column_title_gp = gpar(fontsize = 20, fontface = "bold"),
+  #                    row_title = rt, row_title_gp = gpar(fontsize = 14), border = TRUE,
+  #                    row_labels = convert_gn(container,rownames(tmp_casted_num)),
+  #                    right_annotation = gene_callouts, top_annotation=var_annot,
+  #                    show_heatmap_legend = FALSE,
+  #                    width = unit(10, "cm"),
+  #                    height = unit(14, "cm")) #used to use w=10, h=20, or 6.75, 20 for combo fig. 10,14 most recently
+
   hm_list <- Heatmap(tmp_casted_num, show_row_dend = FALSE, show_column_dend = FALSE,
                      name = "loading", show_row_names = display_genes,
                      column_names_gp = gpar(fontsize = 12), cluster_columns = FALSE,
@@ -360,9 +378,7 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
                      row_title = rt, row_title_gp = gpar(fontsize = 14), border = TRUE,
                      row_labels = convert_gn(container,rownames(tmp_casted_num)),
                      right_annotation = gene_callouts, top_annotation=var_annot,
-                     show_heatmap_legend = FALSE,
-                     width = unit(10, "cm"),
-                     height = unit(20, "cm")) #used to use w=10, h=20, or 6.75, 20 for combo fig
+                     show_heatmap_legend = FALSE) #used to use w=10, h=20, or 6.75, 20 for combo fig. 10,14 most recently
 
   # turn off heatmap message saying callouts require pdf view or zoom view
   ht_opt$message = FALSE
@@ -409,15 +425,41 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
 
   if (!is.null(sim_de_donor_group)) {
 
-    de_genes <- sim_de_donor_group[[factor_select]][rownames(tmp_casted_num),]
-    color_lim <- stats::quantile(as.matrix(abs(de_genes)), c(.95))
-    col_fun = colorRamp2(c(0,0.6,color_lim), c("white","white", "violet"))
+    # for use with splatter
+    ct1_de <- sim_de_donor_group[[1]]
+    ct2_de <- sim_de_donor_group[[2]]
+
+    ct1_de_genes <- rownames(ct1_de)[ct1_de$DEFacGroup2!=1]
+    ct2_de_genes <- rownames(ct2_de)[ct2_de$DEFacGroup2!=1]
+
+    ct1_de_genes <- ct1_de_genes[ct1_de_genes %in% rownames(tmp_casted_num)]
+    ct2_de_genes <- ct2_de_genes[ct2_de_genes %in% rownames(tmp_casted_num)]
+
+    de_res <- as.data.frame(matrix(0,ncol=ncol(tmp_casted_num),nrow=nrow(tmp_casted_num)))
+    rownames(de_res) <- rownames(tmp_casted_num)
+    colnames(de_res) <- colnames(tmp_casted_num)
+    de_res[ct1_de_genes,'ct1'] <- 1
+    de_res[ct2_de_genes,'ct2'] <- 1
+
+    mycol <- c('white','violet')
+    names(mycol) <- c(0,1)
     hm_list <- hm_list +
-      Heatmap(as.matrix(de_genes), col=col_fun,
+      Heatmap(as.matrix(de_res), col=mycol,
               name = "True DE Genes", cluster_columns = FALSE,
               show_row_names = FALSE,
               show_heatmap_legend = TRUE, show_column_dend = FALSE,
               column_names_gp = gpar(fontsize = 12), border = TRUE)
+
+    ## use this with SymSim
+    # de_genes <- sim_de_donor_group[[factor_select]][rownames(tmp_casted_num),]
+    # color_lim <- stats::quantile(as.matrix(abs(de_genes)), c(.95))
+    # col_fun = colorRamp2(c(0,0.6,color_lim), c("white","white", "violet"))
+    # hm_list <- hm_list +
+    #   Heatmap(as.matrix(de_genes), col=col_fun,
+    #           name = "True DE Genes", cluster_columns = FALSE,
+    #           show_row_names = FALSE,
+    #           show_heatmap_legend = TRUE, show_column_dend = FALSE,
+    #           column_names_gp = gpar(fontsize = 12), border = TRUE)
 
 
   }
@@ -442,11 +484,11 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
       draw(hm_list,annotation_legend_list = pd,
            legend_grouping = "original",
            heatmap_legend_list = le_legend, heatmap_legend_side = "bottom",
-           newpage=FALSE)
+           newpage=TRUE)
     } else {
       draw(hm_list,annotation_legend_list = pd,
            legend_grouping = "original",
-           newpage=FALSE)
+           newpage=TRUE)
     }
 
   }
@@ -824,8 +866,8 @@ plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype,
   colnames(donor_unfold) <- gn_ctype_cnames
   rownames(donor_unfold) <- donor_nm
 
-  ## testing out scaling the data to unit variance
-  donor_unfold <- scale(donor_unfold)
+  # ## testing out scaling the data to unit variance
+  # donor_unfold <- scale(donor_unfold)
 
   # subset data to just genes to plot
   donor_unfold_sub <- donor_unfold[,genes_plot]
@@ -884,11 +926,11 @@ plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype,
   ct_show <- sapply(rownames(donor_unfold_sub),function(x){
     strsplit(x,split="_")[[1]][[2]]
   })
-  ct_show <- factor(ct_show,levels=ctypes_use)
+  ct_show <- factor(ct_show,levels=ctypes)
 
   set.seed(10)
-  mycol <- RColorBrewer::brewer.pal(n = length(ctypes_use), name = "Accent")
-  names(mycol) <- ctypes_use
+  mycol <- RColorBrewer::brewer.pal(n = length(ctypes), name = "Accent")
+  names(mycol) <- ctypes
 
   ct_annot <- ComplexHeatmap::rowAnnotation(cell_types=anno_simple(ct_show),
                                             show_annotation_name=FALSE,

@@ -9,7 +9,8 @@ compute_LR_interact(
   lr_pairs,
   factor_select,
   sig_thresh = 0.05,
-  percentile_exp_rec = 0.75
+  percentile_exp_rec = 0.75,
+  show_rec_sig = TRUE
 )
 }
 \arguments{
@@ -25,6 +26,12 @@ required for signaling.}
 
 \item{sig_thresh}{numeric The p-value significance threshold to use for module-
 factor associations and ligand-factor associations}
+
+\item{percentile_exp_rec}{numeric The percentile above which donors expressing the
+ligand all must be expressing the receptor (default=.75)}
+
+\item{show_rec_sig}{logical Set to TRUE to append a heatmap showing the significance
+of using the receptor expression in predicting module expression (default=TRUE)}
 }
 \value{
 The project container with the plt added in container$plots$lr_analysis$factor_num

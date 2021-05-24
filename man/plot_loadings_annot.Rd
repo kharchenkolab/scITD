@@ -17,6 +17,7 @@ plot_loadings_annot(
   gene_callouts = FALSE,
   callout_n_gene_per_ctype = 5,
   callout_ctypes = NULL,
+  specific_callouts = NULL,
   le_set_callouts = NULL,
   le_set_colormap = NULL,
   le_set_num_per = 5,
@@ -68,6 +69,8 @@ of largest magnitude significant genes from each cell type to include in gene ca
 \item{callout_ctypes}{character To use if gene_callouts is TRUE. Specifies which cell types
 to get gene callouts for. If NULL, then gets gene callouts for largest magnitude significant
 genes for all cell types. (default=NULL)}
+
+\item{specific_callouts}{character A vector of gene names to show callouts for (default=NULL)}
 
 \item{le_set_callouts}{character Pass a vector of gene set names to show leading edge genes
 for a select set of gene sets (default=NULL)}
