@@ -26,8 +26,8 @@ for each cell type as well as results and plots from all analyses}
 positive loading genes or "down" to compute enrichment among the significant
 negative loading genes.}
 
-\item{thresh}{numeric Pvalue significance threshold. Used for significant
-gene selection (default=0.05)}
+\item{thresh}{numeric Pvalue significance threshold. Used as cutoff for calling
+genes as significant to use for enrichment tests. (default=0.05)}
 
 \item{db_use}{character The database of gene sets to use. Database
 options include "GO", "Reactome", "KEGG", and "BioCarta". More than

@@ -2,7 +2,7 @@
 % Please edit documentation in R/get_LR_interact.R
 \name{get_gene_modules}
 \alias{get_gene_modules}
-\title{Get WGCNA gene modules for each cell type}
+\title{Compute WGCNA gene modules for each cell type}
 \usage{
 get_gene_modules(container, sft_thresh)
 }
@@ -17,5 +17,5 @@ each cell type. Length should be the same as container$experiment_params$ctypes_
 The project container with gene modules added
 }
 \description{
-Get WGCNA gene modules for each cell type
+Compute WGCNA gene modules for each cell type
 }

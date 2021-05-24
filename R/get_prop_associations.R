@@ -1,5 +1,7 @@
 
-utils::globalVariables(c("dscore", "donor_proportion", "ctypes", "AUC", "Specificity", "Precision"))
+utils::globalVariables(c("dscore", "donor_proportion", "ctypes", "AUC", "Specificity",
+                         "Precision", "subtype_names","subtype_associations","dsc",
+                         "prop", "cell_types"))
 
 #' Compute associations between donor factor scores and donor proportions of cell subtypes
 #'
@@ -914,27 +916,6 @@ get_indv_subtype_associations <- function(container, donor_props, factor_select)
   reg_stats_all <- reg_stats_all[parsed_name==factor_select]
 
   return(reg_stats_all)
-}
-
-#' Generate subcluster plots for multiple subclusterings at different resolutsions
-#'
-#' @param container environment Project container that stores sub-containers
-#' for each cell type as well as results and plots from all analyses
-#' @param ctypes character The major cell types for which to get subcluster plots for
-#' @param res numeric The subcluster resolution corresponding to the ctypes vector
-#' @param factors numeric A vector of factors to get compute subtype associations
-#' with. Should be same length as ctypes vector.
-#'
-#' @return the subtype plots for cell types at the specified resolutions
-#' @export
-get_all_subclust_plots <- function(container,ctypes,res,factors) {
-  for (i in 1:length(ctypes)) {
-    ct <- ctypes[i]
-    r <- res[i]
-    f <- factors[i]
-    container <- get_subclust_plots(container=container,ctype=ct,res=r,factor_use=f)
-  }
-  return(container)
 }
 
 

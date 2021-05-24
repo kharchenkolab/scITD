@@ -1,6 +1,6 @@
 
 
-#' Title
+#' Compare gene loadings between any two factors
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -202,6 +202,20 @@ compare_factors <- function(container, f_compare, direction, compare_type,
 
 
 
+#' Compute enriched gene sets for the previously run factor comparison
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param ctype character The cell type to compute enrichment for
+#' @param direc numeric Can either be set to 1 or -1. If compare_type was "same",
+#' use 1. If compare_type was "different", then use 1 or -1 to choose which of the
+#' two compared factors to compute enrichment for.
+#' @param db_use character The database of gene sets to use. Database
+#' options include "GO", "Reactome", "KEGG", and "BioCarta". More than
+#' one database can be used. (default="GO")
+#'
+#' @return a named vector of adjusted p-values for the gene sets tested
+#' @export
 get_compare_go_enrich <- function(container,ctype,direc,db_use='GO') {
   comp <- container$factor_comparison
   comp <- as.data.frame(comp)

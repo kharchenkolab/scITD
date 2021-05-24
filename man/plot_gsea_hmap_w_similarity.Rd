@@ -2,7 +2,7 @@
 % Please edit documentation in R/run_gsea.R
 \name{plot_gsea_hmap_w_similarity}
 \alias{plot_gsea_hmap_w_similarity}
-\title{Plot enriched gene sets from all cell types in a heatmap}
+\title{Plot already computed enriched gene sets to show semantic similarity between sets}
 \usage{
 plot_gsea_hmap_w_similarity(container, factor_select, direc, thresh)
 }
@@ -12,14 +12,13 @@ for each cell type as well as results and plots from all analyses}
 
 \item{factor_select}{numeric The factor to plot}
 
-\item{thresh}{numeric Pvalue threshold to use for including gene sets in the heatmap}
+\item{direc}{character Set to either 'up' or 'down' to use the appropriate sets}
 
-\item{set_union}{character A vector of the main pathways from collapsePathways, and it is the
-union of such pathways from all cell types of the factor (default=NULL)}
+\item{thresh}{numeric Pvalue threshold to use for including gene sets in the heatmap}
 }
 \value{
 the heatmap plot
 }
 \description{
-Plot enriched gene sets from all cell types in a heatmap
+Plot already computed enriched gene sets to show semantic similarity between sets
 }

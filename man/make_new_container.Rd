@@ -15,8 +15,7 @@ make_new_container(
   gn_convert = NULL,
   metadata_cols = NULL,
   metadata_col_nm = NULL,
-  label_donor_sex = FALSE,
-  winsorize_param = NULL
+  label_donor_sex = FALSE
 )
 }
 \arguments{
@@ -55,9 +54,6 @@ used. (default=NULL)}
 
 \item{label_donor_sex}{logical Set to TRUE to label donor sex in the meta data
 by using expressing of sex-associated genes (default=FALSE)}
-
-\item{winsorize_param}{numeric Winsorizes top gene expression per cell
-to reduce impact of outliers (default=NULL)}
 }
 \value{
 project container that stores sub-containers

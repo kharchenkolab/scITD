@@ -1,4 +1,6 @@
 
+utils::globalVariables(c("UMAP1", "UMAP2"))
+
 #' Plot matrix of donor scores extracted from Tucker decomposition
 #' @importFrom circlize colorRamp2
 #' @import ComplexHeatmap
@@ -334,15 +336,6 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
     var_annot <- NULL
   }
 
-  # make colormap for hmap
-  # color_lim <- max(abs(tmp_casted_num))
-  # nintieth_per <- stats::quantile(as.matrix(abs(tmp_casted_num)), c(.95))
-  # if (color_lim > (1.5*nintieth_per)) {
-  #   col_fun = colorRamp2(c(-nintieth_per, 0, nintieth_per), c("blue", "white", "red"))
-  # } else {
-  #   col_fun = colorRamp2(c(-color_lim, 0, color_lim), c("blue", "white", "red"))
-  # }
-
   # color_lim <- stats::quantile(as.matrix(abs(tmp_casted_num)), c(.9999999))
   # color_lim <- stats::quantile(as.matrix(abs(tmp_casted_num)), c(.99))
   color_lim <- stats::quantile(as.matrix(abs(tmp_casted_num)), c(.95))
@@ -449,19 +442,6 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
               show_row_names = FALSE,
               show_heatmap_legend = TRUE, show_column_dend = FALSE,
               column_names_gp = gpar(fontsize = 12), border = TRUE)
-
-    ## use this with SymSim
-    # de_genes <- sim_de_donor_group[[factor_select]][rownames(tmp_casted_num),]
-    # color_lim <- stats::quantile(as.matrix(abs(de_genes)), c(.95))
-    # col_fun = colorRamp2(c(0,0.6,color_lim), c("white","white", "violet"))
-    # hm_list <- hm_list +
-    #   Heatmap(as.matrix(de_genes), col=col_fun,
-    #           name = "True DE Genes", cluster_columns = FALSE,
-    #           show_row_names = FALSE,
-    #           show_heatmap_legend = TRUE, show_column_dend = FALSE,
-    #           column_names_gp = gpar(fontsize = 12), border = TRUE)
-
-
   }
 
   # save plot in the container
@@ -797,7 +777,6 @@ render_multi_plots <- function(container,data_type,max_cols=3) {
 plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype,
                                  ctypes_use=NULL, show_donor_labels=FALSE,
                                  additional_meta=NULL, add_genes=NULL) {
-  ## add catch in case they havent run jackstraw yet...
 
   # extract tensor information
   tensor_data <- container$tensor_data
@@ -910,8 +889,6 @@ plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype,
     ta <- NULL
   }
 
-
-
   # rename genes
   rownames(donor_unfold_sub) <- sapply(rownames(donor_unfold_sub),function(x) {
     gn <- strsplit(x,split="_")[[1]][1]
@@ -956,199 +933,6 @@ plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype,
   container$plots$donor_sig_genes[[as.character(factor_select)]] <- myhmap
   return(container)
 }
-
-
-#' Generate heatmap showing top genes in each cell type significantly associated
-#' with a given factor
-#'
-#' @param container environment Project container that stores sub-containers
-#' for each cell type as well as results and plots from all analyses
-#' @param factor_select numeric The factor to query
-#' @param top_n_per_ctype numeric Vector of the number of top genes from each cell type
-#' to plot
-#' @param ctypes_use character The cell types for which to get the top genes to make
-#' callouts for. If NULL then uses all cell types. (default=NULL)
-#' @param show_donor_labels logical Set to TRUE to display donor labels (default=FALSE)
-#' @param additional_meta character Another meta variable to plot (default=NULL)
-#'
-#' @return the project container with the plot in the slot
-#' container$plots$donor_sig_genes$Factor#
-#' @export
-plot_donor_sig_genes_v2 <- function(container, factor_select, top_n_per_ctype,
-                                 ctypes_use=NULL, show_donor_labels=FALSE,
-                                 additional_meta=NULL) {
-  ## add catch in case they havent run jackstraw yet...
-
-  # extract tensor information
-  tensor_data <- container$tensor_data
-  donor_nm <- tensor_data[[1]]
-  gene_nm  <- tensor_data[[2]]
-  ctype_nm  <- tensor_data[[3]]
-  tnsr <- tensor_data[[4]]
-
-  # get the loadings matrix
-  ldngs <- container$tucker_results[[2]]
-
-  # break down a factor from the loadings matrix
-  genes <- sapply(colnames(ldngs),function(x){strsplit(x,split=":")[[1]][2]})
-  ctypes <- sapply(colnames(ldngs),function(x){strsplit(x,split=":")[[1]][1]})
-
-  sr_col <- ldngs[factor_select,]
-
-  tmp_casted_num <- reshape_loadings(sr_col,genes,ctypes)
-
-  # extract the genes to show
-  if (is.null(ctypes_use)) {
-    ctypes <- container$experiment_params$ctypes_use
-  } else {
-    ctypes <- ctypes_use
-  }
-  sig_vecs <- get_significance_vectors(container,factor_select,ctypes)
-  genes_plot <- c()
-  ct_in_hmap <- c()
-  for (i in 1:length(ctypes)) {
-    ct <- ctypes[i]
-    if (length(top_n_per_ctype)==1) {
-      top_n <- top_n_per_ctype
-    } else {
-      top_n <- top_n_per_ctype[i]
-    }
-
-    # get significant genes for the ctype
-    ct_sig_genes <- sig_vecs[[ct]]
-    ct_sig_genes <- ct_sig_genes[ct_sig_genes<0.05]
-
-    # get top loading genes of the significant ones
-    ct_sig_loadings <- tmp_casted_num[names(ct_sig_genes),ct]
-
-    # ## testing not using gene significance
-    # ct_sig_loadings <- tmp_casted_num[,ct]
-
-    ct_sig_loadings <- ct_sig_loadings[order(abs(ct_sig_loadings),decreasing=TRUE)]
-    ct_top_genes <- names(ct_sig_loadings)[1:top_n]
-    ct_top_genes <- sapply(ct_top_genes,function(x) {paste0(x,"_",ct)})
-    genes_plot <- c(genes_plot,ct_top_genes)
-    ct_in_hmap <- c(ct_in_hmap, rep(ct,top_n))
-  }
-
-  ct_in_hmap <- factor(ct_in_hmap)
-
-  # unfold tensor along donor mode
-  donor_unfold <- rTensor::k_unfold(rTensor::as.tensor(tnsr),1)@data
-
-  gn_ctype_cnames <- c()
-  for (ct in ctype_nm) {
-    for (gn in gene_nm) {
-      gn_ctype_cnames <- c(gn_ctype_cnames,paste0(gn,"_",ct))
-    }
-  }
-
-  colnames(donor_unfold) <- gn_ctype_cnames
-  rownames(donor_unfold) <- donor_nm
-
-  ## testing out scaling the data to unit variance
-  donor_unfold <- scale(donor_unfold)
-
-  # subset data to just genes to plot
-  donor_unfold_sub <- donor_unfold[,genes_plot]
-  donor_unfold_sub <- t(donor_unfold_sub)
-
-  # reorder donors by their score for the factor
-  donor_scores <- container$tucker_results[[1]]
-  donor_scores_fact <- donor_scores[,factor_select]
-  dsc_ord <- order(donor_scores_fact)
-  donor_unfold_sub <- donor_unfold_sub[,dsc_ord]
-  donor_scores <- donor_scores[dsc_ord,]
-
-  colnames(donor_scores) <- sapply(1:ncol(donor_scores), function(x) {
-    paste0('Factor',as.character(x))
-  })
-  col_fun2 = circlize::colorRamp2(c(min(donor_scores), 0, max(donor_scores)), c("purple", "white", "green"))
-  dscores_hmap <- Heatmap(as.matrix(t(donor_scores)),name='dscores',
-                          cluster_columns = FALSE,
-                          cluster_rows = FALSE,
-                          show_row_names = TRUE,
-                          show_column_names = FALSE,
-                          col = col_fun2, border = TRUE,
-                          height = unit(3.5, "cm"),
-                          column_title = 'Donors',
-                          column_title_side = "bottom")
-
-
-  if (!is.null(additional_meta)) {
-    meta <- container$scMinimal_full$metadata[,c('donors',additional_meta)]
-    meta <- unique(meta)
-    rownames(meta) <- meta$donors
-    meta$donors <- NULL
-    meta <- meta[colnames(donor_unfold_sub),,drop=FALSE]
-
-    # make all columns of meta to be factors
-    for (i in 1:ncol(meta)) {
-      meta[,i] <- as.factor(unlist(meta[,i]))
-    }
-
-    set.seed(30)
-    if (length(levels(meta)) < 3) {
-      mycol <- RColorBrewer::brewer.pal(n = 3, name = "Paired")
-    } else {
-      mycol <- RColorBrewer::brewer.pal(n = length(levels(meta)), name = "Paired")
-    }
-    names(mycol) <- levels(meta)
-    ta <- ComplexHeatmap::HeatmapAnnotation(df = meta, show_annotation_name=TRUE,
-                                            col = list(df = mycol))
-
-  } else {
-    ta <- NULL
-  }
-
-
-
-  # rename genes
-  rownames(donor_unfold_sub) <- sapply(rownames(donor_unfold_sub),function(x) {
-    gn <- strsplit(x,split="_")[[1]][1]
-    ct <- strsplit(x,split="_")[[1]][2]
-    gn <- convert_gn(container,gn)
-    return(paste0(gn,"_",ct))
-  })
-
-  rn_show <- sapply(rownames(donor_unfold_sub),function(x){
-    strsplit(x,split="_")[[1]][[1]]
-  })
-  ct_show <- sapply(rownames(donor_unfold_sub),function(x){
-    strsplit(x,split="_")[[1]][[2]]
-  })
-  ct_show <- factor(ct_show,levels=ctypes_use)
-
-  set.seed(10)
-  mycol <- RColorBrewer::brewer.pal(n = length(ctypes_use), name = "Accent")
-  names(mycol) <- ctypes_use
-
-  ct_annot <- ComplexHeatmap::rowAnnotation(cell_types=anno_simple(ct_show),
-                                            show_annotation_name=FALSE,
-                                            col = list(cell_types = mycol))
-
-  # create the hmap
-  col_fun = colorRamp2(c(min(donor_unfold_sub), 0, max(donor_unfold_sub)), c("blue", "white", "red"))
-
-  myhmap <- Heatmap(donor_unfold_sub, name = "expr",
-                    cluster_columns = FALSE,
-                    cluster_rows = TRUE,
-                    column_names_gp = gpar(fontsize = 8),
-                    row_names_gp = gpar(fontsize = 10),
-                    col = col_fun, row_split = ct_show,
-                    row_labels=rn_show,border=TRUE, show_column_names=show_donor_labels,
-                    left_annotation=ct_annot,show_row_dend = FALSE,
-                    top_annotation=ta,
-                    column_title = paste0('Factor ',as.character(factor_select)),
-                    column_title_gp = gpar(fontsize = 20),
-                    column_title_side = "top")
-
-  myhmap <- myhmap %v% dscores_hmap
-
-  container$plots$donor_sig_genes[[as.character(factor_select)]] <- myhmap
-  return(container)
-}
-
 
 
 #' Pairwise comparison of factors from two separate decompositions
@@ -1471,8 +1255,6 @@ plot_donor_umap <- function(container, color_by_factor=NULL, color_by_meta=NULL,
       geom_point()
   }
 
-
-
   container$plots$dscores_umap <- fig
 
   return(container)
@@ -1481,7 +1263,15 @@ plot_donor_umap <- function(container, color_by_factor=NULL, color_by_meta=NULL,
 
 
 
-
+#' Compute enrichment of categorical variables at either end of a factor
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param factor_use numeric The factor to test
+#' @param meta_var character The name of the metadata variable to test
+#'
+#' @return the enrichment plots
+#' @export
 plot_dscore_enr <- function(container,factor_use,meta_var) {
   meta <- unique(container$scMinimal_full$metadata[,c('donors',meta_var)])
   rownames(meta) <- meta$donors
@@ -1494,7 +1284,7 @@ plot_dscore_enr <- function(container,factor_use,meta_var) {
 
   myranks <- container$tucker_results[[1]][,factor_use]
 
-  fgseaRes <- fgsea(pathways = mypaths,
+  fgseaRes <- fgsea::fgsea(pathways = mypaths,
                     stats    = myranks,
                     minSize  = 0,
                     maxSize  = 5000)
@@ -1503,7 +1293,7 @@ plot_dscore_enr <- function(container,factor_use,meta_var) {
 
   plt_lst <- list()
   for (i in 1:length(meta_vals)) {
-    plt <- plotEnrichment(mypaths[[meta_vals[i]]],
+    plt <- fgsea::plotEnrichment(mypaths[[meta_vals[i]]],
                               myranks) + labs(title=paste0(meta_vals[i],' - Factor ',as.character(factor_use)))
     plt <- plt +
       annotate(geom="text",  x=Inf, y=Inf, hjust=1,vjust=1, col="black",
@@ -1519,6 +1309,16 @@ plot_dscore_enr <- function(container,factor_use,meta_var) {
 
 
 
+#' Get the leading edge genes from GSEA results
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param factor_select numeric The factor to get results for
+#' @param gsets character A vector of gene set names to get leading edge genes for.
+#' @param num_genes_per numeric The maximum number of leading edge genes to get for
+#' each gene set (default=5)
+#'
+#' @return a named character vector of gene sets, with leading edge genes as the names
 get_leading_edge_genes <- function(container,factor_select,gsets,num_genes_per=5) {
   factor_name <- paste0('Factor',as.character(factor_select))
 
@@ -1550,10 +1350,6 @@ get_leading_edge_genes <- function(container,factor_select,gsets,num_genes_per=5
     # unlist and order g_counts decreasing order
     g_counts <- unlist(g_counts)
     g_counts <- g_counts[order(g_counts,decreasing=TRUE)]
-
-    # if (length(ct_sig)==1) {
-    #   g_counts <- sample(g_counts)
-    # }
     all_le[[gs]] <- g_counts
   }
 
@@ -1561,8 +1357,6 @@ get_leading_edge_genes <- function(container,factor_select,gsets,num_genes_per=5
   final_le <- list()
   for (i in 1:length(all_le)) {
     g_counts <- all_le[[i]]
-    # g_counts <- sample(g_counts)
-    # print(g_counts)
     track <- 0 #keeps track of number genes accepted as unique for the set
     ndx <- 1
     while (track < num_genes_per && ndx <= length(g_counts)) {

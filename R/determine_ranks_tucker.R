@@ -98,7 +98,7 @@ determine_ranks_tucker <- function(container, max_ranks_test,
     return(rec_errors)
   })
 
-  # recompute unshuffled tensor if shuffling was done at cell level
+  # recompute original tensor if shuffling was done at cell level
   if (shuffle_level == "cells") {
     # get actual reconstruction errors
     container <- get_pseudobulk(container, shuffle=FALSE)
@@ -500,8 +500,7 @@ plot_var_scale_power <- function(power_results) {
 }
 
 
-#' Get plot of r-squared values for each factor's association with a batch variable
-#' to varying numbers of donor factors
+#' Plot factor-batch associations for increasing number of donor factors
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses

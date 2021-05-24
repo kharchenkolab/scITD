@@ -2,7 +2,7 @@
 % Please edit documentation in R/get_LR_interact.R
 \name{prep_LR_interact}
 \alias{prep_LR_interact}
-\title{Prep data for LR analysis and get soft thresholds to use for gene modules}
+\title{Prepare data for LR analysis and get soft thresholds to use for gene modules}
 \usage{
 prep_LR_interact(
   container,
@@ -41,8 +41,9 @@ If NULL, uses var_scale_power from container$experiment_params. (default=.5)}
 \item{batch_var}{character A batch variable from metadata to remove (default=NULL)}
 }
 \value{
-The project container now including more ligands and receptors
+The project container with added container$scale_pb_extra slot that contains
+the tensor with additional ligands and receptors
 }
 \description{
-Prep data for LR analysis and get soft thresholds to use for gene modules
+Prepare data for LR analysis and get soft thresholds to use for gene modules
 }

@@ -2,8 +2,7 @@
 % Please edit documentation in R/determine_ranks_tucker.R
 \name{get_num_batch_ranks}
 \alias{get_num_batch_ranks}
-\title{Get plot of r-squared values for each factor's association with a batch variable
-to varying numbers of donor factors}
+\title{Plot factor-batch associations for increasing number of donor factors}
 \usage{
 get_num_batch_ranks(
   container,
@@ -39,6 +38,5 @@ matrix and loadings. Otherwise set to 'varimax' to perform varimax rotation. (de
 plots placed in container$plots$num_batch_factors slot
 }
 \description{
-Get plot of r-squared values for each factor's association with a batch variable
-to varying numbers of donor factors
+Plot factor-batch associations for increasing number of donor factors
 }

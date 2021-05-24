@@ -31,8 +31,6 @@
 #' used. (default=NULL)
 #' @param label_donor_sex logical Set to TRUE to label donor sex in the meta data
 #' by using expressing of sex-associated genes (default=FALSE)
-#' @param winsorize_param numeric Winsorizes top gene expression per cell
-#' to reduce impact of outliers (default=NULL)
 #'
 #' @return project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -40,7 +38,7 @@
 make_new_container <- function(params, count_data=NULL, meta_data=NULL,
                                seurat_obj=NULL, scMinimal=NULL, gn_convert=NULL,
                                metadata_cols=NULL, metadata_col_nm=NULL,
-                               label_donor_sex=FALSE, winsorize_param=NULL) {
+                               label_donor_sex=FALSE) {
 
   if (!is.null(seurat_obj)) {
     scMinimal <- seurat_to_scMinimal(seurat_obj, metadata_cols=metadata_cols,
@@ -65,10 +63,6 @@ make_new_container <- function(params, count_data=NULL, meta_data=NULL,
 
   if (label_donor_sex) {
     container <- identify_sex_metadata(container)
-  }
-
-  if (!is.null(winsorize_param)) {
-    container <- winsorize_counts(container,winsorize_param)
   }
 
   return(container)
@@ -182,68 +176,6 @@ identify_sex_metadata <- function(container,y_gene='RPS4Y1',x_gene='XIST') {
   return(container)
 
 }
-
-
-
-# # add winsorize parameter to make_new_container with win_param
-# winsorize_counts <- function(container,win_size=2) {
-#   count_data <- container$scMinimal_full$count_data
-#   metadata <- container$scMinimal_full$metadata
-#   ncores <- container$experiment_params$ncores
-#   for (ct in container$experiment_params$ctypes_use) {
-#     print(ct)
-#     counts_sub <- count_data[,metadata$ctypes==ct]
-#     meta_sub <- metadata[metadata$ctypes==ct,]
-#     for (d in unique(meta_sub$donors)) {
-#       print(d)
-#       # get counts for the donor for current cell type
-#       d_counts <- counts_sub[,meta_sub$donors==d]
-#
-#       # normalize counts by library size
-#       lib_sizes <- Matrix::colSums(d_counts)
-#       d_counts <- sweep(d_counts,MARGIN=2,lib_sizes,FUN='/')
-#
-#       d_counts <- t(d_counts)
-#
-#       # winsorize - set top two highest expressing cells to third highest (for each gene)
-#       tmp_out <- pagoda2:::inplaceWinsorizeSparseCols(d_counts,win_size,ncores)
-#
-#       d_counts <- t(d_counts)
-#
-#       # transform back to count space
-#       d_counts <- sweep(d_counts,MARGIN=2,lib_sizes,FUN='*')
-#       d_counts <- round(d_counts)
-#
-#       # replace info in count_data
-#       count_data[rownames(d_counts),colnames(d_counts)] <- d_counts
-#     }
-#   }
-#   # ensure cells are ordered correctly matching metadata
-#   count_data <- count_data[,rownames(metadata)]
-#
-#   container$scMinimal_full$count_data <- count_data
-#
-#   return(container)
-# }
-
-
-winsorize_counts <- function(container,winsorize_param) {
-  # get function from splatter
-  inplaceWinsorizeSparseCols <- utils::getFromNamespace("inplaceWinsorizeSparseCols", "pagoda2")
-  ncores <- container$experiment_params$ncores
-
-  count_data <- container$scMinimal_full$count_data
-  lib_sizes <- Matrix::colSums(count_data)
-  count_data <- sweep(count_data,MARGIN=2,lib_sizes,FUN='/')
-  tmp <- inplaceWinsorizeSparseCols(count_data,winsorize_param,ncores)
-  count_data <- sweep(count_data,MARGIN=2,lib_sizes,FUN='*')
-  count_data <- round(count_data)
-
-  container$scMinimal_full$count_data <- count_data
-  return(container)
-}
-
-
 
 
 

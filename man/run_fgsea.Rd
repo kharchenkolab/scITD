@@ -2,16 +2,9 @@
 % Please edit documentation in R/run_gsea.R
 \name{run_fgsea}
 \alias{run_fgsea}
-\title{Run fgsea on expression levels as summed after multiplying by donor scores}
+\title{Run fgsea for one cell type of one factor. Note, this uses}
 \usage{
-run_fgsea(
-  container,
-  factor_select,
-  sig_thresh,
-  ctype,
-  db_use = "GO",
-  collapse_paths = TRUE
-)
+run_fgsea(container, factor_select, ctype, db_use = "GO")
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
@@ -19,20 +12,15 @@ for each cell type as well as results and plots from all analyses}
 
 \item{factor_select}{numeric The factor of interest}
 
-\item{sig_thresh}{numeric The pvalue threshold for selecting gene sets}
-
 \item{ctype}{character The cell type of interest}
 
 \item{db_use}{character The database of gene sets to use. Database
-options include "GO", "Reactome", "KEGG", and "BioCarta". More than
+options include "GO", "Reactome", "KEGG", "BioCarta", and "Hallmark". More than
 one database can be used. (default="GO")}
-
-\item{collapse_paths}{logical Set to TRUE to collapse significant pathways with
-considerable overlap (default=TRUE)}
 }
 \value{
 data.frame of the fgsea results (including non-significant results)
 }
 \description{
-Run fgsea on expression levels as summed after multiplying by donor scores
+Run fgsea for one cell type of one factor. Note, this uses
 }

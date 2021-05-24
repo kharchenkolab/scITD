@@ -1,6 +1,6 @@
 
 
-#' Prep data for LR analysis and get soft thresholds to use for gene modules
+#' Prepare data for LR analysis and get soft thresholds to use for gene modules
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -23,7 +23,8 @@
 #' If NULL, uses var_scale_power from container$experiment_params. (default=.5)
 #' @param batch_var character A batch variable from metadata to remove (default=NULL)
 #'
-#' @return The project container now including more ligands and receptors
+#' @return The project container with added container$scale_pb_extra slot that contains
+#' the tensor with additional ligands and receptors
 #' @export
 prep_LR_interact <- function(container, lr_pairs, norm_method='trim', scale_factor=10000,
                              var_scale_power=.5, batch_var=NULL) {
@@ -95,7 +96,7 @@ prep_LR_interact <- function(container, lr_pairs, norm_method='trim', scale_fact
   return(container)
 }
 
-#' Get WGCNA gene modules for each cell type
+#' Compute WGCNA gene modules for each cell type
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -144,7 +145,7 @@ get_gene_modules <- function(container,sft_thresh) {
   return(container)
 }
 
-#' Plot the LR interactions for one factor
+#' Compute and plot the LR interactions for one factor
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -154,16 +155,16 @@ get_gene_modules <- function(container,sft_thresh) {
 #' required for signaling.
 #' @param factor_select numeric The factor to get associated LR-modules for
 #' @param sig_thresh numeric The p-value significance threshold to use for module-
-#' factor associations and ligand-factor associations
-#' @param percentile_exp_rec numeric The percentile above which donors expressing the
-#' ligand all must be expressing the receptor (default=.75)
+#' factor associations and ligand-factor associations (default=0.05)
+#' @param percentile_exp_rec numeric The percentile above which the top donors expressing the
+#' ligand all must be expressing the receptor (default=0.75)
 #' @param show_rec_sig logical Set to TRUE to append a heatmap showing the significance
 #' of using the receptor expression in predicting module expression (default=TRUE)
 #'
-#' @return The project container with the plt added in container$plots$lr_analysis$factor_num
+#' @return The project container with the plot added in container$plots$lr_analysis$factor_num
 #' @export
 compute_LR_interact <- function(container, lr_pairs, factor_select, sig_thresh=0.05,
-                                percentile_exp_rec=.75, show_rec_sig=TRUE) {
+                                percentile_exp_rec=0.75, show_rec_sig=TRUE) {
   ctypes_use <- container$experiment_params$ctypes_use
   dsc <- container$tucker_results[[1]][,factor_select]
 
@@ -437,6 +438,20 @@ compute_LR_interact <- function(container, lr_pairs, factor_select, sig_thresh=0
 
 
 
+#' Compute gene sets that are enriched within specified gene co-regulatory modules.
+#' Uses a hypergeometric test for over-representation. Used in plot_multi_module_enr.
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param ctype character The name of cell type for the cell type module to test
+#' @param mod_select numeric The module number for the cell type module to test
+#' @param db_use character The database of gene sets to use. Database
+#' options include "GO", "Reactome", "KEGG", "BioCarta", "Hallmark", "TF", and
+#' "immuno". More than one database can be used. (default="GO")
+#' @param adjust_pval logical Set to TRUE to apply FDR correction (default=TRUE)
+#'
+#' @return p-values for the tested gene sets
+#' @export
 get_module_enr <- function(container,ctype,mod_select,db_use='GO',adjust_pval=TRUE) {
   mod_genes_all <- container$module_genes[[ctype]] #vector of cluster assignments for each gene
   all_genes <- names(mod_genes_all)
@@ -482,10 +497,6 @@ get_module_enr <- function(container,ctype,mod_select,db_use='GO',adjust_pval=TR
       # select the BioCarts gene sets
       m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
                                           category = "C7"))
-    } else if (db == "ctype") {
-      # select the BioCarts gene sets
-      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
-                                          category = "C8"))
     }
   }
 
@@ -521,8 +532,24 @@ get_module_enr <- function(container,ctype,mod_select,db_use='GO',adjust_pval=TR
   return(pvals)
 }
 
-# make heatmap of dimensions gene sets x ct_modules
-plot_multi_module_enr <- function(container, ctypes, modules, sig_thresh=.05, db_use='TF') {
+#' Generate gene set x ct_module heatmap showing significantly enriched sets
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param ctypes character A vector of cell type names corresponding to the module
+#' numbers in mod_select, specifying the modules to compute enrichment for
+#' @param modules numeric A vector of module numbers corresponding to the cell
+#' types in ctype, specifying the modules to compute enrichment for
+#' @param sig_thresh numeric P-value threshold for results to include. Only shows
+#' a given gene set if at least one module has a result lower than the threshold.
+#' (default=0.05)
+#' @param db_use character The database of gene sets to use. Database
+#' options include "GO", "Reactome", "KEGG", "BioCarta", "Hallmark", "TF", and
+#' "immuno". More than one database can be used. (default="GO")
+#'
+#' @return the heatmap plot of enrichment results
+#' @export
+plot_multi_module_enr <- function(container, ctypes, modules, sig_thresh=0.05, db_use='TF') {
   ct_mod <- sapply(1:length(ctypes), function(x) {paste0(ctypes[x],"_",modules[x])})
 
   mod_res <- list()
@@ -596,6 +623,19 @@ plot_multi_module_enr <- function(container, ctypes, modules, sig_thresh=.05, db
 
 
 
+#' Plot trio of associations between ligand expression, module levels, and
+#' factor scores
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param factor_select numeric The factor to use
+#' @param mod_ct character The name of the cell type for the corresponding module
+#' @param mod numeric The number of the corresponding module
+#' @param lig_ct character The name of the cell type where the ligand is expressed
+#' @param lig character The name of the ligand to use
+#'
+#' @return plots of the three associations
+#' @export
 plot_mod_and_lig <- function(container,factor_select,mod_ct,mod,lig_ct,lig) {
 
   dsc <- container$tucker_results[[1]][,factor_select]

@@ -2,7 +2,7 @@
 % Please edit documentation in R/compare_factors.R
 \name{compare_factors}
 \alias{compare_factors}
-\title{Title}
+\title{Compare gene loadings between any two factors}
 \usage{
 compare_factors(
   container,
@@ -31,5 +31,5 @@ respectively.}
 The comparison heatmap in container$plots$comparisons$<f1>_<f2>
 }
 \description{
-Title
+Compare gene loadings between any two factors
 }

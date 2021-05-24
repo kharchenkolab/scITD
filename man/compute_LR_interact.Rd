@@ -2,7 +2,7 @@
 % Please edit documentation in R/get_LR_interact.R
 \name{compute_LR_interact}
 \alias{compute_LR_interact}
-\title{Plot the LR interactions for one factor}
+\title{Compute and plot the LR interactions for one factor}
 \usage{
 compute_LR_interact(
   container,
@@ -25,17 +25,17 @@ required for signaling.}
 \item{factor_select}{numeric The factor to get associated LR-modules for}
 
 \item{sig_thresh}{numeric The p-value significance threshold to use for module-
-factor associations and ligand-factor associations}
+factor associations and ligand-factor associations (default=0.05)}
 
-\item{percentile_exp_rec}{numeric The percentile above which donors expressing the
-ligand all must be expressing the receptor (default=.75)}
+\item{percentile_exp_rec}{numeric The percentile above which the top donors expressing the
+ligand all must be expressing the receptor (default=0.75)}
 
 \item{show_rec_sig}{logical Set to TRUE to append a heatmap showing the significance
 of using the receptor expression in predicting module expression (default=TRUE)}
 }
 \value{
-The project container with the plt added in container$plots$lr_analysis$factor_num
+The project container with the plot added in container$plots$lr_analysis$factor_num
 }
 \description{
-Plot the LR interactions for one factor
+Compute and plot the LR interactions for one factor
 }

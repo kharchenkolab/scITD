@@ -1,5 +1,5 @@
 
-#' Plot meta data associations in a heatmap
+#' Get metadata associations with all factors
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -7,8 +7,7 @@
 #' @param stat_use character Set to either 'rsq' to get r-squared values or 'pval'
 #' to get adjusted pvalues (default='rsq)
 #'
-#' @return the project container with the heatmap in the slot
-#' container$plots$meta_associations
+#' @return the project container with the metadata associations in container$meta_associations
 #' @export
 get_meta_associations <- function(container, vars_test, stat_use='rsq') {
   # check that tucker has already been run

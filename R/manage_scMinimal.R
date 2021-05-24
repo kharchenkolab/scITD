@@ -120,7 +120,6 @@ subset_scMinimal <- function(scMinimal, ctypes_use=NULL,cells_use=NULL,
     scMinimal_sub <- instantiate_scMinimal(count_data,metadata)
   }
 
-
   return(scMinimal_sub)
 }
 

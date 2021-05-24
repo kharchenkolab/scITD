@@ -1,3 +1,3 @@
-#' Tiny data container object for unit tests only
+#' Data container object for unit tests only
 #'
 "test_container"

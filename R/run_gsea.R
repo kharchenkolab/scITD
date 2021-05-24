@@ -1,65 +1,32 @@
 
 
-#' Run fgsea on expression levels as summed after multiplying by donor scores
+#' Run fgsea for one cell type of one factor. Note, this uses
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
 #' @param factor_select numeric The factor of interest
-#' @param sig_thresh numeric The pvalue threshold for selecting gene sets
 #' @param ctype character The cell type of interest
 #' @param db_use character The database of gene sets to use. Database
-#' options include "GO", "Reactome", "KEGG", and "BioCarta". More than
+#' options include "GO", "Reactome", "KEGG", "BioCarta", and "Hallmark". More than
 #' one database can be used. (default="GO")
-#' @param collapse_paths logical Set to TRUE to collapse significant pathways with
-#' considerable overlap (default=TRUE)
 #'
 #' @return data.frame of the fgsea results (including non-significant results)
 #' @export
-run_fgsea <- function(container, factor_select, sig_thresh, ctype, db_use="GO",
-                      collapse_paths=TRUE) {
+run_fgsea <- function(container, factor_select, ctype, db_use="GO") {
   donor_scores <- container$tucker_results[[1]]
 
   # select mean exp data for one cell type
   tnsr_slice <- container$scMinimal_ctype[[ctype]]$pseudobulk
-  tnsr_slice <- scale(tnsr_slice, center=TRUE) # scaling to unit variance!
-  # tnsr_slice <- tnsr_slice[rownames(donor_scores),]
-
-  # ## testing use of gene significance...
-  # sig_vectors <- get_significance_vectors(container,
-  #                                         factor_select, container$experiment_params$ctypes_use)
-  # sig_ctype <- sig_vectors[[ctype]]
-  # min_nonzero <- min(sig_ctype[sig_ctype!=0])
-  # sig_ctype[sig_ctype==0] <- min_nonzero
-  # sig_ctype <- -log10(sig_ctype)
-  # ##
+  tnsr_slice <- scale(tnsr_slice, center=TRUE) # rescaling to unit variance
 
   # get transformed expression for each gene by summing d_score * scaled exp
   exp_vals <- sapply(1:ncol(tnsr_slice), function(j) {
     exp_transform <- tnsr_slice[,j] * donor_scores[rownames(tnsr_slice),factor_select]
     de_val <- sum(exp_transform)
 
+    ## testing out using undirected statistics. Use with commented out fgsea fn below.
     # exp_transform <- tnsr_slice[,j] * donor_scores[rownames(tnsr_slice),factor_select]
     # de_val <- abs(sum(exp_transform))
-
-    # exp_transform <- tnsr_slice[,j] * (donor_scores[rownames(tnsr_slice),factor_select]**2)
-    # mysigns <- donor_scores[rownames(tnsr_slice),factor_select] < 0
-    # exp_transform[mysigns] <- exp_transform[mysigns] * -1
-    # de_val <- sum(exp_transform)
-
-    # de_val <- cor(tnsr_slice[,j],donor_scores[rownames(tnsr_slice),factor_select])
-
-    ## testing get a score based on significance from jackstraw that is signed appropriately
-    # to avoid excessive # of ties, I'll use significance as a weighting factor
-    # exp_transform <- tnsr_slice[,j] * donor_scores[rownames(tnsr_slice),factor_select]
-    # de_val <- sum(exp_transform)
-    # de_val <- de_val * sig_ctype[j]
-
-    # # Trying to use lm slope as statistic
-    # tmp <- as.data.frame(cbind(tnsr_slice[,j],donor_scores[rownames(tnsr_slice),factor_select]))
-    # colnames(tmp) <- c('expr','dsc')
-    # lmres <- lm(expr~dsc,data=tmp)
-    # tmp2 <- summary(lmres)
-    # de_val <- tmp2$coefficients['dsc','Estimate']
 
     return(de_val)
 
@@ -114,123 +81,11 @@ run_fgsea <- function(container, factor_select, sig_thresh, ctype, db_use="GO",
   #                           gseaParam=1,
   #                           scoreType = "pos",
   #                           nproc=container$experiment_params$ncores)
-  # fgsea_res <- fgsea::fgsea(pathways = my_pathways,
-  #                           stats = exp_vals,
-  #                           minSize=15,
-  #                           maxSize=400,
-  #                           gseaParam=1,
-  #                           nperm=10000,
-  #                           nproc=container$experiment_params$ncores)
 
   fgsea_res <- fgsea_res[order(fgsea_res$padj, decreasing=FALSE),]
 
-  fgsea_lim <- fgsea_res[fgsea_res$padj < sig_thresh,]
-  # print(ctype)
-  # print(fgsea_lim[,1:5])
-
-  if (collapse_paths) {
-    # collapse significant pathways
-    fgsea_lim <- fgsea_res[fgsea_res$padj < sig_thresh,]
-    # print(fgsea_lim)
-    cpaths <- fgsea::collapsePathways(fgseaRes=fgsea_lim,pathways=my_pathways,stats=exp_vals,
-                                      pval.threshold=.05,gseaParam=1)
-    main_paths <- cpaths$mainPathways
-  } else {
-    main_paths <- NULL
-  }
-
-
-  return(list(fgsea_res,main_paths))
+  return(fgsea_res)
 }
-
-
-
-#' Compute enriched gene sets in a cell type for a factor using fgsea
-#'
-#' @param container environment Project container that stores sub-containers
-#' for each cell type as well as results and plots from all analyses
-#' @param factor_select numeric The factor of interest
-#' @param ctype character The cell type of interest
-#' @param db_use character The database of gene sets to use. Database
-#' options include "GO", "Reactome", "KEGG", and "BioCarta". More than
-#' one database can be used. (default="GO")
-#'
-#' @return data.frame of the fgsea results limited to genes passing the
-#' significance threshold.
-#' @export
-run_fgsea_old <- function(container, factor_select, ctype,
-                      db_use="GO", sig_thresh, collapse_paths) {
-
-  set.seed(container$experiment_params$rand_seed)
-
-  ldngs <- container$tucker_results[[2]]
-
-  # prep the loadings matrix
-  genes <- sapply(colnames(ldngs),function(x){strsplit(x,split=":")[[1]][2]})
-  ctypes <- sapply(colnames(ldngs),function(x){strsplit(x,split=":")[[1]][1]})
-
-  sr_col <- ldngs[factor_select,]
-
-  tmp_casted_num <- reshape_loadings(sr_col, genes, ctypes)
-
-  ctype_lds <- tmp_casted_num[,ctype]
-
-  names(ctype_lds) <- convert_gn(container, rownames(tmp_casted_num))
-
-  # check for duplicate genes
-  duplicates <- names(ctype_lds)[duplicated(names(ctype_lds))]
-  genes_remove <- names(ctype_lds) %in% duplicates
-  ctype_lds <- ctype_lds[!genes_remove]
-
-  ## testing use of gene significance...
-  sig_vectors <- get_significance_vectors(container,
-                                          factor_select, container$experiment_params$ctypes_use)
-  sig_ctype <- sig_vectors[[ctype]]
-  min_nonzero <- min(sig_ctype[sig_ctype!=0])
-  sig_ctype[sig_ctype==0] <- min_nonzero
-  sig_ctype <- sqrt(-log10(sig_ctype))
-
-  ctype_lds <- ctype_lds * sig_ctype[names(ctype_lds)]
-  ##
-
-  # # trying throwing out 0 value genes...
-  # ctype_lds <- ctype_lds[ctype_lds!=0]
-
-  m_df <- data.frame()
-  for (db in db_use) {
-    if (db == "GO") {
-      # select the GO Biological Processes group of gene sets
-      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
-                                          category = "C5", subcategory = "BP"))
-    } else if (db == "Reactome") {
-      # select the Reactome gene sets
-      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
-                                          category = "C2", subcategory = "CP:REACTOME"))
-    } else if (db == "KEGG") {
-      # select the KEGG gene sets
-      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
-                                          category = "C2", subcategory = "CP:KEGG"))
-    } else if (db == "BioCarta") {
-      # select the BioCarts gene sets
-      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
-                                          category = "C2", subcategory = "CP:BIOCARTA"))
-    }
-  }
-
-  my_pathways <- split(m_df$gene_symbol, f = m_df$gs_name)
-  fgsea_res <- fgsea::fgsea(pathways = my_pathways,
-                            stats = ctype_lds,
-                            minSize=15,
-                            maxSize=500,
-                            eps=0,
-                            gseaParam=1,
-                            nPermSimple = 10000)
-
-  fgsea_res <- fgsea_res[order(fgsea_res$padj, decreasing=FALSE),]
-
-  return(list(fgsea_res,NULL))
-}
-
 
 
 #' Compute enriched gene sets among significant genes in a cell type for
@@ -243,8 +98,8 @@ run_fgsea_old <- function(container, factor_select, ctype,
 #' @param up_down character Either "up" to compute enrichment among the significant
 #' positive loading genes or "down" to compute enrichment among the significant
 #' negative loading genes.
-#' @param thresh numeric Pvalue significance threshold. Used for significant
-#' gene selection (default=0.05)
+#' @param thresh numeric Pvalue significance threshold. Used as cutoff for calling
+#' genes as significant to use for enrichment tests. (default=0.05)
 #' @param db_use character The database of gene sets to use. Database
 #' options include "GO", "Reactome", "KEGG", and "BioCarta". More than
 #' one database can be used. (default="GO")
@@ -254,9 +109,9 @@ run_fgsea_old <- function(container, factor_select, ctype,
 run_hypergeometric_gsea <- function(container, factor_select, ctype, up_down,
                                      thresh=0.05, db_use="GO") {
 
-  # make sure Tucker has been run
-  if (is.null(container$tucker_results)) {
-    stop('Run run_tucker_ica() first.')
+  # make sure jackstraw has been run
+  if (is.null(container[["gene_score_associations"]])) {
+    stop('Run run_jackstraw() first')
   }
 
   ldngs <- container$tucker_results[[2]]
@@ -358,8 +213,6 @@ run_hypergeometric_gsea <- function(container, factor_select, ctype, up_down,
 #' @param db_use character The database of gene sets to use. Database
 #' options include "GO", "Reactome", "KEGG", and "BioCarta". More than
 #' one database can be used. (default="GO")
-#' @param collapse_paths logical Set to TRUE to collapse significant pathways with
-#' considerable overlap. Only used if method="fgsea". (default=TRUE)
 #' @param reset_other_factor_plots logical Set to TRUE to set all other gsea plots to NULL (default=FALSE)
 #' @param draw_plot logical Set to TRUE to show the plot. Plot is stored regardless. (default=TRUE)
 #'
@@ -367,8 +220,7 @@ run_hypergeometric_gsea <- function(container, factor_select, ctype, up_down,
 #' container$plots$gsea$FactorX
 #' @export
 run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh=0.05,
-                                db_use="GO", collapse_paths=TRUE,
-                                reset_other_factor_plots=FALSE, draw_plot=TRUE) {
+                                db_use="GO", reset_other_factor_plots=FALSE, draw_plot=TRUE) {
 
   if (reset_other_factor_plots) {
     container$plots$gsea <- NULL
@@ -377,16 +229,13 @@ run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh
 
   up_sets_all <- list()
   down_sets_all <- list()
-  set_union <- c()
   ctypes_use <- container$experiment_params$ctypes_use
   for (ct in ctypes_use) {
     print(ct)
     if (method == 'fgsea') {
       fgsea_res <- run_fgsea(container, factor_select=factor_select,
-                             sig_thresh=thresh, ctype=ct, db_use=db_use,
-                             collapse_paths=collapse_paths)
+                             ctype=ct, db_use=db_use)
 
-      main_paths <- fgsea_res[[2]]
       fgsea_res <- fgsea_res[[1]]
 
       # remove results where NES is na
@@ -401,18 +250,16 @@ run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh
       names(down_sets) <- down_sets_names
       up_sets_all[[ct]] <- up_sets
       down_sets_all[[ct]] <- down_sets
-      set_union <- unique(c(set_union,main_paths))
       # store fgsea_res for access later on
       container$gsea_res_full[[paste0('Factor',factor_select)]][[ct]] <- fgsea_res
     } else if (method == 'hypergeometric') {
       gsea_res_up <- run_hypergeometric_gsea(container, factor_select=factor_select, ctype=ct,
-                                             up_down='up', thresh=.1, db_use=db_use)
+                                             up_down='up', thresh=thresh, db_use=db_use)
       gsea_res_down <- run_hypergeometric_gsea(container, factor_select=factor_select, ctype=ct,
-                                               up_down='down', thresh=.1, db_use=db_use)
+                                               up_down='down', thresh=thresh, db_use=db_use)
 
       up_sets_all[[ct]] <- gsea_res_up
       down_sets_all[[ct]] <- gsea_res_down
-      set_union <- NULL
     }
   }
 
@@ -421,7 +268,7 @@ run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh
                                                 'down'=down_sets_all)
 
   # plot results
-  myplot <- plot_gsea_hmap(container,factor_select,thresh,set_union=set_union)
+  myplot <- plot_gsea_hmap(container,factor_select,thresh)
   container$plots$gsea[[as.character(factor_select)]] <- myplot
 
   if (draw_plot) {
@@ -477,12 +324,10 @@ get_intersecting_pathways <- function(container, factor_select, these_ctypes_onl
 #' for each cell type as well as results and plots from all analyses
 #' @param factor_select numeric The factor to plot
 #' @param thresh numeric Pvalue threshold to use for including gene sets in the heatmap
-#' @param set_union character A vector of the main pathways from collapsePathways, and it is the
-#' union of such pathways from all cell types of the factor (default=NULL)
 #'
 #' @return the heatmap plot
 #' @export
-plot_gsea_hmap <- function(container,factor_select,thresh,set_union=NULL) {
+plot_gsea_hmap <- function(container,factor_select,thresh) {
   factor_name <- paste0('Factor',as.character(factor_select))
   gsea_res <- container$gsea_results[[as.character(factor_select)]]
 
@@ -514,10 +359,6 @@ plot_gsea_hmap <- function(container,factor_select,thresh,set_union=NULL) {
 
     if (nrow(res_plot) == 0) {
       next
-    }
-
-    if (!is.null(set_union)) {
-      res_plot <- res_plot[rownames(res_plot)%in%set_union,]
     }
 
     df_list[[names(gsea_res)[k]]] <- res_plot
@@ -577,26 +418,25 @@ plot_gsea_hmap <- function(container,factor_select,thresh,set_union=NULL) {
 
 
 
-
-
-
-##### making versions of these functions that work with GO names instead of IDs
-#####
-
-#' Plot enriched gene sets from all cell types in a heatmap
+#' Plot already computed enriched gene sets to show semantic similarity between sets
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
 #' @param factor_select numeric The factor to plot
+#' @param direc character Set to either 'up' or 'down' to use the appropriate sets
 #' @param thresh numeric Pvalue threshold to use for including gene sets in the heatmap
-#' @param set_union character A vector of the main pathways from collapsePathways, and it is the
-#' union of such pathways from all cell types of the factor (default=NULL)
 #'
 #' @return the heatmap plot
 #' @export
 plot_gsea_hmap_w_similarity <- function(container,factor_select,direc,thresh) {
   factor_name <- paste0('Factor',as.character(factor_select))
   up_down_sets <- container$gsea_results[[as.character(factor_select)]][[direc]]
+
+
+  # make sure jackstraw has been run
+  if (is.null(up_down_sets)) {
+    stop('Run run_gsea_one_factor() for this factor first')
+  }
 
   # get unique gene sets
   all_sets <- c()
@@ -694,7 +534,19 @@ plot_gsea_hmap_w_similarity <- function(container,factor_select,direc,thresh) {
   return(hm_list)
 }
 
-plot_gsea_sub <- function(container,factor_select,direc,thresh,clust_select) {
+
+#' Look at enriched gene sets from a cluster of semantically similar gene sets.
+#' Uses the results from previous run of plot_gsea_hmap_w_similarity()
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param clust_select numeric The cluster to plot gene sets from. On the previous
+#' semantic similarity plot, cluster numbering starts from the top as 1.
+#' @param thresh numeric Color threshold to use for showing significance (default=0.05)
+#'
+#' @return the heatmap plot showing gene set significance with row order preserved
+#' @export
+plot_gsea_sub <- function(container,clust_select,thresh=0.05) {
   res_plot <- container$gsea_last_info[[1]]
   cl <- container$gsea_last_info[[2]]
   ordering <- container$gsea_last_info[[3]]
@@ -717,12 +569,12 @@ plot_gsea_sub <- function(container,factor_select,direc,thresh,clust_select) {
 
   col_fun <- colorRamp2(c(thresh, 0), c("white", "blue"))
 
-  myhmap <- Heatmap(as.matrix(res_plot_sub), name = paste0(direc,' pval'),
+  myhmap <- Heatmap(as.matrix(res_plot_sub), name = paste0('pval'),
                     show_row_dend = FALSE, show_column_dend = FALSE,
                     column_names_gp = gpar(fontsize = 10),
                     col = col_fun,
                     row_title_gp = gpar(fontsize = 12),
-                    column_title = paste0('Factor ',factor_select," ",direc,' gene sets, cluster ', clust_select),
+                    column_title = paste0('Cluster ', clust_select),
                     column_title_side = "top",
                     column_title_gp = gpar(fontsize = 12, fontface = "bold"),
                     border=TRUE,
@@ -735,42 +587,9 @@ plot_gsea_sub <- function(container,factor_select,direc,thresh,clust_select) {
 }
 
 
-# == title
-# Visualize the similarity matrix and the clustering
+# Visualize the similarity matrix and the clustering. From simplifyEnrichment package.
 #'@import grid
-# == param
-# -mat A similarity matrix.
-# -cl Cluster labels inferred from the similarity matrix, e.g. from `cluster_terms` or `binary_cut`.
-# -dend Used internally.
-# -col A vector of colors that map from 0 to the 95^th percentile of the similarity values.
-# -draw_word_cloud Whether to draw the word clouds.
-# -term The full name or the description of the corresponding GO IDs.
-# -min_term Minimal number of functional terms in a cluster. All the clusters
-#     with size less than ``min_term`` are all merged into one separated cluster in the heatmap.
-# -order_by_size Whether to reorder clusters by their sizes. The cluster
-#      that is merged from small clusters (size < ``min_term``) is always put to the bottom of the heatmap.
-# -cluster_slices Whether to cluster slices.
-# -exclude_words Words that are excluded in the word cloud.
-# -max_words Maximal number of words visualized in the word cloud.
-# -word_cloud_grob_param A list of graphic parameters passed to `word_cloud_grob`.
-# -fontsize_range The range of the font size. The value should be a numeric vector with length two.
-#       The minimal font size is mapped to word frequency value of 1 and the maximal font size is mapped
-#       to the maximal word frequency. The font size interlopation is linear.
-# -column_title Column title for the heatmap.
-# -ht_list A list of additional heatmaps added to the left of the similarity heatmap.
-# -use_raster Whether to write the heatmap as a raster image.
-# -... Other arguments passed to `ComplexHeatmap::draw,HeatmapList-method`.
-#
-# == value
-# A `ComplexHeatmap::HeatmapList-class` object.
-#
-# == example
-# mat = readRDS(system.file("extdata", "random_GO_BP_sim_mat.rds",
-#     package = "simplifyEnrichment"))
-# cl = binary_cut(mat)
-# ht_clusters(mat, cl, word_cloud_grob_param = list(max_width = 80))
-# ht_clusters(mat, cl, word_cloud_grob_param = list(max_width = 80),
-#     order_by_size = TRUE)
+#'@importFrom grDevices col2rgb dev.off pdf rgb
 ht_clusters = function(mat, cl, dend = NULL, col = c("white", "red"),
                        draw_word_cloud = simplifyEnrichment:::is_GO_id(rownames(mat)[1]) || !is.null(term),
                        term = NULL, min_term = 5,
@@ -848,9 +667,9 @@ ht_clusters = function(mat, cl, dend = NULL, col = c("white", "red"),
       }
       keywords = tapply(go_id, cl, function(term_id) {
         if(is.null(term)) {
-          suppressMessages(suppressWarnings(df <- simplifyEnrichment:::count_word(term_id, exclude_words = exclude_words)))
+          suppressMessages(suppressWarnings(df <- simplifyEnrichment::count_word(term_id, exclude_words = exclude_words)))
         } else {
-          suppressMessages(suppressWarnings(df <- simplifyEnrichment:::count_word(term = id2term[term_id], exclude_words = exclude_words)))
+          suppressMessages(suppressWarnings(df <- simplifyEnrichment::count_word(term = id2term[term_id], exclude_words = exclude_words)))
         }
         df = df[df$freq > 1, , drop = FALSE]
         if(nrow(df) > max_words) {
@@ -874,7 +693,7 @@ ht_clusters = function(mat, cl, dend = NULL, col = c("white", "red"),
           fontsize = scale_fontsize(freq, rg = c(1, max(10, freq)), fs = fontsize_range)
 
           lt = c(list(text = kw, fontsize = fontsize), word_cloud_grob_param)
-          do.call(simplifyEnrichment:::word_cloud_grob, lt)
+          do.call(simplifyEnrichment::word_cloud_grob, lt)
         })
         names(gbl) = names(align_to)
 
@@ -920,24 +739,14 @@ ht_clusters = function(mat, cl, dend = NULL, col = c("white", "red"),
   return(list(ht,od2))
 }
 
-# == title
-# Scale font size
-#
-# == param
-# -x A numeric vector.
-# -rg The range.
-# -fs Range of the font size.
-#
-# == detaisl
-# It is a linear interpolation.
-#
-# == value
-# A numeric vector.
-#
-# == example
-# x = runif(10, min = 1, max = 20)
-# # scale x to fontsize 4 to 16.
-# scale_fontsize(x)
+# From simplifyEnrichment package
+stop_wrap = function (...) {
+  x = paste0(...)
+  x = paste(strwrap(x), collapse = "\n")
+  stop(x, call. = FALSE)
+}
+
+# Scale font size. From simplifyEnrichment package
 scale_fontsize = function(x, rg = c(1, 30), fs = c(4, 16)) {
   k = (fs[2] - fs[1])/(rg[2] - rg[1])
   b = fs[2] - k*rg[2]
@@ -949,8 +758,20 @@ scale_fontsize = function(x, rg = c(1, 30), fs = c(4, 16)) {
 
 
 
-# should be able to accommodate both up and down enriched gene sets
-plot_select_sets <- function(container, factors_all, sets_plot, thresh=.05, color_sets=NULL, cl_rows=FALSE) {
+#' Plot enrichment results for hand picked gene sets
+#' @importFrom stats anova as.formula dist hclust quantile
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param factors_all numeric Vector of one or more factor numbers to get plots for
+#' @param sets_plot character Vector of gene set names to show enrichment values for
+#' @param color_sets named character Values are colors corresponding to each set,
+#' with names as the gene set names
+#' @param cl_rows logical Set to TRUE to cluster gene set results
+#'
+#' @return a list of heatmaps with a legend object as the last element
+#' @export
+plot_select_sets <- function(container, factors_all, sets_plot, color_sets=NULL, cl_rows=FALSE) {
   hm_list <- NULL
   for (factor_select in factors_all) {
     factor_name <- paste0('Factor',as.character(factor_select))
