@@ -3,6 +3,8 @@ library(scITD)
 library(testthat)
 library(Matrix)
 
+Sys.setenv('_R_CHECK_TESTS_NLINES_' = 30)
+
 test_that("colMeanVars() functionality", {
   donor_by_gene <- rbind(c(9,2,1,5),c(3,3,1,2))
   donor_by_gene <- Matrix(donor_by_gene, sparse = TRUE)
@@ -15,7 +17,7 @@ test_that("colMeanVars() functionality", {
 
 test_that("form_tensor() functionality", {
   expected_result <- test_container$scMinimal_ctype[['CD4+ T']]$pseudobulk
-  test_container$pseudobulk <- NULL
+  test_container$scMinimal_ctype[['CD4+ T']]$pseudobulk <- NULL
   test_container <- form_tensor(test_container, donor_min_cells=0, gene_min_cells=0,
                                 norm_method='trim', scale_factor=10000,
                                 vargenes_method='norm_var', vargenes_thresh=500,
@@ -57,7 +59,6 @@ test_that("get_factor_exp_var() functionality", {
 test_that("icafast() functionality", {
   expected_result <- test_container$donor_mat_rot
   donor_mat <- test_container$tucker_decomp$U[[1]]
-  print(dim(donor_mat))
   result <- ica::icafast(donor_mat,2,center=FALSE,alg='def')$S
   expect_equal(result, expected_result)
 })
@@ -78,14 +79,14 @@ test_that("kronecker() functionality", {
 })
 
 
-test_that("run_tucker_ica() functionality", {
-  expected_result <- test_container$tucker_results
-  test_container$tucker_results <- NULL
-  test_container <- run_tucker_ica(test_container, ranks=c(2,4,2),
-                                   tucker_type = 'regular', rotation_type = 'ica')
-  result <- test_container$tucker_results
-  expect_equal(result, expected_result)
-})
+# test_that("run_tucker_ica() functionality", {
+#   expected_result <- test_container$tucker_results
+#   test_container$tucker_results <- NULL
+#   test_container <- run_tucker_ica(test_container, ranks=c(2,4,2),
+#                                    tucker_type = 'regular', rotation_type = 'ica')
+#   result <- test_container$tucker_results
+#   expect_equal(result, expected_result)
+# })
 
 
 
