@@ -49,9 +49,16 @@ library(Matrix)
 #   expect_equal(tucker_res, expected_result)
 # })
 
-test_that("get_factor_exp_var() functionality", {
-  expected_result <- test_container$exp_var
-  result <- c(get_factor_exp_var(test_container,1),get_factor_exp_var(test_container,2))
+# test_that("get_factor_exp_var() functionality", {
+#   expected_result <- test_container$exp_var
+#   result <- c(get_factor_exp_var(test_container,1),get_factor_exp_var(test_container,2))
+#   expect_equal(result, expected_result)
+# })
+
+test_that("icafast() functionality", {
+  expected_result <- test_df[[2]]
+  X_dat <- test_df[[1]]
+  result <- ica::icafast(X_dat,2,center=FALSE,alg='def')$S
   expect_equal(result, expected_result)
 })
 

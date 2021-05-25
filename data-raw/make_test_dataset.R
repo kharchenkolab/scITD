@@ -96,8 +96,16 @@ save(test_container,file='/home/jmitchel/scITD/data/test_container.RData',compre
 
 
 
+# making separate df to test ica
 
-
+set.seed(123)
+nobs <- 1000
+Amat <- cbind(icasamp("a","rnd",nobs),icasamp("b","rnd",nobs))
+Bmat <- matrix(2*runif(4),2,2)
+X_dat <- tcrossprod(Amat,Bmat)
+test_res <- ica::icafast(X_dat,2,center=FALSE,alg='def')$S
+test_df <- list(X_dat,test_res)
+save(test_df,file='/home/jmitchel/scITD/data/test_df.RData',compress = "xz")
 
 
 
