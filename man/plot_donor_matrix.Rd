@@ -44,3 +44,6 @@ the project container with the plot in container$plots$donor_matrix
 \description{
 Plot matrix of donor scores extracted from Tucker decomposition
 }
+\examples{
+test_container <- plot_donor_matrix(test_container, show_donor_ids = TRUE)
+}

@@ -100,3 +100,7 @@ to re-render the plot with legend
 \description{
 Plot the gene x cell type loadings for a factor
 }
+\examples{
+test_container <- plot_loadings_annot(test_container, 1, display_genes=FALSE,
+show_var_explained = TRUE)
+}

@@ -25,6 +25,9 @@ utils::globalVariables(c("UMAP1", "UMAP2"))
 #'
 #' @return the project container with the plot in container$plots$donor_matrix
 #' @export
+#'
+#' @examples
+#' test_container <- plot_donor_matrix(test_container, show_donor_ids = TRUE)
 plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL,
                               show_donor_ids=FALSE, add_meta_associations=NULL,
                               show_var_explained=TRUE, donors_sel=NULL) {
@@ -210,6 +213,10 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL,
 #' container$plots$all_legends. Use draw(<hmap obj>,annotation_legend_list = <hmap legend obj>)
 #' to re-render the plot with legend
 #' @export
+#'
+#' @examples
+#' test_container <- plot_loadings_annot(test_container, 1, display_genes=FALSE,
+#' show_var_explained = TRUE)
 plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, nonsig_to_zero=FALSE, annot='none',
                                 pathways=NULL, sim_de_donor_group=NULL, sig_thresh=0.05, display_genes=FALSE,
                                 gene_callouts=FALSE, callout_n_gene_per_ctype=5, callout_ctypes=NULL, specific_callouts=NULL,

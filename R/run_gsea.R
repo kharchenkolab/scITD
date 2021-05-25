@@ -236,8 +236,6 @@ run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh
       fgsea_res <- run_fgsea(container, factor_select=factor_select,
                              ctype=ct, db_use=db_use)
 
-      fgsea_res <- fgsea_res[[1]]
-
       # remove results where NES is na
       fgsea_res <- fgsea_res[!is.na(fgsea_res$NES),]
 
@@ -272,7 +270,7 @@ run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh
   container$plots$gsea[[as.character(factor_select)]] <- myplot
 
   if (draw_plot) {
-    draw(myplot,newpage=FALSE)
+    draw(myplot,heatmap_legend_side = "left",newpage=TRUE)
   }
 
   return(container)
@@ -876,9 +874,6 @@ plot_select_sets <- function(container, factors_all, sets_plot, color_sets=NULL,
        legend_grouping = "original")
   return(list(hm_list,pd))
 }
-
-
-
 
 
 

@@ -5,7 +5,7 @@
 \alias{test_container}
 \title{Data container object for unit tests only}
 \format{
-An object of class \code{environment} of length 8.
+An object of class \code{environment} of length 9.
 }
 \usage{
 test_container

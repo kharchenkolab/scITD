@@ -6,20 +6,22 @@ pbmc_meta <- readRDS('/home/jmitchel/data/van_der_wijst/pbmc_meta_v2.rds')
 feature.names <- readRDS('/home/jmitchel/data/van_der_wijst/genes.rds')
 
 # need to do this one donor at a time!!!
-baby_counts1 <- pbmc_counts[,pbmc_meta$donors == 's5']
-baby_meta1 <- pbmc_meta[pbmc_meta$donors == 's5',]
-baby_counts2 <- pbmc_counts[,pbmc_meta$donors == 's40']
-baby_meta2 <- pbmc_meta[pbmc_meta$donors == 's40',]
+small_meta1 <- pbmc_meta[pbmc_meta$donors == 's5',]
+small_meta2 <- pbmc_meta[pbmc_meta$donors == 's40',]
+small_meta3 <- pbmc_meta[pbmc_meta$donors == 's12',]
 
 ct1 <- 'CD4+ T'
 ct2 <- 'CD8+ T'
 
-cells_use_1_ct1 <- sample(rownames(baby_meta1[baby_meta1$ctypes==ct1,]),5)
-cells_use_1_ct2 <- sample(rownames(baby_meta1[baby_meta1$ctypes==ct2,]),5)
-cells_use_2_ct1 <- sample(rownames(baby_meta2[baby_meta2$ctypes==ct1,]),5)
-cells_use_2_ct2 <- sample(rownames(baby_meta2[baby_meta2$ctypes==ct2,]),5)
+cells_use_1_ct1 <- sample(rownames(small_meta1[small_meta1$ctypes==ct1,]),5)
+cells_use_1_ct2 <- sample(rownames(small_meta1[small_meta1$ctypes==ct2,]),5)
+cells_use_2_ct1 <- sample(rownames(small_meta2[small_meta2$ctypes==ct1,]),5)
+cells_use_2_ct2 <- sample(rownames(small_meta2[small_meta2$ctypes==ct2,]),5)
+cells_use_3_ct1 <- sample(rownames(small_meta3[small_meta3$ctypes==ct1,]),5)
+cells_use_3_ct2 <- sample(rownames(small_meta3[small_meta3$ctypes==ct2,]),5)
 
-cells_use <- c(cells_use_1_ct1,cells_use_1_ct2,cells_use_2_ct1,cells_use_2_ct2)
+cells_use <- c(cells_use_1_ct1,cells_use_1_ct2,cells_use_2_ct1,cells_use_2_ct2,
+               cells_use_3_ct1,cells_use_3_ct2)
 
 baby_counts <- pbmc_counts[1:30,cells_use]
 baby_meta <- pbmc_meta[cells_use,]
@@ -36,7 +38,7 @@ baby_counts_rand <- Matrix(baby_counts_rand, sparse = TRUE)
 
 
 param_list <- initialize_params(ctypes_use = c("CD4+ T", "CD8+ T"),
-                                ncores = 10, rand_seed = 10)
+                                ncores = 2, rand_seed = 10)
 
 test_container <- make_new_container(count_data=baby_counts_rand, meta_data=baby_meta,
                                      params=param_list)
@@ -49,5 +51,12 @@ test_container <- form_tensor(test_container, donor_min_cells=0, gene_min_cells=
 test_container <- run_tucker_ica(test_container, ranks=c(2,4,2),
                                  tucker_type = 'regular', rotation_type = 'ica')
 
+test_container <- run_jackstraw(test_container, ranks=c(2,4,2),
+                                n_fibers=10, n_iter=500, tucker_type='regular',
+                                rotation_type='ica')
+
 save(test_container,file='/home/jmitchel/scITD/data/test_container.RData',compress = "xz")
+
+
+test_container <- plot_loadings_annot(test_container, 1, display_genes=FALSE, show_var_explained = TRUE)
 

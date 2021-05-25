@@ -18,6 +18,10 @@ utils::globalVariables(c("donor_rank", "min_sig"))
 #'
 #' @return the project container with adjusted pvalues in container$gene_score_associations
 #' @export
+#'
+#' @examples
+#' test_container <- run_jackstraw(test_container, ranks=c(2,4,2), n_fibers=6,
+#' n_iter=50, tucker_type='regular', rotation_type='ica')
 run_jackstraw <- function(container, ranks, n_fibers=100, n_iter=500,
                           tucker_type='regular', rotation_type='ica') {
   # set random seed

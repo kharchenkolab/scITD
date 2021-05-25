@@ -164,6 +164,29 @@ get_ctype_exp_var <- function(container, factor_use, ctype) {
 
 
 
+#' Get the donor scores and loadings matrix for a single-factor
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param factor_select numeric The number corresponding to the factor to extract
+#'
+#' @return a list with the first element as the donor scores and the second element
+#' as the corresponding loadings matrix
+#' @export
+get_one_factor <- function(container, factor_select) {
+  ldngs <- container$tucker_results[[2]]
+
+  # break down a factor from the loadings matrix
+  genes <- sapply(colnames(ldngs),function(x){strsplit(x,split=":")[[1]][2]})
+  ctypes <- sapply(colnames(ldngs),function(x){strsplit(x,split=":")[[1]][1]})
+
+  sr_col <- ldngs[factor_select,]
+
+  tmp_casted_num <- reshape_loadings(sr_col,genes,ctypes)
+
+  return(list(container$tucker_results[[1]][,factor_select,drop=FALSE],tmp_casted_num))
+}
+
 
 
 
