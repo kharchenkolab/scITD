@@ -65,12 +65,34 @@ tucker_decomp <- rTensor::tucker(rTensor::as.tensor(tnsr), ranks=c(2,4,2))
 test_container$tucker_decomp <- tucker_decomp
 
 
+## now saving the raw tucker helper results
+# run tucker
+tensor_data <- test_container$tensor_data
+tucker_res <- tucker_ica_helper(tensor_data, ranks=c(2,4,2), tucker_type='regular',
+                                rotation_type='ica')
+
+test_container$pre_tucker_results <- tucker_res
+
+
+# adding rotation results as a test
+donor_mat <- test_container$tucker_decomp$U[[1]]
+donor_mat_rot <- ica::icafast(donor_mat,2,center=FALSE,alg='def')$S
+test_container$donor_mat_rot <- donor_mat_rot
+
+
+# store result for testing kronecker product
+tensor_data <- test_container$tensor_data
+gene_nm  <- tensor_data[[2]]
+ctype_nm  <- tensor_data[[3]]
+gene_by_factors <- test_container$tucker_decomp$U[[2]]
+rownames(gene_by_factors) <- gene_nm
+ctype_by_factors <- test_container$tucker_decomp$U[[3]]
+rownames(ctype_by_factors) <- ctype_nm
+
+kron_prod <- kronecker(ctype_by_factors,gene_by_factors,make.dimnames = TRUE)
+test_container$kron_prod_test <- kron_prod
+
 save(test_container,file='/home/jmitchel/scITD/data/test_container.RData',compress = "xz")
-
-
-
-
-
 
 
 

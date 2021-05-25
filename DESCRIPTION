@@ -37,7 +37,6 @@ Imports:
     mgcv,
     methods,
     utils,
-    splatter (>= 1.12),
     Rcpp,
     RColorBrewer,
     GPArotation, 
