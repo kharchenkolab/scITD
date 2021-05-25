@@ -55,8 +55,34 @@ test_container <- run_jackstraw(test_container, ranks=c(2,4,2),
                                 n_fibers=10, n_iter=500, tucker_type='regular',
                                 rotation_type='ica')
 
+
+## now saving the raw tucker results for testing purposes
+# get the tensor
+tnsr <- test_container$tensor_data[[4]]
+
+# run tucker
+tucker_decomp <- rTensor::tucker(rTensor::as.tensor(tnsr), ranks=c(2,4,2))
+test_container$tucker_decomp <- tucker_decomp
+
+
 save(test_container,file='/home/jmitchel/scITD/data/test_container.RData',compress = "xz")
 
 
-test_container <- plot_loadings_annot(test_container, 1, display_genes=FALSE, show_var_explained = TRUE)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

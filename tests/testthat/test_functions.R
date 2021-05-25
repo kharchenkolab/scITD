@@ -24,6 +24,22 @@ test_that("form_tensor() functionality", {
   expect_equal(result, expected_result)
 })
 
+
+test_that("tucker() functionality", {
+
+  expected_result <- test_container$tucker_decomp
+  test_container$tucker_decomp <- NULL
+
+  # get the tensor
+  tnsr <- test_container$tensor_data[[4]]
+
+  # run just tucker
+  tucker_decomp <- rTensor::tucker(rTensor::as.tensor(tnsr), ranks=c(2,4,2))
+
+  expect_equal(tucker_decomp, expected_result)
+})
+
+
 test_that("run_tucker_ica() functionality", {
   expected_result <- test_container$tucker_results
   test_container$tucker_results <- NULL
@@ -32,4 +48,9 @@ test_that("run_tucker_ica() functionality", {
   result <- test_container$tucker_results
   expect_equal(result, expected_result)
 })
+
+
+
+
+
 
