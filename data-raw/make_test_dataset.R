@@ -9,6 +9,8 @@ feature.names <- readRDS('/home/jmitchel/data/van_der_wijst/genes.rds')
 small_meta1 <- pbmc_meta[pbmc_meta$donors == 's5',]
 small_meta2 <- pbmc_meta[pbmc_meta$donors == 's40',]
 small_meta3 <- pbmc_meta[pbmc_meta$donors == 's12',]
+small_meta4 <- pbmc_meta[pbmc_meta$donors == 's20',]
+small_meta5 <- pbmc_meta[pbmc_meta$donors == 's22',]
 
 ct1 <- 'CD4+ T'
 ct2 <- 'CD8+ T'
@@ -19,9 +21,14 @@ cells_use_2_ct1 <- sample(rownames(small_meta2[small_meta2$ctypes==ct1,]),5)
 cells_use_2_ct2 <- sample(rownames(small_meta2[small_meta2$ctypes==ct2,]),5)
 cells_use_3_ct1 <- sample(rownames(small_meta3[small_meta3$ctypes==ct1,]),5)
 cells_use_3_ct2 <- sample(rownames(small_meta3[small_meta3$ctypes==ct2,]),5)
+cells_use_4_ct1 <- sample(rownames(small_meta4[small_meta4$ctypes==ct1,]),5)
+cells_use_4_ct2 <- sample(rownames(small_meta4[small_meta4$ctypes==ct2,]),5)
+cells_use_5_ct1 <- sample(rownames(small_meta5[small_meta5$ctypes==ct1,]),5)
+cells_use_5_ct2 <- sample(rownames(small_meta5[small_meta5$ctypes==ct2,]),5)
 
 cells_use <- c(cells_use_1_ct1,cells_use_1_ct2,cells_use_2_ct1,cells_use_2_ct2,
-               cells_use_3_ct1,cells_use_3_ct2)
+               cells_use_3_ct1,cells_use_3_ct2,cells_use_4_ct1,cells_use_4_ct2,
+               cells_use_5_ct1,cells_use_5_ct2)
 
 baby_counts <- pbmc_counts[1:30,cells_use]
 baby_meta <- pbmc_meta[cells_use,]
@@ -75,24 +82,26 @@ test_container$pre_tucker_results <- tucker_res
 
 
 # adding rotation results as a test
-donor_mat <- test_container$tucker_decomp$U[[1]]
-donor_mat_rot <- ica::icafast(donor_mat,2,center=FALSE,alg='def')$S
+dm <- test_container$tucker_decomp$U[[1]]
+donor_mat_rot <- ica::icafast(dm,2,center=FALSE,alg='def')$S
 test_container$donor_mat_rot <- donor_mat_rot
 
-
-# store result for testing kronecker product
-tensor_data <- test_container$tensor_data
-gene_nm  <- tensor_data[[2]]
-ctype_nm  <- tensor_data[[3]]
-gene_by_factors <- test_container$tucker_decomp$U[[2]]
-rownames(gene_by_factors) <- gene_nm
-ctype_by_factors <- test_container$tucker_decomp$U[[3]]
-rownames(ctype_by_factors) <- ctype_nm
-
-kron_prod <- kronecker(ctype_by_factors,gene_by_factors,make.dimnames = TRUE)
-test_container$kron_prod_test <- kron_prod
-
 save(test_container,file='/home/jmitchel/scITD/data/test_container.RData',compress = "xz")
+
+
+# # store result for testing kronecker product
+# tensor_data <- test_container$tensor_data
+# gene_nm  <- tensor_data[[2]]
+# ctype_nm  <- tensor_data[[3]]
+# gene_by_factors <- test_container$tucker_decomp$U[[2]]
+# rownames(gene_by_factors) <- gene_nm
+# ctype_by_factors <- test_container$tucker_decomp$U[[3]]
+# rownames(ctype_by_factors) <- ctype_nm
+#
+# kron_prod <- kronecker(ctype_by_factors,gene_by_factors,make.dimnames = TRUE)
+# test_container$kron_prod_test <- kron_prod
+
+# save(test_container,file='/home/jmitchel/scITD/data/test_container.RData',compress = "xz")
 
 
 
