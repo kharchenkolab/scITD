@@ -363,17 +363,18 @@ ica_p1 <-
     nobs <- nrow(X)
     nvar <- ncol(X)
     nc <- as.integer(nc[1])
-    # if(nc<1){ stop("Must set nc>=1 component.") }
-    # maxit <- as.integer(maxit[1])
-    # if(maxit<1){ stop("Must set maxit>=1 iteration.") }
-    # tol <- tol[1]
-    # if(tol<=0){ stop("Must set ctol>0.") }
-    # if(nc>min(nobs,nvar)){ stop("Too many components. Set nc<=min(dim(X)).") }
-    # alpha <- alpha[1]
-    # if(alpha<1 | alpha>2){ stop("Must set 'alpha' between 1 and 2.") }
-    # if(nrow(Rmat)!=nc | ncol(Rmat)!=nc){ stop("Input 'Rmat' must be nc-by-nc rotation matrix.") }
+    if(nc<1){ stop("Must set nc>=1 component.") }
+    maxit <- as.integer(maxit[1])
+    if(maxit<1){ stop("Must set maxit>=1 iteration.") }
+    tol <- tol[1]
+    if(tol<=0){ stop("Must set ctol>0.") }
+    if(nc>min(nobs,nvar)){ stop("Too many components. Set nc<=min(dim(X)).") }
+    alpha <- alpha[1]
+    if(alpha<1 | alpha>2){ stop("Must set 'alpha' between 1 and 2.") }
+    if(nrow(Rmat)!=nc | ncol(Rmat)!=nc){ stop("Input 'Rmat' must be nc-by-nc rotation matrix.") }
 
     ### center and whiten
+    cp <- crossprod(X)
     # xeig <- eigen(crossprod(X)/nobs,symmetric=TRUE)
     # nze <- sum(xeig$val>xeig$val[1]*.Machine$double.eps)
     # if(nze<nc){
@@ -388,7 +389,7 @@ ica_p1 <-
     # Xw <- X%*%Pmat   # whitened data
 
 
-    return(X)
+    return(cp)
 
   }
 
@@ -420,7 +421,7 @@ ica_p2 <-
     if(nrow(Rmat)!=nc | ncol(Rmat)!=nc){ stop("Input 'Rmat' must be nc-by-nc rotation matrix.") }
 
     ### center and whiten
-    xeig <- eigen(crossprod(X)/nobs,symmetric=TRUE)
+    xeig <- eigen(crossprod(X)/nobs,symmetric=TRUE)$vectors
     # nze <- sum(xeig$val>xeig$val[1]*.Machine$double.eps)
     # if(nze<nc){
     #   warning("Numerical rank of X is less than requested number of components (nc).\n  Number of components has been redefined as the numerical rank of X.")
