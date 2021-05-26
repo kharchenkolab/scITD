@@ -69,6 +69,12 @@ test_that("icafast() functionality", {
   expect_equal(result, expected_result)
 })
 
+# test_that("scale functionality", {
+#   expected_result <- colMeans(test_container$donor_mat_rot)
+#   result <- c(0,0)
+#   expect_equal(result, expected_result)
+# })
+
 # test_that("kronecker() functionality", {
 #   expected_result <- test_container$kron_prod_test
 #

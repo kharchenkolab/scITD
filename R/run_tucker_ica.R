@@ -218,9 +218,6 @@ icafast2 <-
     if(nrow(Rmat)!=nc | ncol(Rmat)!=nc){ stop("Input 'Rmat' must be nc-by-nc rotation matrix.") }
 
     ### center and whiten
-    if(center) {
-      X <- scale(X,scale=FALSE)
-    }
     xeig <- eigen(crossprod(X)/nobs,symmetric=TRUE)
     nze <- sum(xeig$val>xeig$val[1]*.Machine$double.eps)
     if(nze<nc){
