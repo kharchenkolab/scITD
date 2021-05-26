@@ -9,7 +9,9 @@ plot_select_sets(
   factors_all,
   sets_plot,
   color_sets = NULL,
-  cl_rows = FALSE
+  cl_rows = FALSE,
+  h_w = NULL,
+  myfontsize = 8
 )
 }
 \arguments{
@@ -21,9 +23,13 @@ for each cell type as well as results and plots from all analyses}
 \item{sets_plot}{character Vector of gene set names to show enrichment values for}
 
 \item{color_sets}{named character Values are colors corresponding to each set,
-with names as the gene set names}
+with names as the gene set names (default=NULL)}
 
-\item{cl_rows}{logical Set to TRUE to cluster gene set results}
+\item{cl_rows}{logical Set to TRUE to cluster gene set results (default=FALSE)}
+
+\item{h_w}{numeric Vector specifying height and width (defualt=NULL)}
+
+\item{myfontsize}{numeric Gene set label fontsize (default=8)}
 }
 \value{
 a list of heatmaps with a legend object as the last element

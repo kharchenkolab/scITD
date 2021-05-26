@@ -764,12 +764,15 @@ scale_fontsize = function(x, rg = c(1, 30), fs = c(4, 16)) {
 #' @param factors_all numeric Vector of one or more factor numbers to get plots for
 #' @param sets_plot character Vector of gene set names to show enrichment values for
 #' @param color_sets named character Values are colors corresponding to each set,
-#' with names as the gene set names
-#' @param cl_rows logical Set to TRUE to cluster gene set results
+#' with names as the gene set names (default=NULL)
+#' @param cl_rows logical Set to TRUE to cluster gene set results (default=FALSE)
+#' @param h_w numeric Vector specifying height and width (defualt=NULL)
+#' @param myfontsize numeric Gene set label fontsize (default=8)
 #'
 #' @return a list of heatmaps with a legend object as the last element
 #' @export
-plot_select_sets <- function(container, factors_all, sets_plot, color_sets=NULL, cl_rows=FALSE) {
+plot_select_sets <- function(container, factors_all, sets_plot, color_sets=NULL, cl_rows=FALSE,
+                             h_w=NULL, myfontsize=8) {
   hm_list <- NULL
   for (factor_select in factors_all) {
     factor_name <- paste0('Factor',as.character(factor_select))
@@ -836,36 +839,68 @@ plot_select_sets <- function(container, factors_all, sets_plot, color_sets=NULL,
     }
 
     # height should depend on number of sets
-    myheight <- (3/5) * nrow(res)
-    myhmap <- Heatmap(as.matrix(res_disc), name = 'signed -log10(padj)',
-                      cluster_rows = FALSE,
-                      cluster_columns = FALSE,
-                      show_row_dend = FALSE, show_column_dend = FALSE,
-                      column_names_gp = gpar(fontsize = 12),
-                      col = colors,
-                      row_title_gp = gpar(fontsize = 12),
-                      column_title = 'Cell Types',
-                      column_title_side = "bottom",
-                      column_title_gp = gpar(fontsize = 12, fontface = "bold"),
-                      row_title = 'Gene Sets',
-                      row_title_side = "left",
-                      border=TRUE,
-                      row_names_side = "right",
-                      row_names_gp = gpar(fontsize = 8, col = color_sets),
-                      show_heatmap_legend = FALSE,
-                      width = unit(10, "cm"),
-                      height = unit(myheight, "cm"),
-                      cell_fun = function(j, i, x, y, w, h, col) { # add text to each grid
-                        if (abs(res[i,j]) > -log10(.001)) {
-                          grid.text('***', x, y, gp = gpar(fontface='bold'))
-                        } else if (abs(res[i,j]) > -log10(.01)) {
-                          grid.text('**', x, y, gp = gpar(fontface='bold'))
-                        } else if (abs(res[i,j]) > -log10(.05)) {
-                          grid.text('*', x, y, gp = gpar(fontface='bold'))
-                        } else {
-                          grid.text('', x, y)
-                        }
-                      })
+    if (!is.null(h_w)) {
+      myhmap <- Heatmap(as.matrix(res_disc), name = 'signed -log10(padj)',
+                        cluster_rows = FALSE,
+                        cluster_columns = FALSE,
+                        show_row_dend = FALSE, show_column_dend = FALSE,
+                        column_names_gp = gpar(fontsize = 12),
+                        col = colors,
+                        row_title_gp = gpar(fontsize = 12),
+                        column_title = 'Cell Types',
+                        column_title_side = "bottom",
+                        column_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                        row_title = 'Gene Sets',
+                        row_title_side = "left",
+                        border=TRUE,
+                        row_names_side = "right",
+                        row_names_gp = gpar(fontsize = myfontsize, col = color_sets),
+                        show_heatmap_legend = FALSE,
+                        width = unit(h_w[2], "cm"),
+                        height = unit(h_w[1], "cm"),
+                        cell_fun = function(j, i, x, y, w, h, col) { # add text to each grid
+                          if (abs(res[i,j]) > -log10(.001)) {
+                            grid.text('***', x, y, gp = gpar(fontface='bold'))
+                          } else if (abs(res[i,j]) > -log10(.01)) {
+                            grid.text('**', x, y, gp = gpar(fontface='bold'))
+                          } else if (abs(res[i,j]) > -log10(.05)) {
+                            grid.text('*', x, y, gp = gpar(fontface='bold'))
+                          } else {
+                            grid.text('', x, y)
+                          }
+                        })
+    } else {
+      myheight <- (3/5) * nrow(res)
+      myhmap <- Heatmap(as.matrix(res_disc), name = 'signed -log10(padj)',
+                        cluster_rows = FALSE,
+                        cluster_columns = FALSE,
+                        show_row_dend = FALSE, show_column_dend = FALSE,
+                        column_names_gp = gpar(fontsize = 12),
+                        col = colors,
+                        row_title_gp = gpar(fontsize = 12),
+                        column_title = 'Cell Types',
+                        column_title_side = "bottom",
+                        column_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                        row_title = 'Gene Sets',
+                        row_title_side = "left",
+                        border=TRUE,
+                        row_names_side = "right",
+                        row_names_gp = gpar(fontsize = 8, col = color_sets),
+                        show_heatmap_legend = FALSE,
+                        width = unit(10, "cm"),
+                        height = unit(myheight, "cm"),
+                        cell_fun = function(j, i, x, y, w, h, col) { # add text to each grid
+                          if (abs(res[i,j]) > -log10(.001)) {
+                            grid.text('***', x, y, gp = gpar(fontface='bold'))
+                          } else if (abs(res[i,j]) > -log10(.01)) {
+                            grid.text('**', x, y, gp = gpar(fontface='bold'))
+                          } else if (abs(res[i,j]) > -log10(.05)) {
+                            grid.text('*', x, y, gp = gpar(fontface='bold'))
+                          } else {
+                            grid.text('', x, y)
+                          }
+                        })
+    }
 
     hm_list <- hm_list + myhmap
   }
