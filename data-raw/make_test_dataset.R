@@ -89,6 +89,15 @@ test_container$donor_mat_rot <- donor_mat_rot
 save(test_container,file='/home/jmitchel/scITD/data/test_container.RData',compress = "xz")
 
 
+# calculating first and second parts of ica fn for testing
+dm <- test_container$tucker_decomp$U[[1]]
+new_X <- ica_p1(dm,2,center=FALSE,alg='def')
+my_eigen <- ica_p2(dm,2,center=FALSE,alg='def')
+test_container$new_X <- new_X
+test_container$my_eigen <- my_eigen
+save(test_container,file='/home/jmitchel/scITD/data/test_container.RData',compress = "xz")
+
+
 # # store result for testing kronecker product
 # tensor_data <- test_container$tensor_data
 # gene_nm  <- tensor_data[[2]]

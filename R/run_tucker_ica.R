@@ -226,10 +226,14 @@ icafast2 <-
       Rmat <- diag(nc)
     }
     Dmat <- sdiag(sqrt(xeig$val[1:nc]))
+    print(Dmat)
     Mprt <- tcrossprod(Dmat,xeig$vec[,1:nc])
+    print(Mprt)
     diag(Dmat) <- 1/diag(Dmat)
     Pmat <- xeig$vec[,1:nc]%*%Dmat
+    print(Pmat)
     Xw <- X%*%Pmat   # whitened data
+    print(Xw)
 
     ### check if nc=1
     if(nc==1L){
@@ -342,9 +346,97 @@ icafast2 <-
 
 
 
+ica_p1 <-
+  function(X, nc, center = TRUE, maxit = 100, tol = 1e-6,
+           Rmat = diag(nc), alg = c("par", "def"),
+           fun = c("logcosh", "exp", "kur"), alpha = 1){
+    ###### Fast Independent Component Analysis
+    ###### Nathaniel E. Helwig (helwig@umn.edu)
+    ###### Last modified: May 23, 2018
+
+    # get sdiag() from ica-internal
+    sdiag <- utils::getFromNamespace("sdiag", "ica")
 
 
+    ### initial checks
+    X <- as.matrix(X)
+    nobs <- nrow(X)
+    nvar <- ncol(X)
+    nc <- as.integer(nc[1])
+    # if(nc<1){ stop("Must set nc>=1 component.") }
+    # maxit <- as.integer(maxit[1])
+    # if(maxit<1){ stop("Must set maxit>=1 iteration.") }
+    # tol <- tol[1]
+    # if(tol<=0){ stop("Must set ctol>0.") }
+    # if(nc>min(nobs,nvar)){ stop("Too many components. Set nc<=min(dim(X)).") }
+    # alpha <- alpha[1]
+    # if(alpha<1 | alpha>2){ stop("Must set 'alpha' between 1 and 2.") }
+    # if(nrow(Rmat)!=nc | ncol(Rmat)!=nc){ stop("Input 'Rmat' must be nc-by-nc rotation matrix.") }
 
+    ### center and whiten
+    # xeig <- eigen(crossprod(X)/nobs,symmetric=TRUE)
+    # nze <- sum(xeig$val>xeig$val[1]*.Machine$double.eps)
+    # if(nze<nc){
+    #   warning("Numerical rank of X is less than requested number of components (nc).\n  Number of components has been redefined as the numerical rank of X.")
+    #   nc <- nze
+    #   Rmat <- diag(nc)
+    # }
+    # Dmat <- sdiag(sqrt(xeig$val[1:nc]))
+    # Mprt <- tcrossprod(Dmat,xeig$vec[,1:nc])
+    # diag(Dmat) <- 1/diag(Dmat)
+    # Pmat <- xeig$vec[,1:nc]%*%Dmat
+    # Xw <- X%*%Pmat   # whitened data
+
+
+    return(X)
+
+  }
+
+ica_p2 <-
+  function(X, nc, center = TRUE, maxit = 100, tol = 1e-6,
+           Rmat = diag(nc), alg = c("par", "def"),
+           fun = c("logcosh", "exp", "kur"), alpha = 1){
+    ###### Fast Independent Component Analysis
+    ###### Nathaniel E. Helwig (helwig@umn.edu)
+    ###### Last modified: May 23, 2018
+
+    # get sdiag() from ica-internal
+    sdiag <- utils::getFromNamespace("sdiag", "ica")
+
+
+    ### initial checks
+    X <- as.matrix(X)
+    nobs <- nrow(X)
+    nvar <- ncol(X)
+    nc <- as.integer(nc[1])
+    if(nc<1){ stop("Must set nc>=1 component.") }
+    maxit <- as.integer(maxit[1])
+    if(maxit<1){ stop("Must set maxit>=1 iteration.") }
+    tol <- tol[1]
+    if(tol<=0){ stop("Must set ctol>0.") }
+    if(nc>min(nobs,nvar)){ stop("Too many components. Set nc<=min(dim(X)).") }
+    alpha <- alpha[1]
+    if(alpha<1 | alpha>2){ stop("Must set 'alpha' between 1 and 2.") }
+    if(nrow(Rmat)!=nc | ncol(Rmat)!=nc){ stop("Input 'Rmat' must be nc-by-nc rotation matrix.") }
+
+    ### center and whiten
+    xeig <- eigen(crossprod(X)/nobs,symmetric=TRUE)
+    # nze <- sum(xeig$val>xeig$val[1]*.Machine$double.eps)
+    # if(nze<nc){
+    #   warning("Numerical rank of X is less than requested number of components (nc).\n  Number of components has been redefined as the numerical rank of X.")
+    #   nc <- nze
+    #   Rmat <- diag(nc)
+    # }
+    # Dmat <- sdiag(sqrt(xeig$val[1:nc]))
+    # Mprt <- tcrossprod(Dmat,xeig$vec[,1:nc])
+    # diag(Dmat) <- 1/diag(Dmat)
+    # Pmat <- xeig$vec[,1:nc]%*%Dmat
+    # Xw <- X%*%Pmat   # whitened data
+
+
+    return(xeig)
+
+  }
 
 
 

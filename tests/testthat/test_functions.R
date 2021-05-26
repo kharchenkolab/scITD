@@ -62,10 +62,24 @@ library(Matrix)
 #   expect_equal(result, expected_result)
 # })
 
-test_that("icafast() functionality", {
-  expected_result <- test_container$donor_mat_rot
+# test_that("icafast() functionality", {
+#   expected_result <- test_container$donor_mat_rot
+#   dm <- test_container$tucker_decomp$U[[1]]
+#   result <- icafast2(dm,2,center=FALSE,alg='def')$S
+#   expect_equal(result, expected_result)
+# })
+
+test_that("ica_p1() functionality", {
+  expected_result <- test_container$new_X
   dm <- test_container$tucker_decomp$U[[1]]
-  result <- icafast2(dm,2,center=FALSE,alg='def')$S
+  result <- ica_p1(dm,2,center=FALSE,alg='def')
+  expect_equal(result, expected_result)
+})
+
+test_that("ica_p2() functionality", {
+  expected_result <- test_container$my_eigen
+  dm <- test_container$tucker_decomp$U[[1]]
+  result <- ica_p2(dm,2,center=FALSE,alg='def')
   expect_equal(result, expected_result)
 })
 
