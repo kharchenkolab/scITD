@@ -55,19 +55,19 @@ library(Matrix)
 #   expect_equal(result, expected_result)
 # })
 
-# test_that("icafast() functionality", {
-#   expected_result <- test_df[[2]]
-#   X_dat <- test_df[[1]]
-#   result <- ica::icafast(X_dat,2,center=FALSE,alg='def')$S
-#   expect_equal(result, expected_result)
-# })
-
 test_that("icafast() functionality", {
-  expected_result <- test_container$donor_mat_rot
-  dm <- test_container$tucker_decomp$U[[1]]
-  result <- ica::icafast(dm,2,center=FALSE,alg='def')$S
+  expected_result <- test_df[[2]]
+  X_dat <- test_df[[1]]
+  result <- ica::icafast(X_dat,2,center=FALSE,alg='def')$S
   expect_equal(result, expected_result)
 })
+
+# test_that("icafast() functionality", {
+#   expected_result <- test_container$donor_mat_rot
+#   dm <- test_container$tucker_decomp$U[[1]]
+#   result <- ica::icafast(dm,2,center=FALSE,alg='def')$S
+#   expect_equal(result, expected_result)
+# })
 
 # test_that("kronecker() functionality", {
 #   expected_result <- test_container$kron_prod_test
