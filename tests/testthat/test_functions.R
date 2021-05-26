@@ -65,7 +65,7 @@ library(Matrix)
 test_that("icafast() functionality", {
   expected_result <- test_container$donor_mat_rot
   dm <- test_container$tucker_decomp$U[[1]]
-  result <- ica::icafast(dm,2,center=FALSE,alg='def')$S
+  result <- icafast2(dm,2,center=FALSE,alg='def')$S
   expect_equal(result, expected_result)
 })
 
