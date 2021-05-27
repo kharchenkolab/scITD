@@ -155,7 +155,7 @@ test_container2 <- form_tensor(test_container2, donor_min_cells=0, gene_min_cell
 tnsr <- test_container2$tensor_data[[4]]
 tucker_decomp <- rTensor::tucker(rTensor::as.tensor(tnsr), ranks=c(2,4,2))
 X_dat <- tucker_decomp$U[[1]]
-test_res <- ica::icafast(X_dat,2,center=FALSE,alg='def')$S
+test_res <- ica::icafast(X_dat,2,center=TRUE,alg='def')$S
 test_df <- list(X_dat,test_res)
 save(test_df,file='/home/jmitchel/scITD/data/test_df.RData',compress = "xz")
 

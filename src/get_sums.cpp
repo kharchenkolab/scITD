@@ -63,3 +63,7 @@ NumericMatrix get_sums(SEXP sY,  IntegerVector rowSel) {
   return sumM;
 
 }
+
+
+
+
