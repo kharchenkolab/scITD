@@ -70,6 +70,10 @@ tnsr <- test_container$tensor_data[[4]]
 # run tucker
 tucker_decomp <- rTensor::tucker(rTensor::as.tensor(tnsr), ranks=c(2,4,2))
 test_container$tucker_decomp <- tucker_decomp
+test_container$dmat <- tucker_decomp$U[[1]]
+my_eigen <- ica_p2(test_container$dmat,2,center=FALSE,alg='def')
+test_container$my_eigen <- my_eigen
+save(test_container,file='/home/jmitchel/scITD/data/test_container.RData',compress = "xz")
 
 
 ## now saving the raw tucker helper results
