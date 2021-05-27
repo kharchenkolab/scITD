@@ -137,11 +137,27 @@ save(test_df,file='/home/jmitchel/scITD/data/test_df.RData',compress = "xz")
 
 
 
+## making new test_container object
+pbmc_counts <- readRDS('/home/jmitchel/data/van_der_wijst/pbmc_counts_v2.rds')
+pbmc_meta <- readRDS('/home/jmitchel/data/van_der_wijst/pbmc_meta_v2.rds')
 
+param_list <- initialize_params(ctypes_use = c("CD4+ T", "CD8+ T"),
+                                ncores = 2, rand_seed = 10)
 
+test_container2 <- make_new_container(count_data=pbmc_counts, meta_data=pbmc_meta,
+                                     params=param_list)
 
+test_container2 <- form_tensor(test_container2, donor_min_cells=0, gene_min_cells=0,
+                              norm_method='trim', scale_factor=10000,
+                              vargenes_method='norm_var', vargenes_thresh=500,
+                              scale_var = TRUE, var_scale_power = 1.5)
 
-
+tnsr <- test_container2$tensor_data[[4]]
+tucker_decomp <- rTensor::tucker(rTensor::as.tensor(tnsr), ranks=c(2,4,2))
+X_dat <- tucker_decomp$U[[1]]
+test_res <- ica::icafast(X_dat,2,center=FALSE,alg='def')$S
+test_df <- list(X_dat,test_res)
+save(test_df,file='/home/jmitchel/scITD/data/test_df.RData',compress = "xz")
 
 
 
