@@ -14,3 +14,5 @@ jobs:
       - run:
           name: Check package
           command: R CMD check *tar.gz
+      - store_test_results:
+          path: $CIRCLE_WORKING_DIRECTORY/tests
