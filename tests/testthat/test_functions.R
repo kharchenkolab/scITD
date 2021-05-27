@@ -83,13 +83,20 @@ library(Matrix)
 #   expect_equal(result, expected_result)
 # })
 
-test_that("ica in parts functionality", {
-  expected_result <- test_container$my_eigen
-  dm <- test_container$tucker_decomp$U[[1]]
-  result1 <- ica_p1(dm,2,center=FALSE,alg='def')
-  result <- eigen(result1/5,symmetric=TRUE)$vectors
+test_that("ica_p2() functionality", {
+  expected_result <- test_df[[2]]
+  dm <- test_df[[1]]
+  result <- ica_p2(dm,2,center=FALSE,alg='def')
   expect_equal(result, expected_result)
 })
+
+# test_that("ica in parts functionality", {
+#   expected_result <- test_container$my_eigen
+#   dm <- test_container$tucker_decomp$U[[1]]
+#   result1 <- ica_p1(dm,2,center=FALSE,alg='def')
+#   result <- eigen(result1/5,symmetric=TRUE)$vectors
+#   expect_equal(result, expected_result)
+# })
 
 # test_that("eigen() functionality", {
 #   expected_result <- test_container$my_eigen
