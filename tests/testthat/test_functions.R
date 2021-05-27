@@ -76,18 +76,18 @@ library(Matrix)
 #   expect_equal(result, expected_result)
 # })
 
-# test_that("ica_p2() functionality", {
-#   expected_result <- test_container$my_eigen
-#   dm <- test_container$tucker_decomp$U[[1]]
-#   result <- ica_p2(dm,2,center=FALSE,alg='def')
-#   expect_equal(result, expected_result)
-# })
-
-test_that("eigen() functionality", {
+test_that("ica_p2() functionality", {
   expected_result <- test_container$my_eigen
-  result <- eigen(test_container$new_X/5,symmetric=TRUE)$vectors
+  dm <- test_container$tucker_decomp$U[[1]]
+  result <- ica_p2(dm,2,center=FALSE,alg='def')
   expect_equal(result, expected_result)
 })
+
+# test_that("eigen() functionality", {
+#   expected_result <- test_container$my_eigen
+#   result <- eigen(test_container$new_X/5,symmetric=TRUE)$vectors
+#   expect_equal(result, expected_result)
+# })
 
 # test_that("scale functionality", {
 #   expected_result <- colMeans(test_container$donor_mat_rot)

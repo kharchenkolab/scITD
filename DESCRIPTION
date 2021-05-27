@@ -35,7 +35,6 @@ Imports:
     parallel,
     ggplot2,
     mgcv,
-    methods,
     utils,
     Rcpp,
     RColorBrewer,
@@ -43,7 +42,8 @@ Imports:
     sparsepca, 
     dplyr,
     stats
-Suggests: 
+Suggests:
+    methods,
     knitr,
     rmarkdown, 
     testthat,
