@@ -58,7 +58,7 @@ library(Matrix)
 test_that("icafast() functionality", {
   expected_result <- test_df[[2]]
   X_dat <- test_df[[1]]
-  result <- ica::icafast(X_dat,2,center=FALSE,alg='def')$S
+  result <- icafast2(X_dat,2,center=FALSE,alg='def')$S
   expect_equal(result, expected_result)
 })
 

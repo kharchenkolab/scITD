@@ -218,7 +218,7 @@ icafast2 <-
     if(nrow(Rmat)!=nc | ncol(Rmat)!=nc){ stop("Input 'Rmat' must be nc-by-nc rotation matrix.") }
 
     ### center and whiten
-    xeig <- eigen(crossprod(X)/nobs,symmetric=TRUE)
+    xeig <- myeigen(crossprod(X)/nobs,symmetric=TRUE)
     nze <- sum(xeig$val>xeig$val[1]*.Machine$double.eps)
     if(nze<nc){
       warning("Numerical rank of X is less than requested number of components (nc).\n  Number of components has been redefined as the numerical rank of X.")
@@ -226,14 +226,10 @@ icafast2 <-
       Rmat <- diag(nc)
     }
     Dmat <- sdiag(sqrt(xeig$val[1:nc]))
-    print(Dmat)
     Mprt <- tcrossprod(Dmat,xeig$vec[,1:nc])
-    print(Mprt)
     diag(Dmat) <- 1/diag(Dmat)
     Pmat <- xeig$vec[,1:nc]%*%Dmat
-    print(Pmat)
     Xw <- X%*%Pmat   # whitened data
-    print(Xw)
 
     ### check if nc=1
     if(nc==1L){
@@ -442,7 +438,32 @@ ica_p2 <-
 
 
 
+myeigen <- function(x, symmetric, only.values = FALSE, EISPACK = FALSE)
+{
+  x <- unname(as.matrix(x))
+  n <- nrow(x)
+  if (!n) stop("0 x 0 matrix")
+  if (n != ncol(x)) stop("non-square matrix in 'eigen'")
+  n <- as.integer(n)
+  if(is.na(n)) stop("invalid nrow(x)")
 
+  complex.x <- is.complex(x)
+  if (!all(is.finite(x))) stop("infinite or missing values in 'x'")
+
+  if(missing(symmetric)) symmetric <- isSymmetric.matrix(x)
+
+  if (symmetric) {
+    z <- if(!complex.x) .Internal(La_rs(x, only.values))
+    else .Internal(La_rs_cmplx(x, only.values))
+    ord <- rev(seq_along(z$values))
+  } else {
+    z <- if(!complex.x) .Internal(La_rg(x, only.values))
+    else .Internal(La_rg_cmplx(x, only.values))
+    ord <- sort.list(Mod(z$values), decreasing = TRUE)
+  }
+  return(list(values = z$values[ord],
+              vectors = if (!only.values) z$vectors[, ord, drop = FALSE]))
+}
 
 
 
