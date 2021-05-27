@@ -19,19 +19,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// get_means
-NumericMatrix get_means(SEXP sY, IntegerVector rowSel, IntegerVector numCells);
-RcppExport SEXP _scITD_get_means(SEXP sYSEXP, SEXP rowSelSEXP, SEXP numCellsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< SEXP >::type sY(sYSEXP);
-    Rcpp::traits::input_parameter< IntegerVector >::type rowSel(rowSelSEXP);
-    Rcpp::traits::input_parameter< IntegerVector >::type numCells(numCellsSEXP);
-    rcpp_result_gen = Rcpp::wrap(get_means(sY, rowSel, numCells));
-    return rcpp_result_gen;
-END_RCPP
-}
 // get_sums
 NumericMatrix get_sums(SEXP sY, IntegerVector rowSel);
 RcppExport SEXP _scITD_get_sums(SEXP sYSEXP, SEXP rowSelSEXP) {
@@ -44,25 +31,10 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// get_vars
-NumericVector get_vars(SEXP sY, IntegerVector rowSel, IntegerVector numCells);
-RcppExport SEXP _scITD_get_vars(SEXP sYSEXP, SEXP rowSelSEXP, SEXP numCellsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< SEXP >::type sY(sYSEXP);
-    Rcpp::traits::input_parameter< IntegerVector >::type rowSel(rowSelSEXP);
-    Rcpp::traits::input_parameter< IntegerVector >::type numCells(numCellsSEXP);
-    rcpp_result_gen = Rcpp::wrap(get_vars(sY, rowSel, numCells));
-    return rcpp_result_gen;
-END_RCPP
-}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_scITD_colMeanVars", (DL_FUNC) &_scITD_colMeanVars, 3},
-    {"_scITD_get_means", (DL_FUNC) &_scITD_get_means, 3},
     {"_scITD_get_sums", (DL_FUNC) &_scITD_get_sums, 2},
-    {"_scITD_get_vars", (DL_FUNC) &_scITD_get_vars, 3},
     {NULL, NULL, 0}
 };
 

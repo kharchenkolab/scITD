@@ -9,7 +9,9 @@ plot_donor_matrix(
   meta_vars = NULL,
   cluster_by_meta = NULL,
   show_donor_ids = FALSE,
-  add_meta_associations = FALSE
+  add_meta_associations = NULL,
+  show_var_explained = TRUE,
+  donors_sel = NULL
 )
 }
 \arguments{
@@ -25,13 +27,23 @@ by. If NULL, donor clustering is done using donor scores. (default=NULL)}
 \item{show_donor_ids}{logical Set to TRUE to show donor id as row name on the
 heamap (default=FALSE)}
 
-\item{add_meta_associations}{logical If TRUE then vertically appends metadata
-associations heatmap, which should have been previously generated with 
-plot_meta_associations() (default=FALSE)}
+\item{add_meta_associations}{character Adds meta data associations with each
+factor as top annotation. These should be generated first with
+plot_meta_associations(). Set to 'pval' if used 'pval' in plot_meta_associations(),
+otherwise set to 'rsq'. If NULL, no annotation is added. (default=NULL)}
+
+\item{show_var_explained}{logical Set to TRUE to display the explained variance for
+each factor (default=TRUE)}
+
+\item{donors_sel}{character A vector of a subset of donors to include in the plot
+(default=NULL)}
 }
 \value{
 the project container with the plot in container$plots$donor_matrix
 }
 \description{
 Plot matrix of donor scores extracted from Tucker decomposition
+}
+\examples{
+test_container <- plot_donor_matrix(test_container, show_donor_ids = TRUE)
 }

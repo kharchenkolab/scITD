@@ -17,6 +17,11 @@ plot_loadings_annot(
   gene_callouts = FALSE,
   callout_n_gene_per_ctype = 5,
   callout_ctypes = NULL,
+  specific_callouts = NULL,
+  le_set_callouts = NULL,
+  le_set_colormap = NULL,
+  le_set_num_per = 5,
+  show_le_legend = FALSE,
   show_xlab = TRUE,
   show_var_explained = TRUE,
   reset_other_factor_plots = FALSE,
@@ -65,9 +70,21 @@ of largest magnitude significant genes from each cell type to include in gene ca
 to get gene callouts for. If NULL, then gets gene callouts for largest magnitude significant
 genes for all cell types. (default=NULL)}
 
+\item{specific_callouts}{character A vector of gene names to show callouts for (default=NULL)}
+
+\item{le_set_callouts}{character Pass a vector of gene set names to show leading edge genes
+for a select set of gene sets (default=NULL)}
+
+\item{le_set_colormap}{character A named vector with names as gene sets and values as colors.
+If NULL, then selects first n colors of Set3 color palette. (default=NULL)}
+
+\item{le_set_num_per}{numeric The number of leading edge genes to show for each gene set (default=5)}
+
+\item{show_le_legend}{logical Set to TRUE to show the color map legend for leading edge genes (default=FALSE)}
+
 \item{show_xlab}{logical If TRUE, displays the xlabel 'genes' (default=TRUE)}
 
-\item{show_var_explained}{logical If TRUE then shows an anottation with the explained variance
+\item{show_var_explained}{logical If TRUE then shows an anotation with the explained variance
 for each cell type (default=TRUE)}
 
 \item{reset_other_factor_plots}{logical Set to TRUE to set all other loadings plots to NULL.
@@ -77,9 +94,13 @@ Useful if run get_all_lds_factor_plots but then only want to show one or two plo
 }
 \value{
 container with the plot put in container$plots$all_lds_plots and the legend put in
-container$plots$all_legends. Use draw(<hmap obj>,annotation_legend_list = <hmap legend obj>) 
+container$plots$all_legends. Use draw(<hmap obj>,annotation_legend_list = <hmap legend obj>)
 to re-render the plot with legend
 }
 \description{
 Plot the gene x cell type loadings for a factor
+}
+\examples{
+test_container <- plot_loadings_annot(test_container, 1, display_genes=FALSE,
+show_var_explained = TRUE)
 }

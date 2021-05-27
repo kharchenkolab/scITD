@@ -1,5 +1,5 @@
 
-#' Convert gene names
+#' Convert alternate gene identifiers to gene symbols
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses

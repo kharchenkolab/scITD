@@ -18,15 +18,15 @@ compare_decompositions(
 
 \item{tucker_res2}{list The container$tucker_res from first decomposition}
 
-\item{decomp_names}{character Names of the two decompositions that will go 
+\item{decomp_names}{character Names of the two decompositions that will go
 on the axes of the heatmap}
 
-\item{meta_anno1}{matrix The result of calling get_meta_associations() 
-corresponding to the first decomposition, which is stored in 
+\item{meta_anno1}{matrix The result of calling get_meta_associations()
+corresponding to the first decomposition, which is stored in
 container$meta_associations}
 
-\item{meta_anno2}{matrix The result of calling get_meta_associations() 
-corresponding to the second decomposition, which is stored in 
+\item{meta_anno2}{matrix The result of calling get_meta_associations()
+corresponding to the second decomposition, which is stored in
 container$meta_associations}
 
 \item{use_text}{logical If TRUE, then displays correlation coefficients in cells

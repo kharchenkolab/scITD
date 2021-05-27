@@ -1,7 +1,8 @@
 
-utils::globalVariables(c("num_ranks", "rec_error", "num_iter", "run_type", "error_diff", "total_ranks"))
+utils::globalVariables(c("num_ranks", "rec_error", "num_iter", "run_type", "error_diff", "total_ranks", "myrsq", "n_factors", "factor_type", "total_n_factors","Status"))
 
-#' Rank determination method
+#' Rank determination by svd on the tensor unfolded along each mode.
+#'
 #' @import ggplot2
 #' @importFrom parallel mclapply
 #'
@@ -9,24 +10,45 @@ utils::globalVariables(c("num_ranks", "rec_error", "num_iter", "run_type", "erro
 #' for each cell type as well as results and plots from all analyses
 #' @param max_ranks_test numeric Vector of length 3 with maximum number of
 #' ranks to test for donor, gene, and cell type modes in that order
-#' @param method character The method to use for rank determination. For 'svd',
-#' reconstruction errors are computed using svd on the unfolded tensor along each
-#' mode. For 'tucker', reconstruction errors are computed using tucker decomposition
-#' (default='svd')
-#' @param shuffle_level character Either "cells" to shuffle cell-donor linkages or 
+#' @param shuffle_level character Either "cells" to shuffle cell-donor linkages or
 #' "tensor" to shuffle values within the tensor. Currently "tensor" only works with
 #' the svd method (default="cells")
+#' @param shuffle_within character A metadata variable to shuffle cell-donor linkages
+#' within (default=NULL)
 #' @param num_iter numeric Number of null iterations (default=100)
-#' @param batch_var character A batch variable from metadata to remove (default=NULL)
+#' @param batch_var character A batch variable from metadata to remove. No batch
+#' correction applied if NULL. (default=NULL)
+#' @param norm_method character The normalization method to use on the pseudobulked
+#' count data. Set to 'regular' to do standard normalization of dividing by
+#' library size. Set to 'trim' to use edgeR trim-mean normalization, whereby counts
+#' are divided by library size times a normalization factor. (default='trim')
+#' @param scale_factor numeric The number that gets multiplied by fractional counts
+#' during normalization of the pseudobulked data (default=10000)
+#' @param scale_var logical TRUE to scale the gene expression variance across donors
+#' for each cell type. If FALSE then all genes are scaled to unit variance across
+#' donors for each cell type. (default=TRUE)
+#' @param var_scale_power numeric Exponent of normalized variance that is
+#' used for variance scaling. Variance for each gene
+#' is initially set to unit variance across donors (for a given cell type).
+#' Variance for each gene is then scaled by multiplying the unit scaled values
+#' by each gene's normalized variance (where the effect of the mean-variance
+#' dependence is taken into account) to the exponent specified here.
+#' If NULL, uses var_scale_power from container$experiment_params. (default=.5)
 #'
-#' @return the project container with rank determination plot and results
-#' added into slots
+#' @return the project container with rank determination plot in
+#' container$plots$rank_determination_plot
 #' @export
-determine_ranks_tucker <- function(container, max_ranks_test, method='svd', shuffle_level='cells', num_iter=100, batch_var=NULL) {
+determine_ranks_tucker <- function(container, max_ranks_test,
+                                   shuffle_level='cells', shuffle_within=NULL,
+                                   num_iter=100, batch_var=NULL,
+                                   norm_method='trim',
+                                   scale_factor=10000,
+                                   scale_var=TRUE,
+                                   var_scale_power=.5) {
 
-  # check that var_scale_power has been set if scale_var is TRUE
-  if (container$experiment_params$scale_var && is.null(container$experiment_params$var_scale_power)) {
-    stop("Need to set variance scaling power parameter, var_scale_power. Use set_experiment_params()")
+  # check if run tensor formation yet...
+  if (is.null(container$tensor_data)) {
+    stop("need to run form_tensor() first")
   }
 
   # set random seed
@@ -39,64 +61,86 @@ determine_ranks_tucker <- function(container, max_ranks_test, method='svd', shuf
   # generate reconstruction errors under the null condition
   null_res <- lapply(1:num_iter, function(x) {
 
-    # first get donor means shuffled
     if (shuffle_level == "cells") {
-      container <- collapse_by_donors(container, shuffle=TRUE)
-    } else {
-      container <- collapse_by_donors(container, shuffle=FALSE)
+
+      # pseudobulk with shuffle donor-cell linkages
+      container <- get_pseudobulk(container, shuffle=TRUE, shuffle_within=shuffle_within)
+
+      # normalize data
+      container <- normalize_pseudobulk(container, method=norm_method, scale_factor=scale_factor)
+
+      # reduce to previously identified vargenes
+      container <- reduce_to_vargenes(container)
+
+      # apply batch correction if specified
+      if (!is.null(batch_var)) {
+        container <- apply_combat(container,batch_var=batch_var)
+      }
+
+      if (scale_var) {
+        # scale gene expression
+        container <- scale_variance(container,
+                                    var_scale_power=var_scale_power)
+      }
+
+      # build the tensor
+      container <- stack_tensor(container)
     }
 
-    # form a tensor
-    container <- form_tensor(container,batch_var=batch_var)
     tmp_tnsr <- container$tensor_data[[4]]
 
     # get and store reconstruction errors
-    if (method == 'svd') {
-      if (shuffle_level == "cells") {
-        rec_errors <- get_reconstruct_errors_svd(tmp_tnsr,max_ranks_test,shuffle_tensor=FALSE)
-      } else {
-        rec_errors <- get_reconstruct_errors_svd(tmp_tnsr,max_ranks_test,shuffle_tensor=TRUE)
-      }
-    } else if (method == 'tucker') {
-      rec_errors <- get_reconstruct_errors_tucker(tmp_tnsr,max_ranks_test,ncores)
+    if (shuffle_level == "cells") {
+      rec_errors <- get_reconstruct_errors_svd(tmp_tnsr,max_ranks_test,shuffle_tensor=FALSE)
+    } else {
+      rec_errors <- get_reconstruct_errors_svd(tmp_tnsr,max_ranks_test,shuffle_tensor=TRUE)
     }
     return(rec_errors)
   })
 
-  # get actual reconstruction errors
-  container <- collapse_by_donors(container, shuffle=FALSE)
+  # recompute original tensor if shuffling was done at cell level
+  if (shuffle_level == "cells") {
+    # get actual reconstruction errors
+    container <- get_pseudobulk(container, shuffle=FALSE)
 
-  # form a tensor
-  container <- form_tensor(container)
+    # normalize data
+    container <- normalize_pseudobulk(container, method=norm_method, scale_factor=scale_factor)
+
+    # reduce to previously identified vargenes
+    container <- reduce_to_vargenes(container)
+
+    # apply batch correction if specified
+    if (!is.null(batch_var)) {
+      container <- apply_combat(container,batch_var=batch_var)
+    }
+
+    if (scale_var) {
+      # scale gene expression
+      container <- scale_variance(container,
+                                  var_scale_power=var_scale_power)
+    }
+
+    # build the tensor
+    container <- stack_tensor(container)
+  }
+
   tmp_tnsr <- container$tensor_data[[4]]
 
   # get and store reconstruction errors
-  if (method == 'svd') {
-    rec_errors_real <- get_reconstruct_errors_svd(tmp_tnsr,max_ranks_test,shuffle_tensor=FALSE)
-  } else if (method == 'tucker') {
-    rec_errors_real <- get_reconstruct_errors_tucker(tmp_tnsr,max_ranks_test,ncores)
-    print(rec_errors_real)
-  }
+  rec_errors_real <- get_reconstruct_errors_svd(tmp_tnsr,max_ranks_test,shuffle_tensor=FALSE)
 
   # plot the results
-  if (method == 'svd') {
-    all_line_plots <- list()
-    all_bar_plots <- list()
-    for (i in 1:length(max_ranks_test)) {
-      line_plot <- plot_rec_errors_line_svd(rec_errors_real, null_res, i)
-      bar_plot <- plot_rec_errors_bar_svd(rec_errors_real, null_res, i)
-      all_line_plots[[i]] <- line_plot
-      all_bar_plots[[i]] <- bar_plot
-    }
-    p <- ggpubr::ggarrange(all_line_plots[[1]], all_bar_plots[[1]], all_line_plots[[2]],
-              all_bar_plots[[2]], all_line_plots[[3]], all_bar_plots[[3]],
-              ncol = 2, nrow = 3)
-  } else if (method == 'tucker') {
-    line_plot <- plot_rec_errors_line_tucker(rec_errors_real, null_res)
-    bar_plot <- plot_rec_errors_bar_tucker(rec_errors_real, null_res)
-    p <- ggpubr::ggarrange(line_plot, bar_plot,
-              ncol = 2, nrow = 1)
+  all_line_plots <- list()
+  all_bar_plots <- list()
+  for (i in 1:length(max_ranks_test)) {
+    line_plot <- plot_rec_errors_line_svd(rec_errors_real, null_res, i)
+    bar_plot <- plot_rec_errors_bar_svd(rec_errors_real, null_res, i)
+    all_line_plots[[i]] <- line_plot
+    all_bar_plots[[i]] <- bar_plot
   }
+  p <- ggpubr::ggarrange(all_line_plots[[1]], all_bar_plots[[1]], all_line_plots[[2]],
+                         all_bar_plots[[2]], all_line_plots[[3]], all_bar_plots[[3]],
+                         ncol = 2, nrow = 3)
 
   # save data and plot
   container$rank_determination_results <- list(rec_errors_real,null_res)
@@ -113,12 +157,12 @@ determine_ranks_tucker <- function(container, max_ranks_test, method='svd', shuf
 #' @param max_ranks_test numeric Vector of length 3 with maximum number of
 #' ranks to test for donor, gene, and cell type modes in that order
 #' @param shuffle_tensor logical Set to TRUE to shuffle values within the tensor
-#' 
+#'
 #' @return reconstruction errors
 #' @export
 get_reconstruct_errors_svd <- function(tnsr, max_ranks_test, shuffle_tensor) {
   tnsr <- rTensor::as.tensor(tnsr)
-  
+
   if (shuffle_tensor) {
     # unfold along donor mode
     d_unfold <- rTensor::k_unfold(tnsr,1)@data
@@ -127,19 +171,17 @@ get_reconstruct_errors_svd <- function(tnsr, max_ranks_test, shuffle_tensor) {
     for (i in 1:ncol(d_unfold)) {
       d_unfold[,i] <- sample(d_unfold[,i])
     }
-    
-    print('cool')
-    
+
     # refold tensor
     tnsr <- rTensor::k_fold(d_unfold,m=1,modes=tnsr@modes)
   }
-  
+
   mode_rank_errors <- list()
-  
+
   for (m in 1:length(max_ranks_test)) {
     rnk_errors <- c()
     d_unfold <- rTensor::k_unfold(tnsr,m)@data
-    
+
     svd_res <- svd(d_unfold)
     d <- diag(svd_res$d)
     for (rnk in 1:max_ranks_test[m]) {
@@ -154,40 +196,6 @@ get_reconstruct_errors_svd <- function(tnsr, max_ranks_test, shuffle_tensor) {
   return(mode_rank_errors)
 }
 
-#' Calculate reconstruction errors using Tucker approach
-#'
-#' @param tnsr array A 3-dimensional array with dimensions of
-#' donors, genes, and cell types in that order
-#' @param max_ranks_test numeric Vector of length 3 with maximum number of
-#' ranks to test for donor, gene, and cell type modes in that order
-#' @param ncores numeric The number of cores to use
-#'
-#' @return the reconstruction errors
-#' @export
-get_reconstruct_errors_tucker <- function(tnsr,max_ranks_test,ncores) {
-  mycombos <- get_factor_combos(max_ranks_test)
-
-  fits <- mclapply(1:nrow(mycombos),function(i) {
-    invisible(utils::capture.output(
-      tucker_decomp <- rTensor::tucker(rTensor::as.tensor(tnsr), ranks=unlist(mycombos[i,1:3]))
-    ))
-    return(tucker_decomp$norm_percent)
-  },mc.cores = ncores)
-  mycombos$fit <- unlist(fits)
-
-  # keep only max fit for a given totalrank
-  totalrank_vals <- unique(mycombos$totalrank)
-  totalrank_vals <- totalrank_vals[order(totalrank_vals,decreasing=FALSE)]
-  new_combos <- data.frame(matrix(nrow=0,ncol=5))
-  for (i in totalrank_vals) {
-    sets_for_totalrank <- mycombos[mycombos$totalrank==i,]
-    set_keep <- which(sets_for_totalrank$fit==max(sets_for_totalrank$fit))
-    new_combos <- rbind(new_combos,sets_for_totalrank[set_keep,])
-  }
-
-  return(new_combos)
-}
-
 #' Evaluate ability to extract sex-linked factor over varying the
 #' variance scaling exponent parameter
 #'
@@ -199,21 +207,31 @@ get_reconstruct_errors_tucker <- function(tnsr,max_ranks_test,ncores) {
 #' ranks to test for donor, gene, and cell type modes in that order
 #' @param min_power_test numeric The minimum exponent parameter value to test
 #' @param max_power_test numeric The maximum parameter value to test
+#' @param tucker_type character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
+#' with sparsity constraints (default='regular')
+#' @param rotation_type character Set to 'ica' to perform ICA rotation on resulting donor factor
+#' matrix and loadings. Otherwise set to 'varimax' to perform varimax rotation. (default='ica')
+#' @param norm_method character The normalization method to use on the pseudobulked
+#' count data. Set to 'regular' to do standard normalization of dividing by
+#' library size. Set to 'trim' to use edgeR trim-mean normalization, whereby counts
+#' are divided by library size times a normalization factor. (default='trim')
+#' @param scale_factor numeric The number that gets multiplied by fractional counts
+#' during normalization of the pseudobulked data (default=10000)
+#' @param batch_var character A batch variable from metadata to remove. No batch
+#' correction applied if NULL. (default=NULL)
 #'
-#' @return the experiment container with added plot and results
+#' @return the experiment container with plot in container$plots$var_scale_plot
 #' @export
-optimize_var_scale_power <- function(container, min_ranks_test, max_ranks_test, 
-                                     min_power_test, max_power_test) {
-  # check that scale_var parameter is true
-  if (!container$experiment_params$scale_var) {
-    stop("scale_var parameter from container$experiment_params is NULL. This
-         function is only needed when variance scaling is used")
+optimize_var_scale_power <- function(container, min_ranks_test, max_ranks_test,
+                                     min_power_test, max_power_test, tucker_type='regular',
+                                     rotation_type='ica', norm_method='trim',
+                                     scale_factor=10000, batch_var=NULL) {
+
+  # check if run tensor formation yet...
+  if (is.null(container$tensor_data)) {
+    stop("need to run form_tensor() first")
   }
 
-  # extract needed inputs from experiment parameters
-  tucker_type <- container$experiment_params$tucker_type
-  rotation_type <- container$experiment_params$rotation_type
-  
   ncores <- container$experiment_params$ncores
 
   if (ncores > 10) {
@@ -228,9 +246,6 @@ optimize_var_scale_power <- function(container, min_ranks_test, max_ranks_test,
   # only test combos above min ranks to test
   mycombos <- mycombos[mycombos[,1]>=min_ranks_test[1],]
   mycombos <- mycombos[mycombos[,2]>=min_ranks_test[2],]
-  
-  # get donor means
-  container <- collapse_by_donors(container, shuffle=FALSE)
 
   powers_test <- seq(min_power_test,max_power_test,by=.25)
   power_results <- list()
@@ -238,8 +253,26 @@ optimize_var_scale_power <- function(container, min_ranks_test, max_ranks_test,
   for (scale_power in powers_test) {
     print(scale_power)
 
-    # form tensor with appropriate scaling
-    container <- form_tensor(container, var_scale_power=scale_power)
+    # get pseudobulk
+    container <- get_pseudobulk(container, shuffle=FALSE)
+
+    # normalize data
+    container <- normalize_pseudobulk(container, method=norm_method, scale_factor=scale_factor)
+
+    # reduce to previously identified vargenes
+    container <- reduce_to_vargenes(container)
+
+    # apply batch correction if specified
+    if (!is.null(batch_var)) {
+      container <- apply_combat(container,batch_var=batch_var)
+    }
+
+    # scale gene expression
+    container <- scale_variance(container,
+                                var_scale_power=scale_power)
+
+    # build the tensor
+    container <- stack_tensor(container)
 
     tensor_data <- container$tensor_data
 
@@ -354,7 +387,7 @@ plot_rec_errors_line_svd <- function(real,shuffled,mode_to_show) {
   } else {
     by_interval <- 1
   }
-   
+
 
   p <- ggplot(plot_res,aes(x=num_ranks,y=rec_error,group=num_iter,color=run_type)) +
     geom_line() +
@@ -406,11 +439,15 @@ plot_rec_errors_bar_svd <- function(real,shuffled,mode_to_show) {
   if (mode_to_show==1) {
     by_interval <- 2
   } else if (mode_to_show==2) {
-    by_interval <- 5
+    if (max(tgc$num_ranks) < 20) {
+      by_interval <- 2
+    } else {
+      by_interval <- 5
+    }
   } else {
     by_interval <- 1
   }
-  
+
   p <- ggplot(tgc, aes(x=num_ranks, y=error_diff, fill=run_type)) +
     geom_bar(stat="identity", color="black", position=position_dodge()) +
     geom_errorbar(aes(ymin=error_diff-sd, ymax=error_diff+sd), width=1,position=position_dodge()) +
@@ -420,104 +457,7 @@ plot_rec_errors_bar_svd <- function(real,shuffled,mode_to_show) {
     ggtitle(paste0('Mode ', as.character(mode_to_show), ' Error Differences')) +
     theme(plot.title = element_text(hjust = 0.5)) +
     scale_x_continuous(breaks = seq(1, max(tgc$num_ranks), by = by_interval))
-  
 
-  return(p)
-}
-
-
-#' Plot reconstruction errors as line plot for tucker method
-#'
-#' @param real list The real reconstruction errors
-#' @param shuffled list The reconstruction errors under null model
-#'
-#' @return plot
-#' @export
-plot_rec_errors_line_tucker <- function(real,shuffled) {
-  plot_res <- data.frame(matrix(ncol=4,nrow=0))
-  for (i in 1:length(shuffled)) {
-    shuffle_iter <- shuffled[[i]][,4:5]
-    tmp <- cbind(shuffle_iter,
-                 rep(as.character(i),nrow(shuffle_iter)),rep('shuffled',nrow(shuffle_iter)))
-    plot_res <- rbind(plot_res,tmp)
-  }
-  colnames(plot_res) <- c("total_ranks","rec_error","num_iter","run_type")
-
-  # append real data
-  tmp <- cbind(real[,4:5],
-               rep('real',nrow(shuffle_iter)),rep('real',nrow(shuffle_iter)))
-  colnames(tmp) <- c("total_ranks","rec_error","num_iter","run_type")
-  plot_res <- rbind(plot_res,tmp)
-  plot_res$rec_error <- as.numeric(as.character(plot_res$rec_error))
-  plot_res$total_ranks <- as.numeric(as.character(plot_res$total_ranks))
-
-  plot_res$rec_error <- (100 - plot_res$rec_error) / 100
-
-  p <- ggplot(plot_res,aes(x=total_ranks,y=rec_error,group=num_iter,color=run_type)) +
-    geom_line() +
-    geom_point() +
-    ylim(0,1) +
-    xlab("Total Ranks") +
-    ylab("Relative Error") +
-    labs(color = "Type") +
-    scale_x_continuous(breaks=shuffle_iter[,1]) +
-    ggtitle('Error') +
-    theme(plot.title = element_text(hjust = 0.5))
-
-  return(p)
-}
-
-#' Plot reconstruction errors as bar plot for tucker method
-#'
-#' @param real list The real reconstruction errors
-#' @param shuffled list The reconstruction errors under null model
-#'
-#' @return plot
-#' @export
-plot_rec_errors_bar_tucker <- function(real,shuffled) {
-  plot_res <- data.frame(matrix(ncol=4,nrow=0))
-  for (i in 1:length(shuffled)) {
-    shuffle_iter <- shuffled[[i]][,4:5]
-    shuffle_iter$dif <- NA
-    shuffle_iter$dif[1] <- shuffle_iter$fit[1]
-    for (j in 2:nrow(shuffle_iter)) {
-      shuffle_iter$dif[j] <- shuffle_iter$fit[j] - shuffle_iter$fit[j-1]
-    }
-    tmp <- cbind(shuffle_iter[,c(1,3)],
-                 rep(as.character(i),nrow(shuffle_iter)),rep('shuffled',nrow(shuffle_iter)))
-    plot_res <- rbind(plot_res,tmp)
-  }
-  colnames(plot_res) <- c("total_ranks","error_diff","num_iter","run_type")
-
-  # append real data
-  real <- real[,4:5]
-  real$dif <- NA
-  real$dif[1] <- real$fit[1]
-  for (i in 2:nrow(real)) {
-    real$dif[i] <- real$fit[i] - real$fit[i-1]
-  }
-  tmp <- cbind(real[,c(1,3)],
-               rep('real',nrow(real)),rep('real',nrow(real)))
-  colnames(tmp) <- c("total_ranks","error_diff","num_iter","run_type")
-  plot_res <- rbind(plot_res,tmp)
-  plot_res$error_diff <- as.numeric(as.character(plot_res$error_diff))
-  plot_res$total_ranks <- as.numeric(as.character(plot_res$total_ranks))
-
-  plot_res$error_diff <- plot_res$error_diff / 100
-
-  # calculate summary stats
-  suppressWarnings(tgc <- Rmisc::summarySE(plot_res, measurevar="error_diff",
-                                           groupvars=c("total_ranks","run_type")))
-
-  p <- ggplot(tgc, aes(x=total_ranks, y=error_diff, fill=run_type)) +
-    geom_bar(stat="identity", color="black", position=position_dodge()) +
-    geom_errorbar(aes(ymin=error_diff-sd, ymax=error_diff+sd), width=1,position=position_dodge()) +
-    xlab("Total Ranks") +
-    ylab("Error(n-1) - Error(n)") +
-    labs(fill = "Type") +
-    scale_x_continuous(breaks=shuffle_iter[,1]) +
-    ggtitle('Error Differences') +
-    theme(plot.title = element_text(hjust = 0.5))
 
   return(p)
 }
@@ -536,7 +476,8 @@ plot_var_scale_power <- function(power_results) {
   # sort columns by increasing donor factor then increasing gene factors
   ranks <- colnames(power_results)
   donor_rank <- sapply(ranks,function(x) {
-    substr(x,2,2)
+    tmp <- strsplit(x,split='[.]')[[1]][[1]]
+    return(as.numeric(substr(tmp,2,nchar(tmp))))
   })
 
   power_results <- power_results[,order(donor_rank)]
@@ -559,69 +500,86 @@ plot_var_scale_power <- function(power_results) {
 }
 
 
-#' Get plot of r-squared values for each factor's association with a batch variable
-#' to varying numbers of donor factors
+#' Plot factor-batch associations for increasing number of donor factors
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
 #' @param donor_ranks_test numeric The number of donor rank values to test
+#' @param gene_ranks numeric The number of gene ranks to use throughout
 #' @param batch_var character The name of the batch meta variable
 #' @param thresh numeric The threshold r-squared cutoff for considering a
 #' factor to be a batch factor. Can be a vector of multiple values to get plots
 #' at varying thresholds. (default=0.5)
+#' @param tucker_type character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
+#' with sparsity constraints (default='regular')
+#' @param rotation_type character Set to 'ica' to perform ICA rotation on resulting donor factor
+#' matrix and loadings. Otherwise set to 'varimax' to perform varimax rotation. (default='ica')
 #'
-#' @return plots of factor-batch associations for varying numbers of factors
+#' @return plots placed in container$plots$num_batch_factors slot
 #' @export
-get_num_batch_ranks <- function(container,donor_ranks_test,batch_var,thresh=0.5) {
+get_num_batch_ranks <- function(container, donor_ranks_test, gene_ranks, batch_var, thresh=0.5,
+                                tucker_type='regular',rotation_type='ica') {
   n_ctypes <- length(container$experiment_params$ctypes_use)
   res <- data.frame(matrix(nrow=0,ncol=2))
   for (r in donor_ranks_test) {
-    # container <- run_tucker_ica(container, ranks=c(r,r*n_ctypes,n_ctypes), shuffle=FALSE)
-    container <- run_tucker_ica(container, ranks=c(r,100,n_ctypes), shuffle=FALSE)
+    container <- run_tucker_ica(container, ranks=c(r,gene_ranks,n_ctypes),
+                                tucker_type=tucker_type, rotation_type=rotation_type)
+    var_exp <- sum(container$exp_var)
     container <- get_meta_associations(container,vars_test=c(batch_var))
-    tmp <- cbind(t(container[["meta_associations"]]),rep(r,r))
+    tmp <- cbind(t(container[["meta_associations"]]),rep(r,r),rep(var_exp,r))
     res <- rbind(res,tmp)
   }
   rownames(res) <- NULL
-  colnames(res) <- c('rsq','total_n_factors')
-  
-  raw_plot <- ggplot(res,aes(x=total_n_factors,y=rsq)) +
+  colnames(res) <- c('myrsq','total_n_factors','var_exp')
+
+  raw_plot <- ggplot(res,aes(x=total_n_factors,y=myrsq)) +
     geom_point() +
     xlab('Total Number of Factors') +
     ylab('Batch Association (r^2)') +
     ggtitle('Factor-Batch Associations') +
     theme(plot.title = element_text(hjust = 0.5))
-  
+
+  var_plot <- ggplot(res,aes(x=total_n_factors,y=var_exp)) +
+    geom_line() +
+    xlab('Total Number of Factors') +
+    ylab('Explained Variance %') +
+    ggtitle('Explained Variance') +
+    theme(plot.title = element_text(hjust = 0.5)) +
+    ylim(0,100)
+
   all_plots <- list(raw_plot)
   for (i in 1:length(thresh)) {
     thr <- thresh[i]
     res2 <- data.frame(matrix(nrow=0,ncol=3))
     for (r in donor_ranks_test) {
       res_sub <- res[res$total_n_factors==r,]
-      num_less <- sum(res_sub$rsq < thr)
-      num_greater <- sum(res_sub$rsq >= thr)
+      num_less <- sum(res_sub$myrsq < thr)
+      num_greater <- sum(res_sub$myrsq >= thr)
       tmp <- cbind(c(num_less,num_greater),rep(r,2),c('non-batch','batch'))
       res2 <- rbind(res2,tmp)
     }
     colnames(res2) <- c('n_factors','total_n_factors','factor_type')
     res2$n_factors <- as.numeric(res2$n_factors)
     res2$total_n_factors <- as.numeric(res2$total_n_factors)
-    
+
     thresh_plot <- ggplot(res2,aes(x=total_n_factors,y=n_factors,color=factor_type)) +
       geom_line() +
       xlab('Total Number of Factors') +
       ylab('Number of Factors') +
       ggtitle(paste0('Threshold r^2 = ',as.character(thr))) +
-      theme(plot.title = element_text(hjust = 0.5)) +
-      labs(color='Factor Type') 
-    
+      theme(plot.title = element_text(hjust = 0.5), legend.position = c(.15, 0.925)) +
+      labs(color='Factor Type')
+
     all_plots[[i+1]] <- thresh_plot
   }
-  
-  
+
+  all_plots[[length(all_plots)+1]] <- var_plot
+
   p <- ggpubr::ggarrange(plotlist=all_plots, nrow = 1)
-  
-  return(p)
+
+  container$plots$num_batch_factors <- p
+
+  return(container)
 }
 
 

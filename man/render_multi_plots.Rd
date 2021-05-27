@@ -4,16 +4,20 @@
 \alias{render_multi_plots}
 \title{Creates a figure of all loadings plots arranged}
 \usage{
-render_multi_plots(container, n_rows, data_type)
+render_multi_plots(container, data_type, max_cols = 3)
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
 for each cell type as well as results and plots from all analyses}
 
-\item{n_rows}{numeric The number of rows to fit the plots onto}
-
 \item{data_type}{character Can be either "loadings", "gsea", or "dgenes". This
 determines which list of heatmaps to organize into the figure.}
+
+\item{max_cols}{numeric The max number of columns to plot. Can only either be 2
+or 3 since these are large plots. (default=3)}
+}
+\value{
+the multi-plot figure
 }
 \description{
 Creates a figure of all loadings plots arranged

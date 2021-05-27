@@ -4,11 +4,15 @@
 \alias{identify_sex_metadata}
 \title{Extract metadata for sex information if not provided already}
 \usage{
-identify_sex_metadata(container)
+identify_sex_metadata(container, y_gene = "RPS4Y1", x_gene = "XIST")
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
 for each cell type as well as results and plots from all analyses}
+
+\item{y_gene}{character Gene name to use for identifying male donors (default='RPS4Y1')}
+
+\item{x_gene}{character Gene name to use for identifying female donors (default='XIST')}
 }
 \value{
 the scMinimal object with sex metadata added to the metadata

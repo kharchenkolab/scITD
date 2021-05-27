@@ -55,7 +55,7 @@ tucker_sparse <- function(tnsr,ranks=NULL,max_iter=25,tol=1e-5){
     #checks convergence
     if(CHECK_CONV(Z, U_list)){
       converged <- TRUE
-      
+
       # ## trying out adding sparse pca as a last iteration...
       # for(m in modes_seq){
       #   #core Z minus mode m
@@ -65,7 +65,7 @@ tucker_sparse <- function(tnsr,ranks=NULL,max_iter=25,tol=1e-5){
       # }
       # #compute core tensor Z
       # Z <- ttm(X,mat=t(U_list[[num_modes]]),m=num_modes)
-      
+
     }else{
       curr_iter <- curr_iter + 1
     }
@@ -77,5 +77,14 @@ tucker_sparse <- function(tnsr,ranks=NULL,max_iter=25,tol=1e-5){
   est <- ttl(Z,U_list,ms=1:num_modes)
   invisible(list(Z=Z, U=U_list, conv=converged, est=est, norm_percent = norm_percent, fnorm_resid=tail(fnorm_resid,1), all_resids=fnorm_resid))
 }
+
+
+
+
+
+
+
+
+
 
 

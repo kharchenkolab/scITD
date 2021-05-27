@@ -21,9 +21,9 @@ Description: Employs the Tucker tensor decomposition method
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
-biocViews:
 Depends:
     R (>= 4.0.0), Matrix
+biocViews:
 Imports: 
     rTensor,
     ica,
@@ -41,8 +41,6 @@ Imports:
     RColorBrewer,
     GPArotation, 
     sparsepca, 
-    SingleCellExperiment,
-    splatter (>= 1.12),
     dplyr,
     stats
 Suggests: 
@@ -62,11 +60,14 @@ Suggests:
     zoo,
     rlang,
     conos,
-    pagoda2
+    pagoda2,
+    edgeR,
+    simplifyEnrichment,
+    WGCNA,
+    umap,
+    stringr,
+    cowplot,
+    betareg
 RoxygenNote: 7.1.1
 LinkingTo: Rcpp, RcppArmadillo, RcppProgress
 NeedsCompilation: yes
-Remotes:
-    kharchenkolab/pagoda2,
-    kharchenkolab/conos,
-    jokergoo/ComplexHeatmap

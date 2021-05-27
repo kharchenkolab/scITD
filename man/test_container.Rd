@@ -3,14 +3,14 @@
 \docType{data}
 \name{test_container}
 \alias{test_container}
-\title{Tiny data container object for unit tests only}
+\title{Data container object for unit tests only}
 \format{
-An object of class \code{environment} of length 14.
+An object of class \code{environment} of length 13.
 }
 \usage{
 test_container
 }
 \description{
-Tiny data container object for unit tests only
+Data container object for unit tests only
 }
 \keyword{datasets}

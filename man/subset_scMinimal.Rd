@@ -6,20 +6,17 @@
 \usage{
 subset_scMinimal(
   scMinimal,
-  make_copy = TRUE,
   ctypes_use = NULL,
   cells_use = NULL,
   donors_use = NULL,
-  genes_use = NULL
+  genes_use = NULL,
+  in_place = TRUE
 )
 }
 \arguments{
 \item{scMinimal}{environment A sub-container for the project typically
 consisting of gene expression data in its raw and processed forms as well
 as metadata}
-
-\item{make_copy}{logical If TRUE, puts the subsetted scMinimal in a new object.
-If FALSE, overwrites the input scMinimal object with the subsetted one. (default=TRUE)}
 
 \item{ctypes_use}{character The cell types to keep (default=NULL)}
 
@@ -28,6 +25,9 @@ If FALSE, overwrites the input scMinimal object with the subsetted one. (default
 \item{donors_use}{character The donors to keep (default=NULL)}
 
 \item{genes_use}{character The genes to keep (default=NULL)}
+
+\item{in_place}{logical If set to TRUE then replaces the input object with the
+new subsetted object (default=TRUE)}
 }
 \value{
 a subsetted scMinimal object

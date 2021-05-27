@@ -2,20 +2,22 @@
 % Please edit documentation in R/get_meta_associations.R
 \name{get_meta_associations}
 \alias{get_meta_associations}
-\title{Plot meta data associations in a heatmap}
+\title{Get metadata associations with all factors}
 \usage{
-get_meta_associations(container, vars_test)
+get_meta_associations(container, vars_test, stat_use = "rsq")
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
 for each cell type as well as results and plots from all analyses}
 
 \item{vars_test}{character The names of meta variables to get associations for}
+
+\item{stat_use}{character Set to either 'rsq' to get r-squared values or 'pval'
+to get adjusted pvalues (default='rsq)}
 }
 \value{
-the project container with the heatmap in the slot
-container$plots$meta_associations
+the project container with the metadata associations in container$meta_associations
 }
 \description{
-Plot meta data associations in a heatmap
+Get metadata associations with all factors
 }

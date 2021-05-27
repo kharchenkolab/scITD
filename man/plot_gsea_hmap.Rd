@@ -4,7 +4,7 @@
 \alias{plot_gsea_hmap}
 \title{Plot enriched gene sets from all cell types in a heatmap}
 \usage{
-plot_gsea_hmap(container, factor_select, thresh, set_union = NULL)
+plot_gsea_hmap(container, factor_select, thresh)
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
@@ -13,9 +13,6 @@ for each cell type as well as results and plots from all analyses}
 \item{factor_select}{numeric The factor to plot}
 
 \item{thresh}{numeric Pvalue threshold to use for including gene sets in the heatmap}
-
-\item{set_union}{character A vector of the main pathways from collapsePathways, and it is the
-union of such pathways from all cell types of the factor (default=NULL)}
 }
 \value{
 the heatmap plot

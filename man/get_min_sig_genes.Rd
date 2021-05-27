@@ -3,15 +3,40 @@
 \name{get_min_sig_genes}
 \alias{get_min_sig_genes}
 \title{Evaluate the minimum number for significant genes in any factor for a given number of
-donor factors extracted by tucker.}
+factors extracted by tucker.}
 \usage{
-get_min_sig_genes(container, donor_rank_range, thresh = 0.05)
+get_min_sig_genes(
+  container,
+  donor_rank_range,
+  gene_ranks,
+  ctype_ranks,
+  tucker_type = "regular",
+  rotation_type = "ica",
+  n_fibers = 100,
+  n_iter = 500,
+  thresh = 0.05
+)
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
 for each cell type as well as results and plots from all analyses. Should have}
 
 \item{donor_rank_range}{numeric Range of possible number of donor factors to use.}
+
+\item{gene_ranks}{numeric The number of gene ranks to use in the decomposition}
+
+\item{ctype_ranks}{numeric The number of cell type ranks to use in the decomposition}
+
+\item{tucker_type}{character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
+with sparsity constraints (default='regular')}
+
+\item{rotation_type}{character Set to 'ica' to perform ICA rotation on resulting donor factor
+matrix and loadings. Otherwise set to 'varimax' to perform varimax rotation. (default='ica')}
+
+\item{n_fibers}{numeric The number of fibers the randomly shuffle in each iteration
+(default=100)}
+
+\item{n_iter}{numeric The number of shuffling iterations to complete (default=500)}
 
 \item{thresh}{numeric Pvalue threshold for significant genes in calculating the
 number of significant genes identified per factor. (default=0.05)}
@@ -23,5 +48,5 @@ container$plots$min_sig_genes
 }
 \description{
 Evaluate the minimum number for significant genes in any factor for a given number of
-donor factors extracted by tucker.
+factors extracted by tucker.
 }

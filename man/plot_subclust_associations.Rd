@@ -5,10 +5,12 @@
 \title{Get plot for associations between subcluster proportions for each major cell
 type and each factor}
 \usage{
-plot_subclust_associations(res)
+plot_subclust_associations(res, n_col = 2)
 }
 \arguments{
 \item{res}{data.frame Regression statistics for each subcluster analysis}
+
+\item{n_col}{numeric The number of columns to organize the plots into (default=2)}
 }
 \value{
 plots of regression statistics for each subtypes at varying clustering

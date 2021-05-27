@@ -10,7 +10,6 @@ run_gsea_one_factor(
   method = "fgsea",
   thresh = 0.05,
   db_use = "GO",
-  collapse_paths = TRUE,
   reset_other_factor_plots = FALSE,
   draw_plot = TRUE
 )
@@ -21,7 +20,7 @@ for each cell type as well as results and plots from all analyses}
 
 \item{factor_select}{numeric The factor of interest}
 
-\item{method}{character The method of gsea to use. Can either be "fgsea", 
+\item{method}{character The method of gsea to use. Can either be "fgsea",
 "fgsea_special or "hypergeometric". (default="fgsea")}
 
 \item{thresh}{numeric Pvalue significance threshold to use. Will include gene sets in
@@ -30,9 +29,6 @@ resulting heatmap if pvalue is below this threshold for at least one cell type. 
 \item{db_use}{character The database of gene sets to use. Database
 options include "GO", "Reactome", "KEGG", and "BioCarta". More than
 one database can be used. (default="GO")}
-
-\item{collapse_paths}{logical Set to TRUE to collapse significant pathways with
-considerable overlap. Only used if method="fgsea". (default=TRUE)}
 
 \item{reset_other_factor_plots}{logical Set to TRUE to set all other gsea plots to NULL (default=FALSE)}
 

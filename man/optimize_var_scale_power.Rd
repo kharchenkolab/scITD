@@ -10,7 +10,12 @@ optimize_var_scale_power(
   min_ranks_test,
   max_ranks_test,
   min_power_test,
-  max_power_test
+  max_power_test,
+  tucker_type = "regular",
+  rotation_type = "ica",
+  norm_method = "trim",
+  scale_factor = 10000,
+  batch_var = NULL
 )
 }
 \arguments{
@@ -26,9 +31,26 @@ ranks to test for donor, gene, and cell type modes in that order}
 \item{min_power_test}{numeric The minimum exponent parameter value to test}
 
 \item{max_power_test}{numeric The maximum parameter value to test}
+
+\item{tucker_type}{character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
+with sparsity constraints (default='regular')}
+
+\item{rotation_type}{character Set to 'ica' to perform ICA rotation on resulting donor factor
+matrix and loadings. Otherwise set to 'varimax' to perform varimax rotation. (default='ica')}
+
+\item{norm_method}{character The normalization method to use on the pseudobulked
+count data. Set to 'regular' to do standard normalization of dividing by
+library size. Set to 'trim' to use edgeR trim-mean normalization, whereby counts
+are divided by library size times a normalization factor. (default='trim')}
+
+\item{scale_factor}{numeric The number that gets multiplied by fractional counts
+during normalization of the pseudobulked data (default=10000)}
+
+\item{batch_var}{character A batch variable from metadata to remove. No batch
+correction applied if NULL. (default=NULL)}
 }
 \value{
-the experiment container with added plot and results
+the experiment container with plot in container$plots$var_scale_plot
 }
 \description{
 Evaluate ability to extract sex-linked factor over varying the

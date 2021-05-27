@@ -4,20 +4,25 @@
 \alias{run_tucker_ica}
 \title{Run Tucker decomposition and apply ICA transformation}
 \usage{
-run_tucker_ica(container, ranks = NULL, batch_var = NULL, shuffle = FALSE)
+run_tucker_ica(
+  container,
+  ranks,
+  tucker_type = "regular",
+  rotation_type = "ica"
+)
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
 for each cell type as well as results and plots from all analyses}
 
 \item{ranks}{numeric The number of donor, gene, and cell type ranks, respectively,
-to decompose to using Tucker decomposition. If NULL, uses ranks in container$experiment_params
-field. (default=NULL)}
+to decompose to using Tucker decomposition.}
 
-\item{batch_var}{character A batch variable from metadata to remove (default=NULL)}
+\item{tucker_type}{character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
+with sparsity constraints (default='regular')}
 
-\item{shuffle}{logical If TRUE, randomly shuffles cell to donor linkages, resulting in a random
-tensor (default=FALSE)}
+\item{rotation_type}{character Set to 'ica' to perform ICA rotation on resulting donor factor
+matrix and loadings. Otherwise set to 'varimax' to perform varimax rotation. (default='ica')}
 }
 \value{
 container with results of the decomposition in container$tucker_results
