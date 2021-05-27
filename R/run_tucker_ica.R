@@ -421,7 +421,8 @@ ica_p2 <-
     if(nrow(Rmat)!=nc | ncol(Rmat)!=nc){ stop("Input 'Rmat' must be nc-by-nc rotation matrix.") }
 
     ### center and whiten
-    xeig <- eigen(crossprod(X)/nobs,symmetric=TRUE)$vectors
+    cp <- crossprod(X)
+    xeig <- eigen(cp/nobs,symmetric=TRUE)$vectors
     # nze <- sum(xeig$val>xeig$val[1]*.Machine$double.eps)
     # if(nze<nc){
     #   warning("Numerical rank of X is less than requested number of components (nc).\n  Number of components has been redefined as the numerical rank of X.")
