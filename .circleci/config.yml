@@ -3,13 +3,13 @@ jobs:
   build:
     docker:
       - image: rocker/verse:4.0.3
+    environment:
+            _R_CHECK_FORCE_SUGGESTS_: false
     steps:
       - checkout
       - run:
           name: Install package dependencies
           command: R -e "devtools::install_deps(dep = TRUE)"
-          environment:
-            _R_CHECK_FORCE_SUGGESTS_: false
       - run:
           name: Build package
           command: R CMD build .
@@ -17,4 +17,4 @@ jobs:
           name: Check package
           command: R CMD check *tar.gz
       - store_test_results:
-          path: $CIRCLE_WORKING_DIRECTORY/tests
+          path: tmp/tests
