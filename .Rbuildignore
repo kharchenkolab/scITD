@@ -8,3 +8,4 @@ CHANGELOG.md
 scITD*.tar.gz
 data-raw
 README.Rmd
+^\.circleci$
