@@ -121,12 +121,12 @@ save(test_container,file='/home/jmitchel/scITD/data/test_container.RData',compre
 # making separate df to test ica
 
 set.seed(123)
-nobs <- 5
+nobs <- 50
 Amat <- cbind(ica::icasamp("a","rnd",nobs),ica::icasamp("b","rnd",nobs))
 Bmat <- matrix(2*runif(4),2,2)
 X_dat <- tcrossprod(Amat,Bmat)
-X_dat <- matrix( rnorm(10,mean=0,sd=1), 5, 2)
-test_res <- ica_p2(X_dat,2,center=FALSE,alg='def')
+# X_dat <- matrix( rnorm(10,mean=0,sd=1), 5, 2)
+test_res <- ica::icafast(X_dat,2,center=FALSE,alg='def')$S
 test_df <- list(X_dat,test_res)
 save(test_df,file='/home/jmitchel/scITD/data/test_df.RData',compress = "xz")
 
