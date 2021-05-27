@@ -2,12 +2,14 @@ version: 2
 jobs:
   build:
     docker:
-      - image: rocker/verse:4.1.0
+      - image: rocker/verse:4.0.3
     steps:
       - checkout
       - run:
           name: Install package dependencies
           command: R -e "devtools::install_deps(dep = TRUE)"
+          environment:
+            _R_CHECK_FORCE_SUGGESTS_: false
       - run:
           name: Build package
           command: R CMD build .
