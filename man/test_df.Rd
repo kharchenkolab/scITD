@@ -3,7 +3,7 @@
 \docType{data}
 \name{test_df}
 \alias{test_df}
-\title{List of dfs for testing ica}
+\title{Contains real tensor data and Tucker results for testing the decomposition}
 \format{
 An object of class \code{list} of length 2.
 }
@@ -11,6 +11,6 @@ An object of class \code{list} of length 2.
 test_df
 }
 \description{
-List of dfs for testing ica
+Contains real tensor data and Tucker results for testing the decomposition
 }
 \keyword{datasets}

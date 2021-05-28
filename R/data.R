@@ -1,7 +1,7 @@
-#' Data container object for unit tests only
+#' Data container for testing tensor formation steps
 #'
 "test_container"
 
-#' List of dfs for testing ica
+#' Contains real tensor data and Tucker results for testing the decomposition
 #'
 "test_df"

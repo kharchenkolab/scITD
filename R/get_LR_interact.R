@@ -639,7 +639,7 @@ plot_multi_module_enr <- function(container, ctypes, modules, sig_thresh=0.05, d
 plot_mod_and_lig <- function(container,factor_select,mod_ct,mod,lig_ct,lig) {
 
   dsc <- container$tucker_results[[1]][,factor_select]
-  lig_exp <- container$scMinimal_ctype[[lig_ct]]$pseudobulk[,lig]
+  lig_exp <- container$scale_pb_extra[[lig_ct]][,lig]
   MEs <- container[["module_eigengenes"]][[mod_ct]]
   ME <- MEs[,mod]
   names(ME) <- rownames(MEs)
