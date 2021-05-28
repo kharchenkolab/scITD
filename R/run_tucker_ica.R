@@ -82,7 +82,8 @@ tucker_ica_helper <- function(tensor_data, ranks, tucker_type, rotation_type) {
   if (ranks[1]>1) {
     # rotate donors matrix
     if (rotation_type == 'ica') {
-      donor_mat <- ica::icafast(donor_mat,ranks[1],center=FALSE,alg='def')$S
+      donor_mat <- ica::icafast(donor_mat,ranks[1],center=FALSE,alg='def',
+                                maxit = 200,tol = 1e-15)$S
 
       # make all vectors length 1 as ICA didn't preserve this
       all_rss <- c()

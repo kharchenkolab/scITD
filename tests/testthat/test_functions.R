@@ -55,13 +55,13 @@ library(Matrix)
 #   expect_equal(result, expected_result)
 # })
 
-test_that("icafast() functionality", {
-  expected_result <- test_df[[2]]
-  X_dat <- test_df[[1]]
-  set.seed(123)
-  result <- ica::icafast(X_dat,2,center=FALSE,alg='def',maxit = 200,tol = 1e-15)$S
-  expect_equal(result, expected_result)
-})
+# test_that("icafast() functionality", {
+#   expected_result <- test_df[[2]]
+#   X_dat <- test_df[[1]]
+#   set.seed(123)
+#   result <- ica::icafast(X_dat,2,center=FALSE,alg='def',maxit = 200,tol = 1e-15)$S
+#   expect_equal(result, expected_result)
+# })
 
 # test_that("icafast() functionality", {
 #   expected_result <- test_container$donor_mat_rot
@@ -126,13 +126,13 @@ test_that("icafast() functionality", {
 # })
 
 
-# test_that("run_tucker_ica() functionality", {
-#   expected_result <- test_container$tucker_results
-#   test_container <- run_tucker_ica(test_container, ranks=c(2,4,2),
-#                                    tucker_type = 'regular', rotation_type = 'ica')
-#   result <- test_container$tucker_results
-#   expect_equal(result, expected_result)
-# })
+test_that("run_tucker_ica() functionality", {
+  expected_result <- test_container$tucker_results
+  test_container <- run_tucker_ica(test_container, ranks=c(2,4,2),
+                                   tucker_type = 'regular', rotation_type = 'ica')
+  result <- test_container$tucker_results
+  expect_equal(result, expected_result)
+})
 
 
 
