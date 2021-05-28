@@ -3,7 +3,7 @@
 
 <!-- badges: start -->
 
-[![<kharchenkolab>](https://circleci.com/gh/kharchenkolab/scITD.svg?style=svg)](https://circleci.com/gh/circleci/circleci-docs)
+[![<kharchenkolab>](https://circleci.com/gh/kharchenkolab/scITD.svg?style=svg)](https://app.circleci.com/pipelines/github/kharchenkolab/scITD)
 <!-- badges: end -->
 
 # scITD
