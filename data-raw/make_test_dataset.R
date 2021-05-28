@@ -155,13 +155,25 @@ test_container2 <- form_tensor(test_container2, donor_min_cells=0, gene_min_cell
 tnsr <- test_container2$tensor_data[[4]]
 tucker_decomp <- rTensor::tucker(rTensor::as.tensor(tnsr), ranks=c(2,4,2))
 X_dat <- tucker_decomp$U[[1]]
-test_res <- ica::icafast(X_dat,2,center=TRUE,alg='def')$S
+set.seed(123)
+test_res <- ica::icafast(X_dat,2,center=FALSE,alg='def')$S
+# test_res <- fastICA(X_dat, 2, alg.typ = "deflation",
+#         fun = "logcosh", alpha = 1.0, method = 'R',
+#         row.norm = FALSE, maxit = 1000, tol = 1e-10, verbose = FALSE,
+#         w.init = NULL)$S
 test_df <- list(X_dat,test_res)
 save(test_df,file='/home/jmitchel/scITD/data/test_df.RData',compress = "xz")
 
 
-
-
+## seeing if icafast and fastica give the same results
+library(fastICA)
+r1 <- fastICA(X_dat, 2, alg.typ = "deflation",
+        fun = "logcosh", alpha = 1.0, method = 'R',
+        row.norm = FALSE, maxit = 100, tol = 1e-06, verbose = FALSE,
+        w.init = NULL)
+r2 <- ica::icafast(X_dat,2,center=FALSE,alg='def')$S
+head(r1$S)
+head(r2)
 
 
 

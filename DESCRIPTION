@@ -41,7 +41,8 @@ Imports:
     GPArotation, 
     sparsepca, 
     dplyr,
-    stats
+    stats,
+    fastICA
 Suggests:
     methods,
     knitr,
