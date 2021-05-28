@@ -59,7 +59,7 @@ test_that("icafast() functionality", {
   expected_result <- test_df[[2]]
   X_dat <- test_df[[1]]
   set.seed(123)
-  result <- ica::icafast(X_dat,2,center=FALSE,alg='def',maxit = 10,tol = 1e-15)$S
+  result <- ica::icafast(X_dat,2,center=FALSE,alg='def',maxit = 200,tol = 1e-15)$S
   expect_equal(result, expected_result)
 })
 

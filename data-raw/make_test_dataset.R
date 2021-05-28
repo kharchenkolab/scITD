@@ -156,7 +156,7 @@ tnsr <- test_container2$tensor_data[[4]]
 tucker_decomp <- rTensor::tucker(rTensor::as.tensor(tnsr), ranks=c(2,4,2))
 X_dat <- tucker_decomp$U[[1]]
 set.seed(123)
-test_res <- ica::icafast(X_dat,2,center=FALSE,alg='def',maxit = 10,tol = 1e-15)$S
+test_res <- ica::icafast(X_dat,2,center=FALSE,alg='def',maxit = 200,tol = 1e-15)$S
 # test_res <- fastICA(X_dat, 2, alg.typ = "deflation",
 #         fun = "logcosh", alpha = 1.0, method = 'R',
 #         row.norm = FALSE, maxit = 1000, tol = 1e-10, verbose = FALSE,
