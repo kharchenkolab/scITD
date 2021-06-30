@@ -577,7 +577,7 @@ plot_multi_module_enr <- function(container, ctypes, modules, sig_thresh=0.05, d
   colnames(myres2) <- colnames(myres)
 
   # limit to just TF sets with a significant result
-  myres2 <- myres2[rowSums(myres2<sig_thresh)>0,]
+  myres2 <- myres2[rowSums(myres2<sig_thresh)>0,,drop=FALSE]
 
   nrn <- rownames(myres2)
   # make set names multi line if too long!
@@ -647,29 +647,53 @@ plot_mod_and_lig <- function(container,factor_select,mod_ct,mod,lig_ct,lig) {
   tmp <- as.data.frame(cbind(dsc[names(ME)],ME,lig_exp[names(ME)]))
   colnames(tmp) <- c('dsc','ME','lig_exp')
 
+  lmres <- lm(lig_exp~dsc,data=tmp)
+  line_range <- seq(min(tmp$dsc),max(tmp$dsc),.001)
+  line_dat <- c(line_range*lmres$coefficients[[2]] + lmres$coefficients[[1]])
+  line_df <- cbind.data.frame(line_range,line_dat)
+  colnames(line_df) <- c('myx','myy')
+
   mycor1 <- cor(tmp$dsc,tmp$lig_exp)
   p1 <- ggplot(tmp,aes(x=dsc,y=lig_exp)) +
     geom_point() +
+    geom_line(data=line_df,aes(x=myx,y=myy)) +
     xlab(paste0('Factor',factor_select,' donor score')) +
     ylab(paste0(lig,' expression in ',lig_ct)) +
     annotate(geom="text",  x=Inf, y=Inf, hjust=1,vjust=1, col="black",
-             label=paste0('pearson r = ',round(mycor1,digits=3)))
+             label=paste0('pearson r = ',round(mycor1,digits=3))) +
+    theme_bw()
+
+  lmres <- lm(ME~dsc,data=tmp)
+  line_range <- seq(min(tmp$dsc),max(tmp$dsc),.001)
+  line_dat <- c(line_range*lmres$coefficients[[2]] + lmres$coefficients[[1]])
+  line_df <- cbind.data.frame(line_range,line_dat)
+  colnames(line_df) <- c('myx','myy')
 
   mycor2 <- cor(tmp$dsc,tmp$ME)
   p2 <- ggplot(tmp,aes(x=dsc,y=ME)) +
     geom_point() +
+    geom_line(data=line_df,aes(x=myx,y=myy)) +
     xlab(paste0('Factor ',factor_select,' donor score')) +
     ylab(paste0(mod_ct,'_',mod,' module expression')) +
     annotate(geom="text",  x=Inf, y=Inf, hjust=1,vjust=1, col="black",
-             label=paste0('pearson r = ',round(mycor2,digits=3)))
+             label=paste0('pearson r = ',round(mycor2,digits=3))) +
+    theme_bw()
+
+  lmres <- lm(ME~lig_exp,data=tmp)
+  line_range <- seq(min(tmp$lig_exp),max(tmp$lig_exp),.001)
+  line_dat <- c(line_range*lmres$coefficients[[2]] + lmres$coefficients[[1]])
+  line_df <- cbind.data.frame(line_range,line_dat)
+  colnames(line_df) <- c('myx','myy')
 
   mycor3 <- cor(tmp$ME,tmp$lig_exp)
   p3 <- ggplot(tmp,aes(x=lig_exp,y=ME)) +
     geom_point() +
+    geom_line(data=line_df,aes(x=myx,y=myy)) +
     xlab(paste0(lig,' expression in ',lig_ct)) +
     ylab(paste0(mod_ct,'_',mod,' module expression')) +
     annotate(geom="text",  x=Inf, y=Inf, hjust=1,vjust=1, col="black",
-             label=paste0('pearson r = ',round(mycor3,digits=3)))
+             label=paste0('pearson r = ',round(mycor3,digits=3))) +
+    theme_bw()
 
   fig_top <- cowplot::plot_grid(plotlist=list(p1,p2), ncol=2)
   fig_bot <- cowplot::plot_grid(plotlist=list(NULL,p3,NULL), ncol=3, rel_widths = c(.25, .5, .25))
