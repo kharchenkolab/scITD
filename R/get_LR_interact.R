@@ -345,20 +345,31 @@ compute_LR_interact <- function(container, lr_pairs, factor_select, sig_thresh=0
         }
         base_formula <- as.formula(base_formula)
         lm2 <- lm(base_formula,data=tmp)
+
+        ## testing out computing interactions between receptor levels and ligand levels
+        lm1 <- lm(eg ~ lig + rec_1,data=tmp)
+        lm2 <- lm(eg ~ lig + rec_1 + lig*rec_1,data=tmp)
+
         anova_res <- anova(lm1,lm2)
         anova_pval <- anova_res$`Pr(>F)`[2]
+        if (ligand=='TNFSF13B') {
+          print(ct_mod)
+          print(ligand_ct)
+          print(anova_pval)
+        }
+
         if (ligand %in% rec && ligand_ct == ct) {
           aovres[l_ct_r,ct_mod] <- 1
         } else {
           aovres[l_ct_r,ct_mod] <- anova_pval
         }
 
-        # ensure receptors not in target module
-        tmp <- container$module_genes[[ct]]
-        tmp_mod <- tmp[tmp==mod]
-        if (sum(rec %in% names(tmp_mod))>0) {
-          aovres[l_ct_r,ct_mod] <- 1
-        }
+        # # ensure receptors not in target module
+        # tmp <- container$module_genes[[ct]]
+        # tmp_mod <- tmp[tmp==mod]
+        # if (sum(rec %in% names(tmp_mod))>0) {
+        #   aovres[l_ct_r,ct_mod] <- 1
+        # }
       }
     }
   }
@@ -655,9 +666,9 @@ plot_mod_and_lig <- function(container,factor_select,mod_ct,mod,lig_ct,lig) {
 
   mycor1 <- cor(tmp$dsc,tmp$lig_exp)
   p1 <- ggplot(tmp,aes(x=dsc,y=lig_exp)) +
-    geom_point() +
+    geom_point(alpha = 0.3,pch=19,size=2) +
     geom_line(data=line_df,aes(x=myx,y=myy)) +
-    xlab(paste0('Factor',factor_select,' donor score')) +
+    xlab(paste0('Factor ',factor_select,' donor score')) +
     ylab(paste0(lig,' expression in ',lig_ct)) +
     annotate(geom="text",  x=Inf, y=Inf, hjust=1,vjust=1, col="black",
              label=paste0('pearson r = ',round(mycor1,digits=3))) +
@@ -671,7 +682,7 @@ plot_mod_and_lig <- function(container,factor_select,mod_ct,mod,lig_ct,lig) {
 
   mycor2 <- cor(tmp$dsc,tmp$ME)
   p2 <- ggplot(tmp,aes(x=dsc,y=ME)) +
-    geom_point() +
+    geom_point(alpha = 0.3,pch=19,size=2) +
     geom_line(data=line_df,aes(x=myx,y=myy)) +
     xlab(paste0('Factor ',factor_select,' donor score')) +
     ylab(paste0(mod_ct,'_',mod,' module expression')) +
@@ -687,7 +698,7 @@ plot_mod_and_lig <- function(container,factor_select,mod_ct,mod,lig_ct,lig) {
 
   mycor3 <- cor(tmp$ME,tmp$lig_exp)
   p3 <- ggplot(tmp,aes(x=lig_exp,y=ME)) +
-    geom_point() +
+    geom_point(alpha = 0.3,pch=19,size=2) +
     geom_line(data=line_df,aes(x=myx,y=myy)) +
     xlab(paste0(lig,' expression in ',lig_ct)) +
     ylab(paste0(mod_ct,'_',mod,' module expression')) +

@@ -87,6 +87,73 @@ run_fgsea <- function(container, factor_select, ctype, db_use="GO") {
   return(fgsea_res)
 }
 
+#' Run fgsea for one cell type of one factor. Note, this uses
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param factor_select numeric The factor of interest
+#' @param ctype character The cell type of interest
+#' @param db_use character The database of gene sets to use. Database
+#' options include "GO", "Reactome", "KEGG", "BioCarta", and "Hallmark". More than
+#' one database can be used. (default="GO")
+#'
+#' @return data.frame of the fgsea results (including non-significant results)
+#' @export
+run_fgsea_old <- function(container, factor_select, ctype, db_use="GO") {
+  donor_scores <- container$tucker_results[[1]]
+
+  f_data <- get_one_factor(pbmc_container, factor_select=factor_select)
+  exp_vals <- f_data[[2]][,ctype]
+
+  m_df <- data.frame()
+  for (db in db_use) {
+    if (db == "GO") {
+      # select the GO Biological Processes group of gene sets
+      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
+                                          category = "C5", subcategory = "BP"))
+    } else if (db == "Reactome") {
+      # select the Reactome gene sets
+      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
+                                          category = "C2", subcategory = "CP:REACTOME"))
+    } else if (db == "KEGG") {
+      # select the KEGG gene sets
+      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
+                                          category = "C2", subcategory = "CP:KEGG"))
+    } else if (db == "BioCarta") {
+      # select the BioCarts gene sets
+      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
+                                          category = "C2", subcategory = "CP:BIOCARTA"))
+    } else if (db == "Hallmark") {
+      # select the BioCarts gene sets
+      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
+                                          category = "H"))
+    }
+  }
+
+  my_pathways <- split(m_df$gene_symbol, f = m_df$gs_name)
+  # my_pathways <- split(m_df$gene_symbol, f = m_df$gs_exact_source)
+
+  fgsea_res <- fgsea::fgsea(pathways = my_pathways,
+                            stats = exp_vals,
+                            minSize=15,
+                            maxSize=500,
+                            eps=0,
+                            gseaParam=.5,
+                            nproc=container$experiment_params$ncores)
+  # fgsea_res <- fgsea::fgsea(pathways = my_pathways,
+  #                           stats = exp_vals,
+  #                           minSize=15,
+  #                           maxSize=500,
+  #                           eps=0,
+  #                           gseaParam=1,
+  #                           scoreType = "pos",
+  #                           nproc=container$experiment_params$ncores)
+
+  fgsea_res <- fgsea_res[order(fgsea_res$padj, decreasing=FALSE),]
+
+  return(fgsea_res)
+}
+
 
 #' Compute enriched gene sets among significant genes in a cell type for
 #' a factor using hypergeometric test

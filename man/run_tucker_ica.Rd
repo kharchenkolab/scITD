@@ -8,7 +8,8 @@ run_tucker_ica(
   container,
   ranks,
   tucker_type = "regular",
-  rotation_type = "ica"
+  rotation_type = "ica",
+  sparsity = 5
 )
 }
 \arguments{
@@ -23,6 +24,8 @@ with sparsity constraints (default='regular')}
 
 \item{rotation_type}{character Set to 'ica' to perform ICA rotation on resulting donor factor
 matrix and loadings. Otherwise set to 'varimax' to perform varimax rotation. (default='ica')}
+
+\item{sparsity}{numeric To use with sparse tucker. Higher indicates more sparse (default=5)}
 }
 \value{
 container with results of the decomposition in container$tucker_results

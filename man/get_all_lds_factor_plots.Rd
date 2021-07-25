@@ -16,7 +16,8 @@ get_all_lds_factor_plots(
   gene_callouts = FALSE,
   callout_n_gene_per_ctype = 5,
   callout_ctypes = NULL,
-  show_var_explained = TRUE
+  show_var_explained = TRUE,
+  reset_other_factor_plots = TRUE
 )
 }
 \arguments{
@@ -63,6 +64,8 @@ genes for all cell types. (default=NULL)}
 
 \item{show_var_explained}{logical If TRUE then shows an anottation with the explained variance
 for each cell type (default=TRUE)}
+
+\item{reset_other_factor_plots}{logical If TRUE then removes any existing loadings plots (default=TRUE)}
 }
 \value{
 the project container with the list of plots placed in container$plots$all_lds_plots

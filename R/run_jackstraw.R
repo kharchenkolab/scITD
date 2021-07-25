@@ -282,7 +282,57 @@ get_min_sig_genes <- function(container, donor_rank_range, gene_ranks,
 }
 
 
+get_lm_pvals <- function(container) {
+  tensor_data <- container$tensor_data
+  tucker_results <- container$tucker_results
 
+  n_genes <- length(tensor_data[[2]])
+  n_ctypes <- length(tensor_data[[3]])
+  all_pvals <- data.frame(matrix(ncol=3,nrow=0))
+  ncores <- container$experiment_params$ncores
+  all_pvals <- mclapply(1:n_genes, function(i) {
+    gene <- tensor_data[[2]][i]
+    gene_res <- list()
+    for (j in 1:n_ctypes) {
+      ctype <- tensor_data[[3]][j]
+      gene_res[[ctype]] <- list()
+      for (k in 1:ncol(tucker_results[[1]])) {
+        tmp_fiber <- tensor_data[[4]][,i,j]
+        df_test <- as.data.frame(cbind(tmp_fiber, tucker_results[[1]][,k]))
+        colnames(df_test) <- c('fiber','factor')
+        lmres <- lm(factor~fiber,df_test)
+
+        x <- summary(lmres)
+        pval <- stats::pf(x$fstatistic[1],x$fstatistic[2],x$fstatistic[3],lower.tail=FALSE)
+
+        gene_res[[ctype]][[as.character(k)]] <- pval
+      }
+    }
+    return(gene_res)
+  }, mc.cores = ncores)
+
+  names(all_pvals) <- tensor_data[[2]]
+
+  # unpack the list
+  all_pvals <- unlist(all_pvals)
+
+  all_pvals <- p.adjust(all_pvals,method='fdr')
+
+  new_names <- sapply(names(all_pvals),function(x) {
+    tmp <- strsplit(x,split = '.', fixed = TRUE)[[1]]
+    if (length(tmp)==4) {
+      return(paste0(tmp[[1]],'.',tmp[[2]],'.',tmp[[3]]))
+    } else if (length(tmp)==5) {
+      return(paste0(tmp[[1]],'.',tmp[[2]],'.',tmp[[3]],'.',tmp[[4]]))
+    } else if (length(tmp)==6) {
+      return(paste0(tmp[[1]],'.',tmp[[2]],'.',tmp[[3]],'.',tmp[[4]],'.',tmp[[5]]))
+    }
+  })
+  names(new_names) <- NULL
+  names(all_pvals) <- new_names
+  container[["gene_score_associations"]] <- all_pvals
+  return(container)
+}
 
 
 

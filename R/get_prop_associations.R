@@ -671,15 +671,35 @@ get_subclust_enr_dotplot <- function(container,ctype,res,subtype,factor_use) {
   donor_props2 <- cbind(donor_props2,as.character(meta[rownames(donor_props2),'Status']))
   colnames(donor_props2)[ncol(donor_props2)] <- 'Status'
 
-  p <- ggplot(as.data.frame(donor_props2),aes(x=as.numeric(dsc),y=as.numeric(prop),color=as.factor(Status))) +
-    geom_point() +
+  donor_props2 <- as.data.frame(donor_props2)
+  donor_props2$dsc <- as.numeric(donor_props2$dsc)
+  donor_props2$prop <- as.numeric(donor_props2$prop)
+  donor_props2$Status <- as.factor(donor_props2$Status)
+
+  lmres <- lm(prop~dsc,data=donor_props2)
+  line_range <- seq(min(donor_props2$dsc),max(donor_props2$dsc),.001)
+  line_dat <- c(line_range*lmres$coefficients[[2]] + lmres$coefficients[[1]])
+  line_df <- cbind.data.frame(line_range,line_dat)
+  # colnames(line_df) <- c('myx','myy')
+  line_df <- cbind.data.frame(line_df,rep('1',nrow(line_df)))
+  colnames(line_df) <- c('myx','myy','Status')
+
+  p <- ggplot(donor_props2,aes(x=dsc,y=prop,color=Status)) +
+    geom_point(alpha = 0.5,pch=19,size=2) +
+    geom_line(data=line_df,aes(x=myx,y=myy)) +
     xlab(paste0('Factor ',as.character(factor_use),' Donor Score')) +
     ylab(paste0('Proportion of All ',ctype)) +
     ylim(0,1) +
     labs(color = "Status") +
     ggtitle(paste0(ctype,'_',as.character(subtype),' Proportions')) +
     theme_bw() +
-    theme(plot.title = element_text(hjust = 0.5))
+    theme(plot.title = element_text(hjust = 0.5),
+          axis.text=element_text(size=12),
+          axis.title=element_text(size=14)) +
+    scale_color_manual(values = c("Healthy" = '#F8766D',
+                                  "Managed" = '#00BFC4',
+                                  "1" = "black"))
+
   return(p)
 }
 

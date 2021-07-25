@@ -344,8 +344,8 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
   }
 
   # color_lim <- stats::quantile(as.matrix(abs(tmp_casted_num)), c(.9999999))
-  # color_lim <- stats::quantile(as.matrix(abs(tmp_casted_num)), c(.99))
-  color_lim <- stats::quantile(as.matrix(abs(tmp_casted_num)), c(.95))
+  color_lim <- stats::quantile(as.matrix(abs(tmp_casted_num)), c(.99))
+  # color_lim <- stats::quantile(as.matrix(abs(tmp_casted_num)), c(.95))
   col_fun = colorRamp2(c(-color_lim, 0, color_lim), c("blue", "white", "red"))
 
 
@@ -658,6 +658,7 @@ get_callouts_annot <- function(container, tmp_casted_num, factor_select, sig_thr
 #' genes for all cell types. (default=NULL)
 #' @param show_var_explained logical If TRUE then shows an anottation with the explained variance
 #' for each cell type (default=TRUE)
+#' @param reset_other_factor_plots logical If TRUE then removes any existing loadings plots (default=TRUE)
 #'
 #' @return the project container with the list of plots placed in container$plots$all_lds_plots
 #' @export
@@ -666,10 +667,16 @@ get_all_lds_factor_plots <- function(container, use_sig_only=FALSE, nonsig_to_ze
                                      sig_thresh=0.05, display_genes=FALSE,
                                      gene_callouts=FALSE, callout_n_gene_per_ctype=5,
                                      callout_ctypes=NULL,
-                                     show_var_explained=TRUE) {
+                                     show_var_explained=TRUE,
+                                     reset_other_factor_plots=TRUE) {
 
   num_fact <- nrow(container$tucker_results[[2]])
   for (i in 1:num_fact) {
+    if (reset_other_factor_plots) {
+      if (i!=1) {
+        reset_other_factor_plots <- FALSE
+      }
+    }
     container <- plot_loadings_annot(container, factor_select=i,
                                      use_sig_only=use_sig_only,
                                      nonsig_to_zero=nonsig_to_zero,
@@ -682,7 +689,7 @@ get_all_lds_factor_plots <- function(container, use_sig_only=FALSE, nonsig_to_ze
                                      callout_ctypes=callout_ctypes[[i]],
                                      show_xlab=TRUE,
                                      show_var_explained=show_var_explained,
-                                     reset_other_factor_plots=FALSE,
+                                     reset_other_factor_plots=reset_other_factor_plots,
                                      draw_plot=FALSE)
 
   }
