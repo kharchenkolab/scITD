@@ -24,7 +24,7 @@ run_fgsea <- function(container, factor_select, ctype, db_use="GO") {
     exp_transform <- tnsr_slice[,j] * donor_scores[rownames(tnsr_slice),factor_select]
     de_val <- sum(exp_transform)
 
-    ## testing out using undirected statistics. Use with commented out fgsea fn below.
+    # # testing out using undirected statistics. Use with commented out fgsea fn below.
     # exp_transform <- tnsr_slice[,j] * donor_scores[rownames(tnsr_slice),factor_select]
     # de_val <- abs(sum(exp_transform))
 

@@ -298,14 +298,20 @@ get_lm_pvals <- function(container) {
       gene_res[[ctype]] <- list()
       for (k in 1:ncol(tucker_results[[1]])) {
         tmp_fiber <- tensor_data[[4]][,i,j]
-        df_test <- as.data.frame(cbind(tmp_fiber, tucker_results[[1]][,k]))
-        colnames(df_test) <- c('fiber','factor')
-        lmres <- lm(factor~fiber,df_test)
 
-        x <- summary(lmres)
-        pval <- stats::pf(x$fstatistic[1],x$fstatistic[2],x$fstatistic[3],lower.tail=FALSE)
+        # if expression is 0 for all donors just skip
+        if (sum(tmp_fiber==0)==length(tmp_fiber)) {
+          gene_res[[ctype]][[as.character(k)]]$value <- NA
+        } else {
+          df_test <- as.data.frame(cbind(tmp_fiber, tucker_results[[1]][,k]))
+          colnames(df_test) <- c('fiber','factor')
+          lmres <- lm(factor~fiber,df_test)
 
-        gene_res[[ctype]][[as.character(k)]] <- pval
+          x <- summary(lmres)
+          pval <- stats::pf(x$fstatistic[1],x$fstatistic[2],x$fstatistic[3],lower.tail=FALSE)
+
+          gene_res[[ctype]][[as.character(k)]] <- pval
+        }
       }
     }
     return(gene_res)
@@ -317,6 +323,9 @@ get_lm_pvals <- function(container) {
   all_pvals <- unlist(all_pvals)
 
   all_pvals <- p.adjust(all_pvals,method='fdr')
+
+  # set NA values to 1
+  all_pvals[is.na(all_pvals)] <- 1
 
   new_names <- sapply(names(all_pvals),function(x) {
     tmp <- strsplit(x,split = '.', fixed = TRUE)[[1]]

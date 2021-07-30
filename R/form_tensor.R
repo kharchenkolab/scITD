@@ -168,29 +168,29 @@ clean_data <- function(container, donor_min_cells=5, gene_min_cells=5) {
     ctype_sub <- subset_scMinimal(ctype_sub, donors_use=donors_in_all)
   }
 
-  for (ct in container$experiment_params$ctypes_use) {
-    ctype_sub <- container$scMinimal_ctype[[ct]]
-
-    # identify genes with few counts across all cells
-    gene_counts <- rowSums(ctype_sub$count_data > 0)
-    genes_keep <- names(gene_counts)[gene_counts > gene_min_cells]
-
-    # subset on genes
-    ctype_sub <- subset_scMinimal(ctype_sub, genes_use = genes_keep)
-  }
-
-  # get genes present in all ctype matrices
-  genes_in_all <- rownames(container$scMinimal_ctype[[1]]$count_data)
-  for (ct in container$experiment_params$ctypes_use) {
-    ctype_genes <- rownames(container$scMinimal_ctype[[ct]]$count_data)
-    genes_in_all <- intersect(genes_in_all,ctype_genes)
-  }
-
-  # reduce data to only the intersection of genes in all ctypes
-  for (ct in container$experiment_params$ctypes_use) {
-    ctype_sub <- container$scMinimal_ctype[[ct]]
-    ctype_sub <- subset_scMinimal(ctype_sub, genes_use=genes_in_all)
-  }
+  # for (ct in container$experiment_params$ctypes_use) {
+  #   ctype_sub <- container$scMinimal_ctype[[ct]]
+  #
+  #   # identify genes with few counts across all cells
+  #   gene_counts <- rowSums(ctype_sub$count_data > 0)
+  #   genes_keep <- names(gene_counts)[gene_counts > gene_min_cells]
+  #
+  #   # subset on genes
+  #   ctype_sub <- subset_scMinimal(ctype_sub, genes_use = genes_keep)
+  # }
+  #
+  # # get genes present in all ctype matrices
+  # genes_in_all <- rownames(container$scMinimal_ctype[[1]]$count_data)
+  # for (ct in container$experiment_params$ctypes_use) {
+  #   ctype_genes <- rownames(container$scMinimal_ctype[[ct]]$count_data)
+  #   genes_in_all <- intersect(genes_in_all,ctype_genes)
+  # }
+  #
+  # # reduce data to only the intersection of genes in all ctypes
+  # for (ct in container$experiment_params$ctypes_use) {
+  #   ctype_sub <- container$scMinimal_ctype[[ct]]
+  #   ctype_sub <- subset_scMinimal(ctype_sub, genes_use=genes_in_all)
+  # }
 
   return(container)
 }
@@ -331,18 +331,15 @@ norm_var_helper <- function(scMinimal) {
   df$m <- log(df$m); df$v <- log(df$v);
   rownames(df) <- colnames(donor_sum_counts);
 
-  gam.k <- 5
+  # min.gene.cells <- round(nrow(scMinimal$pseudobulk)*.02)
   min.gene.cells <- 0
   vi <- which(is.finite(df$v) & df$nobs>=min.gene.cells);
-  if(length(vi)<gam.k*1.5) { gam.k=1 };# too few genes
-  if(gam.k<2) {
-    m <- lm(v ~ m, data = df[vi,])
-  } else {
-    m <- mgcv::gam(stats::as.formula(paste0('v ~ s(m, k = ',gam.k,')')), data = df[vi,])
-  }
+  gam.k <- 5
+  m <- mgcv::gam(stats::as.formula(paste0('v ~ s(m, k = ',gam.k,')')), data = df[vi,])
 
-  df$res <- -Inf;  df$res <- stats::resid(m,type='response')
-  n.obs <- df$nobs;
+  df$res <- -Inf
+  df$res[vi] <- stats::resid(m,type='response')
+  n.obs <- df$nobs
   suppressWarnings(df$lp <- as.numeric(stats::pf(exp(df$res),n.obs,n.obs,lower.tail=FALSE,log.p=FALSE)))
   var_pvals <- log(p.adjust(df$lp,method='fdr'))
   df$lp <- log(df$lp)
@@ -353,9 +350,13 @@ norm_var_helper <- function(scMinimal) {
 
 
   # make sure no scaled_var values == 0 as I use it to scale the variance later
+  scaled_var[is.nan(scaled_var)] <- 0  # first make any nan to 0
   min_non_zero <- min(scaled_var[scaled_var!=0])
   ndx_zero <- which(scaled_var==0)
   scaled_var[ndx_zero] <- min_non_zero
+
+  # make log(pvals) for nan elements to be 0
+  var_pvals[is.nan(var_pvals)] <- 0
 
   return(list(scaled_var,var_pvals))
 }
@@ -551,6 +552,9 @@ scale_variance <- function(container, var_scale_power) {
 
     # center with unit variance
     pb <- scale(pb, center=TRUE)
+
+    # if gene was all 0's it is now NaN, so need to change the values back
+    pb[is.nan(pb)] <- 0
 
     norm_variances <- container$scMinimal_ctype[[ct]]$norm_variances
     scale_factor <- norm_variances[colnames(pb)]

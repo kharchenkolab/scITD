@@ -141,9 +141,9 @@ tucker_ica_helper2 <- function(tensor_data, ranks, tucker_type, rotation_type, s
   donor_mat <- tucker_decomp$U[[1]]
   rownames(donor_mat) <- donor_nm
 
-  ## trying to set ctype factor matrix to identity
-  ctype_by_factors <- diag(ncol(tucker_decomp$U[[3]]))
-  rownames(ctype_by_factors) <- ctype_nm
+  # ## trying to set ctype factor matrix to identity
+  # ctype_by_factors <- diag(ncol(tucker_decomp$U[[3]]))
+  # rownames(ctype_by_factors) <- ctype_nm
 
   # compute kronecker product
   kron_prod <- kronecker(ctype_by_factors,gene_by_factors,make.dimnames = TRUE)
