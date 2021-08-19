@@ -124,8 +124,9 @@ tucker_ica_helper <- function(tensor_data, ranks, tucker_type, rotation_type, sp
     # generate counter-rotated core tensor unfolded along donor dimension
     core_new <- t(as.matrix(donor_mat)) %*% rTensor::k_unfold(rTensor::as.tensor(tnsr),1)@data %*% kron_prod
 
-    # optimize core by rotating it with varimax
-    vari_res <- stats::varimax(t(core_new))
+    ## optimize core by rotating it with varimax
+    vari_res <- stats::varimax(t(core_new),eps = 1e-15)
+    # vari_res <- stats::varimax(t(core_new))
     core_new <- t(t(core_new) %*% vari_res$rotmat)
     ldngs <- core_new %*% t(kron_prod)
 
