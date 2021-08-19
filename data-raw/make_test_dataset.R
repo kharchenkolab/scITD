@@ -57,6 +57,8 @@ test_container <- form_tensor(test_container, donor_min_cells=0,
 
 test_container <- run_tucker_ica(test_container, ranks=c(2,4),
                                  tucker_type = 'regular', rotation_type = 'hybrid')
+test_container <- run_tucker_ica(test_container, ranks=c(2,4),
+                                 tucker_type = 'regular', rotation_type = 'ica_dsc')
 
 test_container <- get_lm_pvals(test_container)
 

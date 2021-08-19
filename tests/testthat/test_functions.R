@@ -27,7 +27,7 @@ test_that("form_tensor() functionality", {
 test_that("run_tucker_ica() functionality", {
   expected_result <- test_container$tucker_results
   test_container <- run_tucker_ica(test_container, ranks=c(2,4),
-                                   tucker_type = 'regular', rotation_type = 'hybrid')
+                                   tucker_type = 'regular', rotation_type = 'ica_dsc')
   result <- test_container$tucker_results
   expect_equal(result, expected_result)
 })
