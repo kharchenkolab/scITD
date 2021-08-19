@@ -24,19 +24,19 @@ test_that("form_tensor() functionality", {
   expect_equal(result, expected_result)
 })
 
-test_that("run_tucker_ica() functionality", {
-  expected_result <- test_container$tucker_results
-  test_container <- run_tucker_ica(test_container, ranks=c(2,4),
-                                   tucker_type = 'regular', rotation_type = 'ica_dsc')
-  result <- test_container$tucker_results
-  expect_equal(result, expected_result)
-})
-
 # test_that("run_tucker_ica() functionality", {
-#   expected_result <- test_df$tucker_results
-#   test_df <- run_tucker_ica(test_df, ranks=c(2,4,2),
-#                                    tucker_type = 'regular', rotation_type = 'ica')
-#   result <- test_df$tucker_results
+#   expected_result <- test_container$tucker_results
+#   test_container <- run_tucker_ica(test_container, ranks=c(2,4),
+#                                    tucker_type = 'regular', rotation_type = 'ica_dsc')
+#   result <- test_container$tucker_results
 #   expect_equal(result, expected_result)
 # })
+
+test_that("run_tucker_ica() functionality", {
+  expected_result <- test_df$tucker_results
+  test_df <- run_tucker_ica(test_df, ranks=c(2,4),
+                                   tucker_type = 'regular', rotation_type = 'ica_dsc')
+  result <- test_df$tucker_results
+  expect_equal(result, expected_result)
+})
 
