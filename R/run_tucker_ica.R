@@ -102,9 +102,9 @@ tucker_ica_helper <- function(tensor_data, ranks, tucker_type, rotation_type, sp
 
   if (rotation_type=='hybrid') {
     ## rotate gene matrix
-    # gene_by_factors <- ica::icafast(gene_by_factors,ranks[2],center=FALSE,
-    #                                 alg='def',maxit = 200,tol = 1e-15)$S
-    gene_by_factors <- ica::icafast(gene_by_factors,ranks[2],center=FALSE,alg='def')$S
+    gene_by_factors <- ica::icafast(gene_by_factors,ranks[2],center=FALSE,
+                                    alg='def',maxit = 200,tol = 1e-15)$S
+    # gene_by_factors <- ica::icafast(gene_by_factors,ranks[2],center=FALSE,alg='def')$S
 
     # make all vectors length 1 as ICA didn't preserve this
     all_rss <- c()
@@ -135,9 +135,9 @@ tucker_ica_helper <- function(tensor_data, ranks, tucker_type, rotation_type, sp
   } else if (rotation_type=='ica_dsc') {
     if (ranks[1]>1) {
       ## rotate donor scores matrix by ICA
-      # donor_mat <- ica::icafast(donor_mat,ranks[1],center=FALSE,alg='def',
-      #                           maxit = 200,tol = 1e-15)$S
-      donor_mat <- ica::icafast(donor_mat,ranks[1],center=FALSE,alg='def')$S
+      donor_mat <- ica::icafast(donor_mat,ranks[1],center=FALSE,alg='def',
+                                maxit = 200,tol = 1e-15)$S
+      # donor_mat <- ica::icafast(donor_mat,ranks[1],center=FALSE,alg='def')$S
 
       # make all vectors length 1 as ICA didn't preserve this
       all_rss <- c()
@@ -167,9 +167,9 @@ tucker_ica_helper <- function(tensor_data, ranks, tucker_type, rotation_type, sp
     ldngs <- core_new %*% t(kron_prod)
 
     ## rotate loadings directly with ICA
-    # ica_res <- ica::icafast(t(ldngs),ranks[1],center=FALSE,alg='def',
-    #                         maxit = 200,tol = 1e-15)
-    ica_res <- ica::icafast(t(ldngs),ranks[1],center=FALSE,alg='def')
+    ica_res <- ica::icafast(t(ldngs),ranks[1],center=FALSE,alg='def',
+                            maxit = 200,tol = 1e-15)
+    # ica_res <- ica::icafast(t(ldngs),ranks[1],center=FALSE,alg='def')
     ldngs <- t(ica_res$S)
 
     # counter rotate the donor scores matrix
