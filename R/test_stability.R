@@ -1,8 +1,41 @@
 
+utils::globalVariables(c("ldngs", "dscores"))
 
 
 
-run_stability_analysis <- function(container, ranks, subset_type, sub_prop=.75, n_iterations=100, tucker_type='regular', sparsity=sqrt(2)) {
+#' Test stability of a decomposition by subsampling or bootstrapping donors. Note that
+#' running this function will replace the decomposition in the project container
+#' with one resulting from the tucker parameters entered here.
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param ranks numeric The number of donor, gene, and cell type ranks, respectively,
+#' to decompose to using Tucker decomposition.
+#' @param tucker_type character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
+#' with sparsity constraints (default='regular')
+#' @param rotation_type character Set to 'hybrid' to optimize loadings via our hybrid
+#' method (see paper for details). Set to 'ica_dsc' to perform ICA rotation
+#' on resulting donor factor matrix. Set to 'ica_lds' to optimize loadings by the
+#' ICA rotation. (default='hybrid')
+#' @param sparsity numeric To use with sparse tucker. Higher indicates more sparse (default=sqrt(2))
+#' @param subset_type character Set to either 'subset' or 'bootstrap' (default='subset')
+#' @param sub_prop numeric The proportion of donors to keep when using subset_type='subset' (default=.75)
+#' @param n_iterations numeric The number of iterations to perform (default=100)
+#'
+#' @return The project container with the donor scores stability in
+#' container$plots$stability_plot_dsc and the loadings stability in
+#' container$plots$stability_plot_lds
+#' @export
+run_stability_analysis <- function(container, ranks, tucker_type='regular',
+                                   rotation_type='hybrid',  sparsity=sqrt(2),
+                                   subset_type='subset', sub_prop=.75,
+                                   n_iterations=100) {
+
+  # run tucker with the above parameters in case they changed them
+  container <- run_tucker_ica(container, ranks=ranks,
+                              tucker_type = tucker_type,
+                              rotation_type = rotation_type)
+
   dnr_full <- container$tucker_results[[1]]
   lds_full <- container$tucker_results[[2]]
 
@@ -13,21 +46,13 @@ run_stability_analysis <- function(container, ranks, subset_type, sub_prop=.75, 
   # save full tensor data
   full_tensor_data <- container$tensor_data
 
-  # store dscore results
-  # res_list <- list()
-  # all_bsamps <- list()
-  # saf_cors <- c()
-  # all_decomps <- list()
-
-  # for (i in 1:n_iterations) {
-  res_list <- mclapply(1:n_iterations, function(x) {
+  res_list <- sccore::plapply(1:n_iterations, function(x) {
     # sample donors
     if (subset_type=='subset') {
       bsamp <- sample(donor_ndx_all,round(n_donors*sub_prop),FALSE)
     } else if (subset_type=='bootstrap') {
       bsamp <- sample(donor_ndx_all,n_donors,TRUE)
     }
-    # all_bsamps[[i]] <- bsamp
 
     # reduce tensor data to just the train donors
     container[["tensor_data"]][[4]] <- container[["tensor_data"]][[4]][bsamp,,]
@@ -35,23 +60,22 @@ run_stability_analysis <- function(container, ranks, subset_type, sub_prop=.75, 
 
     # run tucker and rotation
     container <- run_tucker_ica(container, ranks=ranks,
-                                tucker_type = tucker_type, rotation_type = 'ica',
+                                tucker_type = tucker_type,
+                                rotation_type = rotation_type,
                                 sparsity=sparsity)
 
     donor_mat <- container$tucker_results[[1]]
     ldngs <- container$tucker_results[[2]]
-    # all_decomps[[i]] <- donor_mat
 
     d_max <- get_max_correlations(dnr_full,donor_mat,res_use='dscores')
     l_max <- get_max_correlations(lds_full,ldngs,res_use='loadings')
-    # saf_cors <- c(saf_cors,d_max[6])
 
     # reset tensor data
     container$tensor_data <- full_tensor_data
 
     return(list(d_max,l_max))
 
-  }, mc.cores=container$experiment_params$ncores)
+  }, mc.preschedule=TRUE,n.cores=container$experiment_params$ncores, progress=TRUE)
 
   stability_results <- do.call(rbind.data.frame, res_list)
 
@@ -79,12 +103,19 @@ run_stability_analysis <- function(container, ranks, subset_type, sub_prop=.75, 
 }
 
 
-
-
-
+#' Computes the max correlation between each factor of the decomposition done using
+#' the whole dataset to each factor computed using the subsampled/bootstrapped dataset
+#'
+#' @param res_full matrix Either the donor scores or loadings matrix from the original
+#' decomposition
+#' @param res_sub matrix Either the donor scores or loadings matrix from the new
+#' decomposition
+#' @param res_use character Can either be 'loadings' or 'dscores' and should correspond
+#' with the data matrix used
+#'
+#' @return a vector of the max correlations for each original factor
 get_max_correlations <- function(res_full, res_sub, res_use) {
   if (res_use == 'loadings') {
-
     # get gene_ctype combos present in both decompositions
     gc_use <- intersect(colnames(res_full),colnames(res_sub))
     res_full <- res_full[,gc_use]
@@ -99,21 +130,25 @@ get_max_correlations <- function(res_full, res_sub, res_use) {
     cormat <- cor(res_full, res_sub)
   }
 
-  # calculate average max correlation between factors
+  # calculate max correlations from original factors to new ones
   max_cors <- apply(abs(cormat), MARGIN=1, FUN=max)
 
   return(max_cors)
 }
 
+#' Generate a plot for either the donor scores or loadings stability test
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param plt_data character Either 'lds' or 'dsc' and indicates which plot to make
+#'
+#' @return the plot
 plot_stability_results <- function(container,plt_data) {
   sr <- container$stability_results
 
   if (plt_data=='lds') {
     p <- ggplot(sr, aes(x=as.factor(factor), y=as.numeric(ldngs))) +
-      # geom_point(alpha=.5) +
-      # geom_violin() +
       geom_boxplot() +
-      # geom_dotplot(binwidth = .0075, dotsize = .75, method='histodot', binaxis = 'y', stackdir='center') +
       xlab('Factor') +
       ylab('Loadings correlation') +
       ggtitle('Loadings stability') +
@@ -121,10 +156,7 @@ plot_stability_results <- function(container,plt_data) {
       ylim(c(0,1))
   } else if (plt_data=='dsc') {
     p <- ggplot(sr, aes(x=as.factor(factor), y=as.numeric(dscores))) +
-      # geom_point(alpha=.5) +
-      # geom_violin() +
       geom_boxplot() +
-      # geom_dotplot(binwidth = .0075, dotsize = .75, method='histodot', binaxis = 'y', stackdir='center') +
       xlab('Factor') +
       ylab('Donor scores correlation') +
       ggtitle('Donor scores stability') +

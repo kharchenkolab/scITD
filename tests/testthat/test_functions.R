@@ -16,20 +16,27 @@ test_that("colMeanVars() functionality", {
 
 test_that("form_tensor() functionality", {
   expected_result <- test_container$scMinimal_ctype[['CD4+ T']]$pseudobulk
-  test_container <- form_tensor(test_container, donor_min_cells=0, gene_min_cells=0,
+  test_container <- form_tensor(test_container, donor_min_cells=0,
                                 norm_method='trim', scale_factor=10000,
                                 vargenes_method='norm_var', vargenes_thresh=500,
-                                scale_var = TRUE, var_scale_power = 1.5)
+                                scale_var = TRUE, var_scale_power = .5)
   result <- test_container$scMinimal_ctype[['CD4+ T']]$pseudobulk
   expect_equal(result, expected_result)
 })
 
-
 test_that("run_tucker_ica() functionality", {
-  expected_result <- test_df$tucker_results
-  test_df <- run_tucker_ica(test_df, ranks=c(2,4,2),
-                                   tucker_type = 'regular', rotation_type = 'ica')
-  result <- test_df$tucker_results
+  expected_result <- test_container$tucker_results
+  test_container <- run_tucker_ica(test_container, ranks=c(2,4),
+                                   tucker_type = 'regular', rotation_type = 'hybrid')
+  result <- test_container$tucker_results
   expect_equal(result, expected_result)
 })
+
+# test_that("run_tucker_ica() functionality", {
+#   expected_result <- test_df$tucker_results
+#   test_df <- run_tucker_ica(test_df, ranks=c(2,4,2),
+#                                    tucker_type = 'regular', rotation_type = 'ica')
+#   result <- test_df$tucker_results
+#   expect_equal(result, expected_result)
+# })
 

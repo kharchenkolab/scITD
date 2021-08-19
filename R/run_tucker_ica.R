@@ -3,7 +3,7 @@
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
-#' @param ranks numeric The number of donor, gene, and cell type ranks, respectively,
+#' @param ranks numeric The number of donor and gene factors, respectively,
 #' to decompose to using Tucker decomposition.
 #' @param tucker_type character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
 #' with sparsity constraints (default='regular')
@@ -11,11 +11,14 @@
 #' method (see paper for details). Set to 'ica_dsc' to perform ICA rotation
 #' on resulting donor factor matrix. Set to 'ica_lds' to optimize loadings by the
 #' ICA rotation. (default='hybrid')
-#' @param sparsity numeric To use with sparse tucker. Higher indicates more sparse (default=5)
+#' @param sparsity numeric To use with sparse tucker. Higher indicates more sparse (default=sqrt(2))
 #'
 #' @return container with results of the decomposition in container$tucker_results
 #' @export
-run_tucker_ica <- function(container, ranks, tucker_type='regular', rotation_type='hybrid', sparsity=5) {
+#'
+#' @examples
+#' test_container <- run_tucker_ica(test_container,ranks=c(2,4))
+run_tucker_ica <- function(container, ranks, tucker_type='regular', rotation_type='hybrid', sparsity=sqrt(2)) {
 
   if (is.null(container$tensor_data)) {
     stop("need to run form_tensor() first")
@@ -29,8 +32,13 @@ run_tucker_ica <- function(container, ranks, tucker_type='regular', rotation_typ
     stop("rotation_type can only be 'hybrid', 'ica_dsc', or 'ica_lds'")
   }
 
-  # run tucker with ica on the tensor
+  # get tensor data
   tensor_data <- container$tensor_data
+
+  # set 3rd ranks position to be the number of cell types
+  ranks[3] <- length(tensor_data[[3]])
+
+  # run tucker with rotation on the tensor
   tucker_res <- tucker_ica_helper(tensor_data, ranks, tucker_type, rotation_type, sparsity)
   container$tucker_results <- tucker_res
 
@@ -52,9 +60,8 @@ run_tucker_ica <- function(container, ranks, tucker_type='regular', rotation_typ
 #'
 #' @param tensor_data list The tensor data including donor, gene, and cell type labels
 #' as well as the tensor array itself
-#' @param ranks numeric The number of donor, gene, and cell type ranks, respectively,
-#' to decompose to using Tucker decomposition. For hybrid rotation, only need to
-#' specify donor and gene ranks as identity is used for cell type factor matrix.
+#' @param ranks numeric The number of donor and gene factors respectively,
+#' to decompose to using Tucker decomposition.
 #' @param tucker_type character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
 #' with sparsity constraints
 #' @param rotation_type character Set to 'hybrid' to optimize loadings via our hybrid
@@ -118,7 +125,7 @@ tucker_ica_helper <- function(tensor_data, ranks, tucker_type, rotation_type, sp
     core_new <- t(as.matrix(donor_mat)) %*% rTensor::k_unfold(rTensor::as.tensor(tnsr),1)@data %*% kron_prod
 
     # optimize core by rotating it with varimax
-    vari_res <- varimax(t(core_new))
+    vari_res <- stats::varimax(t(core_new))
     core_new <- t(t(core_new) %*% vari_res$rotmat)
     ldngs <- core_new %*% t(kron_prod)
 

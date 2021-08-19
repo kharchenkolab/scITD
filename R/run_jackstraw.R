@@ -18,10 +18,6 @@ utils::globalVariables(c("donor_rank", "min_sig"))
 #'
 #' @return the project container with adjusted pvalues in container$gene_score_associations
 #' @export
-#'
-#' @examples
-#' test_container <- run_jackstraw(test_container, ranks=c(2,4,2), n_fibers=6,
-#' n_iter=50, tucker_type='regular', rotation_type='ica')
 run_jackstraw <- function(container, ranks, n_fibers=100, n_iter=500,
                           tucker_type='regular', rotation_type='ica') {
   # set random seed
@@ -53,13 +49,6 @@ run_jackstraw <- function(container, ranks, n_fibers=100, n_iter=500,
 
   # compute actual F statistics for all real fibers
   fstats_real <- get_real_fstats(container, ncores)
-
-  # # temporary testing getting regular pvalues
-  # pvals_adj <- fstats_real
-  # names(pvals_adj) <- names(fstats_real)
-  # names(pvals_adj) <- sapply(names(pvals_adj),function(x){
-  #   substr(x,1,nchar(x)-6)
-  # })
 
   # calculate p-value by counting how many null F stats greater
   pvals_adj <- get_fstats_pvals(fstats_real, fstats_shuffled)
@@ -282,9 +271,24 @@ get_min_sig_genes <- function(container, donor_rank_range, gene_ranks,
 }
 
 
+#' Compute gene-factor associations
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#'
+#' @return the project container with the adjust p-values for the gene-factor
+#' associations in container$gene_score_associations
+#' @export
+#'
+#' @examples
+#' test_container <- get_lm_pvals(test_container)
 get_lm_pvals <- function(container) {
   tensor_data <- container$tensor_data
   tucker_results <- container$tucker_results
+
+  if (is.null(tucker_results)) {
+    stop('Need to run run_tucker_ica() first')
+  }
 
   n_genes <- length(tensor_data[[2]])
   n_ctypes <- length(tensor_data[[3]])

@@ -9,14 +9,14 @@ run_tucker_ica(
   ranks,
   tucker_type = "regular",
   rotation_type = "hybrid",
-  sparsity = 5
+  sparsity = sqrt(2)
 )
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
 for each cell type as well as results and plots from all analyses}
 
-\item{ranks}{numeric The number of donor, gene, and cell type ranks, respectively,
+\item{ranks}{numeric The number of donor and gene factors, respectively,
 to decompose to using Tucker decomposition.}
 
 \item{tucker_type}{character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
@@ -27,11 +27,14 @@ method (see paper for details). Set to 'ica_dsc' to perform ICA rotation
 on resulting donor factor matrix. Set to 'ica_lds' to optimize loadings by the
 ICA rotation. (default='hybrid')}
 
-\item{sparsity}{numeric To use with sparse tucker. Higher indicates more sparse (default=5)}
+\item{sparsity}{numeric To use with sparse tucker. Higher indicates more sparse (default=sqrt(2))}
 }
 \value{
 container with results of the decomposition in container$tucker_results
 }
 \description{
 Run Tucker decomposition and apply ICA transformation
+}
+\examples{
+test_container <- run_tucker_ica(test_container,ranks=c(2,4))
 }

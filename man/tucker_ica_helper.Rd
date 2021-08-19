@@ -10,9 +10,8 @@ tucker_ica_helper(tensor_data, ranks, tucker_type, rotation_type, sparsity)
 \item{tensor_data}{list The tensor data including donor, gene, and cell type labels
 as well as the tensor array itself}
 
-\item{ranks}{numeric The number of donor, gene, and cell type ranks, respectively,
-to decompose to using Tucker decomposition. For hybrid rotation, only need to
-specify donor and gene ranks as identity is used for cell type factor matrix.}
+\item{ranks}{numeric The number of donor and gene factors respectively,
+to decompose to using Tucker decomposition.}
 
 \item{tucker_type}{character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
 with sparsity constraints}

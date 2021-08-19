@@ -1,4 +1,4 @@
-
+utils::globalVariables(c("myx", "myy"))
 
 #' Prepare data for LR analysis and get soft thresholds to use for gene modules
 #'
@@ -183,7 +183,7 @@ compute_LR_interact <- function(container, lr_pairs, sig_thresh=0.05,
   rownames(myres_mat) <- lig_ct_rec_names
 
   ## loop through lig_ct_rec combos
-  myres <- plapply(1:length(lig_ct_rec_names), function(lcr_ndx) {
+  myres <- sccore::plapply(1:length(lig_ct_rec_names), function(lcr_ndx) {
     ct_mod_sig <- c()
     lig_ct_rec <- lig_ct_rec_names[lcr_ndx]
     split_name <- strsplit(lig_ct_rec,split='_')[[1]]

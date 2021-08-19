@@ -1,7 +1,7 @@
 
 utils::globalVariables(c("dscore", "donor_proportion", "ctypes", "AUC", "Specificity",
                          "Precision", "subtype_names","subtype_associations","dsc",
-                         "prop", "cell_types"))
+                         "prop", "cell_types", "myx", "myy"))
 
 #' Compute associations between donor factor scores and donor proportions of cell subtypes
 #'

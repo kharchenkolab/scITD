@@ -1,7 +1,6 @@
 
 #'Tucker Decomposition adapted from rTensor but with sparsity constraints
 #'@import rTensor
-#'@importFrom sparsepca rspca
 #'
 #'@param tnsr Tensor with K modes.
 #'@param ranks numeric Vector of the modes of the output core Tensor (default=NULL)
@@ -26,7 +25,7 @@ tucker_sparse <- function(tnsr,ranks=NULL,max_iter=25,tol=1e-5,sparsity=5){
       if(m==3) {
         U_list[[m]] <- diag(tnsr@modes[3])
       } else {
-        U_list[[m]] <- ssvd(temp_mat,r=ranks[m],method='theory',gamma.u=sparsity)$u
+        U_list[[m]] <- ssvd::ssvd(temp_mat,r=ranks[m],method='theory',gamma.u=sparsity)$u
         # U_list[[m]] <- svd(temp_mat,nu=ranks[m])$u # changed to test regular with identity
       }
       # U_list[[m]] <- rspca(t(temp_mat),ranks[m],center=FALSE,alpha=.0001)$loadings
@@ -62,7 +61,7 @@ tucker_sparse <- function(tnsr,ranks=NULL,max_iter=25,tol=1e-5,sparsity=5){
         if(m==3) {
           U_list[[m]] <- diag(tnsr@modes[3])
         } else {
-          U_list[[m]] <- ssvd(rs_unfold(X,m=m)@data,r=ranks[m],method='theory',gamma.u=sparsity)$u
+          U_list[[m]] <- ssvd::ssvd(rs_unfold(X,m=m)@data,r=ranks[m],method='theory',gamma.u=sparsity)$u
           # U_list[[m]] <- svd(rs_unfold(X,m=m)@data,nu=ranks[m])$u # changed to test regular with identity
         }
         # U_list[[m]] <- rspca(t(rs_unfold(X,m=m)@data),ranks[m],center=FALSE,alpha=.0001)$loadings
