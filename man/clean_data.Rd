@@ -5,7 +5,7 @@
 \title{Clean data to remove genes only expressed in a few cells and donors
 with very few cells}
 \usage{
-clean_data(container, donor_min_cells = 5, gene_min_cells = 5)
+clean_data(container, donor_min_cells = 5)
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
@@ -13,9 +13,6 @@ for each cell type as well as results and plots from all analyses}
 
 \item{donor_min_cells}{numeric Minimum threshold for number of cells per
 donor (default=5)}
-
-\item{gene_min_cells}{numeric Minimum threshold for number of cells
-with nonzero expression of a gene (default=5)}
 }
 \value{
 the project container with cleaned counts matrices

@@ -5,8 +5,6 @@
 #' for each cell type as well as results and plots from all analyses
 #' @param donor_min_cells numeric Minimum threshold for number of cells per
 #' donor (default=5)
-#' @param gene_min_cells numeric Minimum threshold for number of cells
-#' with nonzero expression of a gene (default=5)
 #' @param norm_method character The normalization method to use on the pseudobulked
 #' count data. Set to 'regular' to do standard normalization of dividing by
 #' library size. Set to 'trim' to use edgeR trim-mean normalization, whereby counts
@@ -37,14 +35,13 @@
 #' @export
 #'
 #' @examples
-#' test_container <- form_tensor(test_container, donor_min_cells=0, gene_min_cells=0,
+#' test_container <- form_tensor(test_container, donor_min_cells=0,
 #' norm_method='trim', scale_factor=10000, vargenes_method='norm_var', vargenes_thresh=500,
 #' scale_var = TRUE, var_scale_power = 1.5)
-form_tensor <- function(container, donor_min_cells=5, gene_min_cells=5,
-                        norm_method='trim', scale_factor=10000,
-                        vargenes_method='norm_var', vargenes_thresh=500,
-                        batch_var=NULL, scale_var=TRUE, var_scale_power=.5,
-                        verbose=TRUE) {
+form_tensor <- function(container, donor_min_cells=5, norm_method='trim',
+                        scale_factor=10000, vargenes_method='norm_var',
+                        vargenes_thresh=500, batch_var=NULL, scale_var=TRUE,
+                        var_scale_power=.5, verbose=TRUE) {
   # parse data by cell type
   if (verbose) {
     print('parsing data matrix by cell/tissue type...')
@@ -55,7 +52,7 @@ form_tensor <- function(container, donor_min_cells=5, gene_min_cells=5,
   if (verbose) {
     print('cleaning data...')
   }
-  container <- clean_data(container, donor_min_cells=donor_min_cells, gene_min_cells=gene_min_cells)
+  container <- clean_data(container, donor_min_cells=donor_min_cells)
 
   # collapse data to donor-level
   if (verbose) {
@@ -138,12 +135,10 @@ parse_data_by_ctypes <- function(container) {
 #' for each cell type as well as results and plots from all analyses
 #' @param donor_min_cells numeric Minimum threshold for number of cells per
 #' donor (default=5)
-#' @param gene_min_cells numeric Minimum threshold for number of cells
-#' with nonzero expression of a gene (default=5)
 #'
 #' @return the project container with cleaned counts matrices
 #' @export
-clean_data <- function(container, donor_min_cells=5, gene_min_cells=5) {
+clean_data <- function(container, donor_min_cells=5) {
   for (ct in container$experiment_params$ctypes_use) {
     ctype_sub <- container$scMinimal_ctype[[ct]]
 
@@ -162,35 +157,20 @@ clean_data <- function(container, donor_min_cells=5, gene_min_cells=5) {
     donors_in_all <- intersect(donors_in_all,ctype_donors)
   }
 
-  # reduce data to only the intersection of donors in all ctypes
+  # reduce data to only the intersection of donors that have all ctypes
   for (ct in container$experiment_params$ctypes_use) {
     ctype_sub <- container$scMinimal_ctype[[ct]]
     ctype_sub <- subset_scMinimal(ctype_sub, donors_use=donors_in_all)
   }
 
-  # for (ct in container$experiment_params$ctypes_use) {
-  #   ctype_sub <- container$scMinimal_ctype[[ct]]
-  #
-  #   # identify genes with few counts across all cells
-  #   gene_counts <- rowSums(ctype_sub$count_data > 0)
-  #   genes_keep <- names(gene_counts)[gene_counts > gene_min_cells]
-  #
-  #   # subset on genes
-  #   ctype_sub <- subset_scMinimal(ctype_sub, genes_use = genes_keep)
-  # }
-  #
-  # # get genes present in all ctype matrices
-  # genes_in_all <- rownames(container$scMinimal_ctype[[1]]$count_data)
-  # for (ct in container$experiment_params$ctypes_use) {
-  #   ctype_genes <- rownames(container$scMinimal_ctype[[ct]]$count_data)
-  #   genes_in_all <- intersect(genes_in_all,ctype_genes)
-  # }
-  #
-  # # reduce data to only the intersection of genes in all ctypes
-  # for (ct in container$experiment_params$ctypes_use) {
-  #   ctype_sub <- container$scMinimal_ctype[[ct]]
-  #   ctype_sub <- subset_scMinimal(ctype_sub, genes_use=genes_in_all)
-  # }
+  print(paste0('Keeping ',length(donors_in_all),' donors. All donors have at least ',donor_min_cells,' cells in each cell type included.'))
+
+  # get total num donors
+  total_num_donors <- length(unique(container$scMinimal_full$metadata$donors))
+
+  if (length(donors_in_all) < (.5*total_num_donors)) {
+    print('Consider using fewer cell types or reducing the donor_min_cells parameter to include more donors.')
+  }
 
   return(container)
 }
