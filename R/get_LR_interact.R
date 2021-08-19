@@ -91,7 +91,6 @@ prep_LR_interact <- function(container, lr_pairs, norm_method='trim', scale_fact
     datExpr <- container$scale_pb_extra[[ct]]
 
     # Call the network topology analysis function
-    # sft <- WGCNA::pickSoftThreshold(datExpr, powerVector = powers, verbose = 5, networkType = "unsigned",)
     sft <- WGCNA::pickSoftThreshold(datExpr, powerVector = powers, verbose = 5, networkType = "signed",)
   }
   return(container)
@@ -115,25 +114,14 @@ get_gene_modules <- function(container,sft_thresh) {
     # get scaled expression data for the cell type
     datExpr <- container$scale_pb_extra[[ct]]
 
-    # # get gene modules, used to use cut height of .25
-    # net <- WGCNA::blockwiseModules(datExpr, power = sft_thresh[i], maxBlockSize = 10000,
-    #                                TOMType = "unsigned", networkType = "unsigned", minModuleSize = 15,
-    #                                reassignThreshold = 0, mergeCutHeight = 0.35,
-    #                                numericLabels = TRUE, pamRespectsDendro = FALSE,
-    #                                saveTOMs = FALSE,
-    #                                verbose = 3)
+    # get gene modules, used to use cut height of .25
     net <- WGCNA::blockwiseModules(datExpr, power = sft_thresh[i], maxBlockSize = 10000,
                                    TOMType = "signed", networkType = "signed", minModuleSize = 15,
                                    reassignThreshold = 0, mergeCutHeight = 0.25,
                                    numericLabels = TRUE, pamRespectsDendro = FALSE,
                                    saveTOMs = FALSE,
                                    verbose = 3)
-    # net <- WGCNA::blockwiseModules(datExpr, power = sft_thresh[i], maxBlockSize = 10000,
-    #                                TOMType = "unsigned", networkType = "unsigned", minModuleSize = 15,
-    #                                reassignThreshold = 0, mergeCutHeight = 0.25,
-    #                                numericLabels = TRUE, pamRespectsDendro = FALSE,
-    #                                saveTOMs = FALSE,
-    #                                verbose = 3)
+
     MEs <- net$MEs
     col_ndx <- sapply(colnames(MEs),function(x) {
       as.numeric(strsplit(x,split='ME')[[1]][[2]])
@@ -151,6 +139,8 @@ get_gene_modules <- function(container,sft_thresh) {
   return(container)
 }
 
+
+
 #' Compute and plot the LR interactions for one factor
 #'
 #' @param container environment Project container that stores sub-containers
@@ -159,296 +149,257 @@ get_gene_modules <- function(container,sft_thresh) {
 #' be ligands and second column should be one or more receptors separated by an
 #' underscore such as receptor1_receptor2 in the case that multiple receptors are
 #' required for signaling.
-#' @param factor_select numeric The factor to get associated LR-modules for
 #' @param sig_thresh numeric The p-value significance threshold to use for module-
 #' factor associations and ligand-factor associations (default=0.05)
 #' @param percentile_exp_rec numeric The percentile above which the top donors expressing the
 #' ligand all must be expressing the receptor (default=0.75)
-#' @param show_rec_sig logical Set to TRUE to append a heatmap showing the significance
-#' of using the receptor expression in predicting module expression (default=TRUE)
+#' @param add_ld_fact_sig logical Set to TRUE to append a heatmap showing significance
+#' of associations between each ligand hit and each factor (default=TRUE)
 #'
-#' @return The project container with the plot added in container$plots$lr_analysis$factor_num
+#' @return The results heatmap(s)
 #' @export
-compute_LR_interact <- function(container, lr_pairs, factor_select, sig_thresh=0.05,
-                                percentile_exp_rec=0.75, show_rec_sig=TRUE) {
-  ctypes_use <- container$experiment_params$ctypes_use
-  dsc <- container$tucker_results[[1]][,factor_select]
-
-  # get list of ligands with associated expression with the factor
+compute_LR_interact <- function(container, lr_pairs, sig_thresh=0.05,
+                                percentile_exp_rec=0.75, add_ld_fact_sig=TRUE) {
+  all_eg <- container[["module_eigengenes"]]
   all_lig <- unique(lr_pairs[,1])
-  sig_vecs <- get_significance_vectors(container,factor_select,ctypes_use)
-  sig_df <- t(as.data.frame(do.call(rbind, sig_vecs)))
-  all_lig_mask <- all_lig %in% rownames(sig_df)
-  ligs_use <- all_lig[all_lig_mask]
-  ct_sig_ligs <- list()
-  for (ct in ctypes_use) {
-    ct_sig_ligs[[ct]] <- c()
-    for (l in ligs_use) {
-      if (sig_df[l,ct] < sig_thresh) {
-        ct_sig_ligs[[ct]] <- c(ct_sig_ligs[[ct]],l)
-      }
-    }
-  }
+  ctypes_use <- container$experiment_params$ctypes_use
 
-  # for all newly added ligands (ones not in sig_df but in pseudbulk) need to compute
-  # lm pvalues to get significance
-  lig_rest <- colnames(container$scale_pb_extra[[1]])[!(colnames(container$scale_pb_extra[[1]]) %in% rownames(sig_df))]
-  lig_rest <- lig_rest[lig_rest %in% all_lig]
-  tmp_ct_pvals <- list()
-  for (ct in ctypes_use) {
-    pb <- container$scale_pb_extra[[ct]]
-    for (l in lig_rest) {
-      tmp <- as.data.frame(cbind(dsc,pb[names(dsc),l]))
-      colnames(tmp) <- c('dsc','expr')
-      if (sum(tmp$expr==0)==nrow(tmp)) {
-        next ## added to deal with all 0 expression ligands
-      }
-      lmres <- lm(dsc~expr,data=tmp)
-      lmres <- summary(lmres)
-      pval <- stats::pf(lmres$fstatistic[1],lmres$fstatistic[2],lmres$fstatistic[3],lower.tail=FALSE)
-      tmp_ct_pvals[[paste0(l,'_',ct)]] <- pval
-    }
-  }
-  tmp_ct_pvals <- p.adjust(tmp_ct_pvals,method='fdr')
-  for (i in 1:length(tmp_ct_pvals)) {
-    pval <- tmp_ct_pvals[i]
-    l <- strsplit(names(pval),split='_')[[1]][[1]]
-    ct <- strsplit(names(pval),split='_')[[1]][[2]]
-    if (pval < sig_thresh) {
-      ct_sig_ligs[[ct]] <- c(ct_sig_ligs[[ct]],l)
-    }
-  }
-
-  ligs_test <- unlist(ct_sig_ligs)
-  ligs_test <- unique(ligs_test)
-
-  # make vector thats inverse of ct_sig_ligs, so lig_ct (ct where it's expressed)
-  ligs_ct_test <- lapply(ligs_test,function(x){
-    combos <- c()
-    for (ct in ctypes_use) {
-      if (x %in% ct_sig_ligs[[ct]]) {
-        combos <- c(combos,paste0(x,'_',ct))
-      }
-    }
-    return(combos)
+  ## make matrix to store results
+  lig_ct_rec_names <- sapply(ctypes_use,function(x) {
+    tmp <- sapply(1:nrow(lr_pairs),function(y) {
+      return(paste0(lr_pairs[y,1],'_',x,'_',lr_pairs[y,2]))
+    })
   })
-  ligs_ct_test <- unlist(ligs_ct_test)
-  myres <- NULL
-  aovres <- NULL
-  mod_fact_r_all <- list()
-  ME_pvals <- list()
-  ct_rec_pres <- list()
-  for (i in 1:length(ctypes_use)) {
-    ct <- ctypes_use[i]
 
-    # check if receptor is expressed in the ctype (for each associated ligand)
-    no_scale_pb_extra <- container$no_scale_pb_extra[[ct]]
+  mod_ct_names <- sapply(ctypes_use,function(x) {
+    tmp <- sapply(1:length(all_eg[[x]]),function(y) {
+      return(paste0(x,'_m',y))
+    })
+  })
+  mod_ct_names <- unlist(mod_ct_names)
+  names(mod_ct_names) <- NULL
+  myres_mat <- matrix(NA,nrow=length(lig_ct_rec_names),ncol=length(mod_ct_names))
+  colnames(myres_mat) <- mod_ct_names
+  rownames(myres_mat) <- lig_ct_rec_names
 
-    rec_pres <- c()
-    for (lig in ligs_ct_test) {
-      # get top nth percentile of donors expressing the ligand
-      ligand <- strsplit(lig,split='_')[[1]][[1]]
-      ct_exp <- strsplit(lig,split='_')[[1]][[2]]
-      lig_ct_exp <- container$scale_pb_extra[[ct_exp]][,ligand]
-      nth_quantile <- quantile(lig_ct_exp, probs = c(percentile_exp_rec))
-      d_above <- names(lig_ct_exp)[lig_ct_exp > nth_quantile]
+  ## loop through lig_ct_rec combos
+  myres <- plapply(1:length(lig_ct_rec_names), function(lcr_ndx) {
+    ct_mod_sig <- c()
+    lig_ct_rec <- lig_ct_rec_names[lcr_ndx]
+    split_name <- strsplit(lig_ct_rec,split='_')[[1]]
+    lig <- split_name[[1]]
+    source_ct <- split_name[[2]]
+    n_rec_comps <- length(split_name) - 2
+    rec_elements <- split_name[3:(2+n_rec_comps)]
 
-      rec_groups <- lr_pairs[lr_pairs[,1]==ligand,2]
-      for (r in rec_groups) {
-        r_comps <- strsplit(r,split='_')[[1]]
-        # if all receptor components are in expression matrix...
-        if (sum(r_comps %in% colnames(no_scale_pb_extra))==length(r_comps)) {
-          # how many of top donors have 0 expression for any receptor componenet
-          mysum <- sum(rowSums(no_scale_pb_extra[d_above,r_comps,drop=FALSE]==0) > 0)
-          if (mysum==0) {
-            rec_pres <- c(rec_pres,paste0(lig,'_',r))
-          }
-        }
-      }
+    # getting ligand expression in source ctype
+    if (!(lig %in% colnames(container$scale_pb_extra[[source_ct]]))) {
+      return(NA)
     }
 
-    # make or add to df for storing results
-    if (is.null(myres)) {
-      myres <- data.frame(matrix(ncol=0,nrow=length(rec_pres)))
-      rownames(myres) <- rec_pres
-      aovres <- data.frame(matrix(1,ncol=0,nrow=length(rec_pres)))
-      rownames(aovres) <- rec_pres
+    lig_ct_exp <- container$scale_pb_extra[[source_ct]][,lig]
+
+    if (sum(lig_ct_exp!=0)==0) {
+      return(NA)
+    }
+
+    # loop through target ctypes
+    for (target_ct in ctypes_use) {
+      if (target_ct == source_ct) {
+        next
+      }
+
+      # check if rec elements in data
+      counts <- container$scMinimal_ctype[[target_ct]]$count_data
+      if (sum(rec_elements %in% rownames(counts))!=length(rec_elements)) {
+        return(NA)
+      }
+
+      # check if rec elements are all present in target ct
+      rec_pres <- check_rec_pres(container,lig_ct_exp,rec_elements,target_ct,percentile_exp_rec)
+
+      if (!rec_pres) {
+        next
+      }
+
+      MEs <- all_eg[[target_ct]]
+
+      # loop through modules for target ct and calculate associations
+      for (mod_ndx in 1:ncol(MEs)) {
+        tmp <- cbind.data.frame(MEs[names(lig_ct_exp),mod_ndx],lig_ct_exp)
+        colnames(tmp) <- c('ME','l_exp')
+        lmres <- lm(ME~l_exp,data=tmp)
+        lmres <- summary(lmres)
+        pval <- stats::pf(lmres$fstatistic[1],lmres$fstatistic[2],lmres$fstatistic[3],lower.tail=FALSE)
+        ct_mod_sig[paste0(lig,"_",source_ct,'_',target_ct,"_m",mod_ndx)] <- pval
+      }
+    }
+    if (length(ct_mod_sig)==0) {
+      return(NA)
     } else {
-      rec_already_in <- rec_pres %in% rownames(myres)
-      if (sum(rec_already_in)!=length(rec_pres)) {
-        l_ct_r_add <- rec_pres[!rec_already_in]
-        nr_cur <- nrow(myres)
-        from <- nr_cur + 1
-        to <- nr_cur + length(l_ct_r_add)
-        myres[from:to,] <- 0
-        rownames(myres)[from:to] <- l_ct_r_add
-        aovres[from:to,] <- 1
-        rownames(aovres)[from:to] <- l_ct_r_add
-      }
+      return(ct_mod_sig)
     }
+  }, mc.preschedule=TRUE,n.cores=container$experiment_params$ncores,progress=TRUE)
 
-    # store receptor presence in each ctype
-    ct_rec_pres[[ct]] <- rec_pres
+  # copy results and name
+  myres_saved <- myres
 
-    # extract stored module eigengenes for the ctype
-    MEs <- container$module_eigengenes[[ct]]
-    for (j in 1:ncol(MEs)) {
-      ME <- MEs[,j]
-      names(ME) <- rownames(MEs)
+  # unlist and remove duplicates
+  myres2 <- unlist(myres)
+  names_keep <- unique(names(myres2))
+  myres2 <- myres2[names_keep]
+  myres2 <- myres2[!is.na(myres2)]
 
-      # calculate significance of association with factor as well as Rsq
-      tmp <- as.data.frame(cbind(dsc[names(ME)],ME))
-      colnames(tmp) <- c('dsc','eg')
-      lmres <- lm(dsc~eg,data=tmp)
-      lmres <- summary(lmres)
-      pval <- stats::pf(lmres$fstatistic[1],lmres$fstatistic[2],lmres$fstatistic[3],lower.tail=FALSE)
-      mod_fact_r <- cor(dsc[names(ME)],ME)
-      mod_fact_r_all[[paste0(ct,'_',j)]] <- mod_fact_r
-      ME_pvals[[paste0(ct,"_",as.character(j))]] <- pval
-    }
-  }
-  # fdr correct ME-factor pvals
-  ME_pvals <- p.adjust(ME_pvals,method='fdr')
+  # adjust p-values
+  myres2 <- p.adjust(myres2,method='fdr')
 
-  # for significant modules, test correlations with significant ligands
-  for (i in 1:length(ME_pvals)) {
-    pval <- ME_pvals[i]
-    ct_mod <- names(ME_pvals[i])
-    ct <- strsplit(ct_mod,split='_')[[1]][[1]]
-    mod <- as.numeric(strsplit(ct_mod,split='_')[[1]][[2]])
-    ME <- container$module_eigengenes[[ct]][,mod]
-    names(ME) <- rownames(container$module_eigengenes[[ct]])
-    ## if significant...
-    if (pval < sig_thresh) { # should add bonferroni correction here too
-      # add module column to results df if not already there
-      if (!(ct_mod %in% colnames(myres))) {
-        myres[,ncol(myres)+1] <- 0
-        colnames(myres)[ncol(myres)] <- ct_mod
-        aovres[,ncol(aovres)+1] <- 1
-        colnames(aovres)[ncol(aovres)] <- ct_mod
-      }
-
-      # calculate r with significant ligands (that have receptor(s) all present in the ctype)
-      rec_pres <- ct_rec_pres[[ct]]
-      for (l_ct_r in rec_pres) {
-        l_ct_r_splt <- strsplit(l_ct_r,split='_')[[1]]
-        ligand <- l_ct_r_splt[[1]]
-        ligand_ct <- l_ct_r_splt[[2]]
-        rec <- l_ct_r_splt[3:length(l_ct_r_splt)]
-        lig_exp <- container$scale_pb_extra[[ligand_ct]][,ligand]
-        lig_mod_cor <- cor(lig_exp[names(ME)],ME)
-        myres[l_ct_r,ct_mod] <- lig_mod_cor
-        rec_exp <- container$scale_pb_extra[[ct]][,rec,drop=FALSE]
-
-
-        # test whether receptor levels help with prediction
-        tmp <- as.data.frame(cbind(lig_exp[names(ME)],ME,rec_exp[names(ME),]))
-        colnames(tmp)[1:2] <- c('lig','eg')
-        colnames(tmp)[3:ncol(tmp)] <- sapply(1:length(rec),function(x) {
-          paste0('rec_',x)
-        })
-        lm1 <- lm(eg~lig,data=tmp)
-        base_formula <- 'eg ~ lig'
-        for (k in 1:length(rec)) {
-          base_formula <- paste0(base_formula,' + rec_',k)
-        }
-        base_formula <- as.formula(base_formula)
-        lm2 <- lm(base_formula,data=tmp)
-
-        # ## testing out computing interactions between receptor levels and ligand levels
-        # lm1 <- lm(eg ~ lig + rec_1,data=tmp)
-        # lm2 <- lm(eg ~ lig + rec_1 + lig*rec_1,data=tmp)
-
-        anova_res <- anova(lm1,lm2)
-        anova_pval <- anova_res$`Pr(>F)`[2]
-
-        if (ligand %in% rec && ligand_ct == ct) {
-          aovres[l_ct_r,ct_mod] <- 1
-        } else {
-          aovres[l_ct_r,ct_mod] <- anova_pval
-        }
-
-        # ensure receptors not in target module
-        tmp <- container$module_genes[[ct]]
-        tmp_mod <- tmp[tmp==mod]
-        if (sum(rec %in% names(tmp_mod))>0) {
-          aovres[l_ct_r,ct_mod] <- 1
-        }
+  # fill results matrix with adjusted p-values
+  names(myres) <- lig_ct_rec_names
+  for (i in 1:length(myres)) {
+    lig_ct_rec <- names(myres)[i]
+    if (!is.na(myres[[i]])) {
+      for (j in 1:length(myres[[i]])) {
+        lig_source_target_mod <- names(myres[[i]][j])
+        split_nm <- strsplit(lig_source_target_mod,split='_')[[1]]
+        mod_nm <- paste0(split_nm[[3]],"_",split_nm[[4]])
+        myres_mat[lig_ct_rec,mod_nm] <- myres2[lig_source_target_mod]
       }
     }
   }
 
-  lig_dsc_cor_all <- list()
-  for (i in 1:nrow(myres)) {
-    l_ct_r <- rownames(myres)[i]
-    l_ct_r_splt <- strsplit(l_ct_r,split='_')[[1]]
-    ligand <- l_ct_r_splt[[1]]
-    ligand_ct <- l_ct_r_splt[[2]]
-    lig_exp <- container$scale_pb_extra[[ligand_ct]][,ligand]
-    lig_dsc_cor <- cor(dsc[names(lig_exp)],lig_exp)
-    lig_dsc_cor_all[[l_ct_r]] <- lig_dsc_cor
-  }
-  lig_dsc_cor_all <- unlist(lig_dsc_cor_all)
-  mod_fact_r_all <- unlist(mod_fact_r_all)
-  mod_fact_r_all <- mod_fact_r_all[colnames(myres)]
+  # make all na to be 1
+  myres_mat[is.na(myres_mat)] <- 1
 
-  # plot results for the factor!
-  # dont forget to adjust aov pvals and take -log10
-  aovres <- as.matrix(aovres)
-  aovres2 <- c(aovres)
-  aovres2 <- p.adjust(aovres2,method='fdr')
-  aovres2 <- matrix(aovres2,nrow=nrow(aovres),ncol=ncol(aovres))
-  colnames(aovres2) <- colnames(aovres)
-  rownames(aovres2) <- rownames(aovres)
-  aovres2 <- -log10(aovres2)
+  # store raw results
+  container$lr_res <- myres_mat
 
-  # hc <- hclust(dist(myres))
-  # hc <- hc[["order"]]
-  hc <- order(rownames(myres))
-  vc <- hclust(dist(t(myres)))
-  vc <- vc[["order"]]
+  # reduce to rows/columns with at least one significant hit
+  myres_mat <- myres_mat[rowSums(myres_mat<sig_thresh)>0,]
+  myres_mat <- myres_mat[,colSums(myres_mat<sig_thresh)>0]
 
-  col_fun = colorRamp2(c(-1, 0, 1), c("blue", "white", "red"))
-  la <- ComplexHeatmap::rowAnnotation(lig_dsc_cor = lig_dsc_cor_all,col=list(lig_dsc_cor=col_fun),
-                                      show_annotation_name=FALSE)
-  ta <- ComplexHeatmap::HeatmapAnnotation(mod_dsc_cor = mod_fact_r_all,col=list(mod_dsc_cor=col_fun),
-                                          show_annotation_name=FALSE)
-  myhmap1 <- Heatmap(as.matrix(myres), name='ligand-mod cor',
+  # log transform values
+  myres_mat <- -log10(myres_mat)
+
+  # get split indices
+  rs <- sapply(rownames(myres_mat),function(x){
+    strsplit(x,split='_')[[1]][[2]]
+  })
+  cs <- sapply(colnames(myres_mat),function(x){
+    strsplit(x,split='_')[[1]][[1]]
+  })
+
+  # if have same source and target ctypes, order them same
+  rs <- factor(rs,levels=unique(rs))
+  cs <- factor(cs,levels=levels(rs))
+
+  # put na values back where source ct == target ct
+  myres_mat[outer(rs, cs, "==")] <- NA
+
+  # make new rownames without source ctype in middle
+  new_rnames <- sapply(rownames(myres_mat),function(x){
+    lig_ct_rec_name <- strsplit(x,split='_')[[1]]
+    lig <- lig_ct_rec_name[[1]]
+    source <- lig_ct_rec_name[[2]]
+    n_rec_comps <- length(lig_ct_rec_name) - 2
+    rec_elements <- lig_ct_rec_name[3:(2+n_rec_comps)]
+    rec_nm <- rec_elements[1]
+    if (n_rec_comps>1) {
+      for (j in 2:length(rec_elements)) {
+        rec_nm <- paste0(rec_nm,"_",rec_elements[j])
+      }
+    }
+    return(paste0(lig,"_",rec_nm))
+  })
+  names(new_rnames) <- NULL
+
+  # make heatmap
+  col_fun = colorRamp2(c(0, -log10(.1), 10), c("white", "white", "red"))
+  myhmap1 <- Heatmap(as.matrix(myres_mat), name='lig_mod -log10(padj)',
                      row_names_side='left', column_names_side='top',
                      show_row_dend=FALSE,
                      show_column_dend=FALSE,
                      column_names_gp = gpar(fontsize = 8),
                      row_names_gp = gpar(fontsize = 8),
                      col=col_fun,
-                     left_annotation=la, top_annotation=ta,
-                     row_order=hc, column_order=vc,
-                     border=TRUE)
+                     border=TRUE,
+                     row_split = rs,
+                     column_split = cs,
+                     cluster_row_slices = FALSE,
+                     cluster_column_slices = FALSE,
+                     na_col = "gray",
+                     row_labels=new_rnames)
 
-  col_fun2 = colorRamp2(c(0, -log10(.05), max(aovres2)), c("white", "white", "green"))
-  col_fun2 = colorRamp2(c(0, -log10(.05), 5), c("white", "white", "green"))
-  myhmap2 <- Heatmap(aovres2, name='rec_sig',
-                     column_names_side='top',
-                     show_row_dend=FALSE,
-                     show_column_dend=FALSE,
-                     column_names_gp = gpar(fontsize = 8),
-                     row_names_gp = gpar(fontsize = 6),
-                     col=col_fun2,
-                     cluster_columns = FALSE,
-                     cluster_rows = FALSE,
-                     show_row_names=FALSE,
-                     row_order=hc, column_order=vc,
-                     top_annotation=ta,
-                     border=TRUE)
+  if (add_ld_fact_sig) {
+    fact_res <- matrix(nrow=nrow(myres_mat),ncol=ncol(container$tucker_results[[1]]))
+    colnames(fact_res) <- sapply(1:ncol(container$tucker_results[[1]]),function(x){
+      paste0('Factor_',x)
+    })
+    for (i in 1:ncol(container$tucker_results[[1]])) {
+      for (j in 1:nrow(myres_mat)) {
+        lig <- strsplit(rownames(myres_mat)[j],split='_')[[1]][[1]]
+        ct <- strsplit(rownames(myres_mat)[j],split='_')[[1]][[2]]
 
-  if (show_rec_sig) {
-    hmlist <- myhmap1 + myhmap2
-  } else {
-    hmlist <- myhmap1
+        lig_ct_exp <- container$scale_pb_extra[[ct]][,lig]
+
+        if (sum(lig_ct_exp!=0)==0) {
+          pval <- NA
+        } else {
+          tmp <- cbind.data.frame(container$tucker_results[[1]][names(lig_ct_exp),i],lig_ct_exp)
+          colnames(tmp) <- c('dsc','l_exp')
+          lmres <- lm(dsc~l_exp,data=tmp)
+          lmres <- summary(lmres)
+          pval <- stats::pf(lmres$fstatistic[1],lmres$fstatistic[2],lmres$fstatistic[3],lower.tail=FALSE)
+          fact_res[j,i] <- pval
+        }
+      }
+    }
+    # adjust p-values and log-transform
+    fact_res2 <- matrix(p.adjust(fact_res,method='fdr'),ncol=ncol(fact_res),nrow=nrow(fact_res))
+    colnames(fact_res2) <- colnames(fact_res)
+    fact_res2[is.na(fact_res2)] <- 1
+    fact_res2 <- -log10(fact_res2)
+    col_fun = colorRamp2(c(0, -log10(.1), 10), c("white", "white", "purple"))
+    myhmap2 <- Heatmap(fact_res2, name='lig_factor -log10(padj)',
+                       show_row_dend=FALSE,
+                       show_column_dend=FALSE,
+                       cluster_columns = FALSE,
+                       column_names_gp = gpar(fontsize = 8),
+                       row_names_gp = gpar(fontsize = 8),
+                       col=col_fun,
+                       border=TRUE)
+    myhmap1 <- myhmap1 + myhmap2
   }
+  return(myhmap1)
+}
 
-  container$plots$lr_analysis[[paste0('Factor',factor_select)]] <- hmlist
-  container$lr_res_raw[[paste0('Factor',factor_select)]] <- myres
-  return(container)
+
+#' Helper function to check whether receptor is present in target cell type
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param lig_ct_exp numeric Scaled expression for a ligand in the source cell type
+#' @param rec_elements character One or more components of a receptor complex
+#' @param target_ct character The name of the target cell type
+#' @param percentile_exp_rec numeric The percentile of ligand expression above which
+#' all donors need to have at least 5 cells expressing the receptor.
+#'
+#' @return A logical indicating whether receptor is present or not
+check_rec_pres <- function(container,lig_ct_exp,rec_elements,target_ct,percentile_exp_rec) {
+  nth_quantile <- quantile(lig_ct_exp, probs = c(percentile_exp_rec))
+  d_above <- names(lig_ct_exp)[lig_ct_exp > nth_quantile]
+
+  meta <- container$scMinimal_ctype[[target_ct]]$metadata
+  counts <- container$scMinimal_ctype[[target_ct]]$count_data
+  for (d in d_above) {
+    cells_keep <- rownames(meta)[meta$donors==d]
+    counts_sub <- counts[rec_elements,cells_keep,drop=FALSE]
+    express_cell_counts <- colSums(counts_sub>0)
+    num_cells_expressing <- sum(express_cell_counts==length(rec_elements))
+    if (num_cells_expressing < 5) {
+      return(FALSE)
+    }
+  }
+  return(TRUE)
 }
 
 
@@ -784,692 +735,6 @@ plot_mod_and_lig <- function(container,factor_select,mod_ct,mod,lig_ct,lig) {
 
 
 
-
-
-
-
-### making second version of everything so I can try including all genes
-prep_LR_interact_v2 <- function(container, lr_pairs, norm_method='trim', scale_factor=10000,
-                             var_scale_power=.5, batch_var=NULL) {
-  # store original pseudobulk matrices because they will be altered
-  orig_pb <- list()
-  for (ct in container$experiment_params$ctypes_use) {
-    orig_pb[[ct]] <- container$scMinimal_ctype[[ct]]$pseudobulk
-  }
-
-  # by getting ps data again it will include all genes
-  container <- get_pseudobulk(container)
-
-  # # remove genes with less than 10 total UMI counts
-  # for (ct in container$experiment_params$ctypes_use) {
-  #   pb <- container$scMinimal_ctype[[ct]]$pseudobulk
-  #
-  #   # ndx_keep <- which(rowSums(pb>0)>(ncol(pb)*.1))
-  #   ndx_keep <- which(rowSums(pb)>500)
-  #   pb <- pb[ndx_keep,]
-  #   print(dim(pb))
-  #
-  #   container$scMinimal_ctype[[ct]]$pseudobulk <- pb
-  # }
-
-  # normalize pseudobulk data
-  container <- normalize_pseudobulk(container, method=norm_method, scale_factor=scale_factor)
-
-  # remove genes with less than 10 total UMI counts
-  for (ct in container$experiment_params$ctypes_use) {
-    pb <- container$scMinimal_ctype[[ct]]$pseudobulk
-
-    # ndx_keep <- which(rowSums(pb>0)>(ncol(pb)*.1))
-    ndx_keep <- which(colSums(pb)>5)
-    pb <- pb[,ndx_keep]
-    print(dim(pb))
-
-    container$scMinimal_ctype[[ct]]$pseudobulk <- pb
-  }
-
-  # need to save pseudobulked normalized data before scaling!!
-  no_scale_pb_extra <- list()
-  for (ct in container$experiment_params$ctypes_use) {
-    no_scale_pb_extra[[ct]] <- container$scMinimal_ctype[[ct]]$pseudobulk
-  }
-  container$no_scale_pb_extra <- no_scale_pb_extra
-
-  container <- scale_variance(container,var_scale_power=var_scale_power)
-
-  if (!is.null(batch_var)) {
-    container <- apply_combat(container,batch_var=batch_var)
-  }
-
-  # put new scaled pb data with added genes separate slot
-  scale_pb_extra <- list()
-  for (ct in container$experiment_params$ctypes_use) {
-    scale_pb_extra[[ct]] <- container$scMinimal_ctype[[ct]]$pseudobulk
-  }
-  container$scale_pb_extra <- scale_pb_extra
-
-  # restore original pseudobulk data in its correct slot
-  for (ct in container$experiment_params$ctypes_use) {
-    container$scMinimal_ctype[[ct]]$pseudobulk <- orig_pb[[ct]]
-  }
-
-  # Choose a set of soft-thresholding powers
-  powers = c(c(1:10), seq(from = 12, to=20, by=2))
-  for (ct in container$experiment_params$ctypes_use) {
-    print(ct)
-
-    datExpr <- container$scale_pb_extra[[ct]]
-
-    # Call the network topology analysis function
-    # sft <- WGCNA::pickSoftThreshold(datExpr, powerVector = powers, verbose = 5, networkType = "unsigned",)
-    sft <- WGCNA::pickSoftThreshold(datExpr, powerVector = powers, verbose = 5, networkType = "signed",)
-  }
-  return(container)
-}
-
-
-compute_LR_interact_v2 <- function(container, lr_pairs, factor_select, sig_thresh=0.05,
-                                percentile_exp_rec=0.75, show_rec_sig=TRUE) {
-  ctypes_use <- container$experiment_params$ctypes_use
-  dsc <- container$tucker_results[[1]][,factor_select]
-
-  # get list of ligands with associated expression with the factor
-  all_lig <- unique(lr_pairs[,1])
-
-  tmp_ct_pvals <- list()
-  for (ct in ctypes_use) {
-    pb <- container$scale_pb_extra[[ct]]
-    for (l in all_lig) {
-      if (l %in% colnames(pb)) {
-        tmp <- as.data.frame(cbind(dsc,pb[names(dsc),l]))
-        colnames(tmp) <- c('dsc','expr')
-        lmres <- lm(dsc~expr,data=tmp)
-        lmres <- summary(lmres)
-        pval <- stats::pf(lmres$fstatistic[1],lmres$fstatistic[2],lmres$fstatistic[3],lower.tail=FALSE)
-        tmp_ct_pvals[[paste0(l,'_',ct)]] <- pval
-      }
-    }
-  }
-
-  # reduce results to just significant ligands
-  tmp_ct_pvals <- p.adjust(tmp_ct_pvals,method='fdr')
-  ct_sig_ligs <- list()
-  for (i in 1:length(tmp_ct_pvals)) {
-    pval <- tmp_ct_pvals[i]
-    l <- strsplit(names(pval),split='_')[[1]][[1]]
-    ct <- strsplit(names(pval),split='_')[[1]][[2]]
-    if (pval < sig_thresh) {
-      ct_sig_ligs[[ct]] <- c(ct_sig_ligs[[ct]],l)
-    }
-  }
-
-  ligs_test <- unlist(ct_sig_ligs)
-  ligs_test <- unique(ligs_test)
-
-  # make vector thats inverse of ct_sig_ligs, so lig_ct (ct where it's expressed)
-  ligs_ct_test <- lapply(ligs_test,function(x){
-    combos <- c()
-    for (ct in ctypes_use) {
-      if (x %in% ct_sig_ligs[[ct]]) {
-        combos <- c(combos,paste0(x,'_',ct))
-      }
-    }
-    return(combos)
-  })
-  ligs_ct_test <- unlist(ligs_ct_test)
-
-  myres <- NULL
-  aovres <- NULL
-  mod_fact_r_all <- list()
-  ME_pvals <- list()
-  ct_rec_pres <- list()
-  for (i in 1:length(ctypes_use)) {
-    ct <- ctypes_use[i]
-
-    # check if receptor is expressed in the ctype (for each associated ligand)
-    no_scale_pb_extra <- container$no_scale_pb_extra[[ct]]
-
-    rec_pres <- c()
-    for (lig in ligs_ct_test) {
-      # get top nth percentile of donors expressing the ligand
-      ligand <- strsplit(lig,split='_')[[1]][[1]]
-      ct_exp <- strsplit(lig,split='_')[[1]][[2]]
-      lig_ct_exp <- container$scale_pb_extra[[ct_exp]][,ligand]
-      nth_quantile <- quantile(lig_ct_exp, probs = c(percentile_exp_rec))
-      d_above <- names(lig_ct_exp)[lig_ct_exp > nth_quantile]
-
-      rec_groups <- lr_pairs[lr_pairs[,1]==ligand,2]
-      for (r in rec_groups) {
-        r_comps <- strsplit(r,split='_')[[1]]
-        # if all receptor components are in expression matrix...
-        if (sum(r_comps %in% colnames(no_scale_pb_extra))==length(r_comps)) {
-          # how many of top donors have 0 expression for any receptor component
-          mysum <- sum(rowSums(no_scale_pb_extra[d_above,r_comps,drop=FALSE]==0) > 0)
-          if (mysum==0) {
-            rec_pres <- c(rec_pres,paste0(lig,'_',r))
-          }
-        }
-      }
-    }
-
-    # make or add to df for storing results
-    if (is.null(myres)) {
-      myres <- data.frame(matrix(ncol=0,nrow=length(rec_pres)))
-      rownames(myres) <- rec_pres
-      aovres <- data.frame(matrix(1,ncol=0,nrow=length(rec_pres)))
-      rownames(aovres) <- rec_pres
-    } else {
-      rec_already_in <- rec_pres %in% rownames(myres)
-      if (sum(rec_already_in)!=length(rec_pres)) {
-        l_ct_r_add <- rec_pres[!rec_already_in]
-        nr_cur <- nrow(myres)
-        from <- nr_cur + 1
-        to <- nr_cur + length(l_ct_r_add)
-        myres[from:to,] <- 0
-        rownames(myres)[from:to] <- l_ct_r_add
-        aovres[from:to,] <- 1
-        rownames(aovres)[from:to] <- l_ct_r_add
-      }
-    }
-
-    # store receptor presence in each ctype
-    ct_rec_pres[[ct]] <- rec_pres
-
-    # extract stored module eigengenes for the ctype
-    MEs <- container$module_eigengenes[[ct]]
-    for (j in 1:ncol(MEs)) {
-      ME <- MEs[,j]
-      names(ME) <- rownames(MEs)
-
-      # calculate significance of association with factor as well as Rsq
-      tmp <- as.data.frame(cbind(dsc[names(ME)],ME))
-      colnames(tmp) <- c('dsc','eg')
-      lmres <- lm(dsc~eg,data=tmp)
-      lmres <- summary(lmres)
-      pval <- stats::pf(lmres$fstatistic[1],lmres$fstatistic[2],lmres$fstatistic[3],lower.tail=FALSE)
-      mod_fact_r <- cor(dsc[names(ME)],ME)
-      mod_fact_r_all[[paste0(ct,'_',j)]] <- mod_fact_r
-      ME_pvals[[paste0(ct,"_",as.character(j))]] <- pval
-    }
-  }
-  # fdr correct ME-factor pvals
-  ME_pvals <- p.adjust(ME_pvals,method='fdr')
-
-  # for significant modules, test correlations with significant ligands
-  for (i in 1:length(ME_pvals)) {
-    pval <- ME_pvals[i]
-    ct_mod <- names(ME_pvals[i])
-    ct <- strsplit(ct_mod,split='_')[[1]][[1]]
-    mod <- as.numeric(strsplit(ct_mod,split='_')[[1]][[2]])
-    ME <- container$module_eigengenes[[ct]][,mod]
-    names(ME) <- rownames(container$module_eigengenes[[ct]])
-    ## if significant...
-    if (pval < sig_thresh) { # should add bonferroni correction here too
-      # add module column to results df if not already there
-      if (!(ct_mod %in% colnames(myres))) {
-        myres[,ncol(myres)+1] <- 0
-        colnames(myres)[ncol(myres)] <- ct_mod
-        aovres[,ncol(aovres)+1] <- 1
-        colnames(aovres)[ncol(aovres)] <- ct_mod
-      }
-
-      # calculate r with significant ligands (that have receptor(s) all present in the ctype)
-      rec_pres <- ct_rec_pres[[ct]]
-      for (l_ct_r in rec_pres) {
-        l_ct_r_splt <- strsplit(l_ct_r,split='_')[[1]]
-        ligand <- l_ct_r_splt[[1]]
-        ligand_ct <- l_ct_r_splt[[2]]
-        rec <- l_ct_r_splt[3:length(l_ct_r_splt)]
-        lig_exp <- container$scale_pb_extra[[ligand_ct]][,ligand]
-        lig_mod_cor <- cor(lig_exp[names(ME)],ME)
-        myres[l_ct_r,ct_mod] <- lig_mod_cor
-        rec_exp <- container$scale_pb_extra[[ct]][,rec,drop=FALSE]
-
-
-        # test whether receptor levels help with prediction
-        tmp <- as.data.frame(cbind(lig_exp[names(ME)],ME,rec_exp[names(ME),]))
-        colnames(tmp)[1:2] <- c('lig','eg')
-        colnames(tmp)[3:ncol(tmp)] <- sapply(1:length(rec),function(x) {
-          paste0('rec_',x)
-        })
-        lm1 <- lm(eg~lig,data=tmp)
-        base_formula <- 'eg ~ lig'
-        for (k in 1:length(rec)) {
-          base_formula <- paste0(base_formula,' + rec_',k)
-        }
-        base_formula <- as.formula(base_formula)
-        lm2 <- lm(base_formula,data=tmp)
-
-        ## testing out computing interactions between receptor levels and ligand levels
-        lm1 <- lm(eg ~ lig + rec_1,data=tmp)
-        lm2 <- lm(eg ~ lig + rec_1 + lig*rec_1,data=tmp)
-
-        anova_res <- anova(lm1,lm2)
-        anova_pval <- anova_res$`Pr(>F)`[2]
-
-        if (ligand %in% rec && ligand_ct == ct) {
-          aovres[l_ct_r,ct_mod] <- 1
-        } else {
-          aovres[l_ct_r,ct_mod] <- anova_pval
-        }
-
-        # # ensure receptors not in target module
-        # tmp <- container$module_genes[[ct]]
-        # tmp_mod <- tmp[tmp==mod]
-        # if (sum(rec %in% names(tmp_mod))>0) {
-        #   aovres[l_ct_r,ct_mod] <- 1
-        # }
-      }
-    }
-  }
-
-  lig_dsc_cor_all <- list()
-  for (i in 1:nrow(myres)) {
-    l_ct_r <- rownames(myres)[i]
-    l_ct_r_splt <- strsplit(l_ct_r,split='_')[[1]]
-    ligand <- l_ct_r_splt[[1]]
-    ligand_ct <- l_ct_r_splt[[2]]
-    lig_exp <- container$scale_pb_extra[[ligand_ct]][,ligand]
-    lig_dsc_cor <- cor(dsc[names(lig_exp)],lig_exp)
-    lig_dsc_cor_all[[l_ct_r]] <- lig_dsc_cor
-  }
-  lig_dsc_cor_all <- unlist(lig_dsc_cor_all)
-  mod_fact_r_all <- unlist(mod_fact_r_all)
-  mod_fact_r_all <- mod_fact_r_all[colnames(myres)]
-
-  # plot results for the factor!
-  # dont forget to adjust aov pvals and take -log10
-  aovres <- as.matrix(aovres)
-  aovres2 <- c(aovres)
-  aovres2 <- p.adjust(aovres2,method='fdr')
-  aovres2 <- matrix(aovres2,nrow=nrow(aovres),ncol=ncol(aovres))
-  colnames(aovres2) <- colnames(aovres)
-  rownames(aovres2) <- rownames(aovres)
-  aovres2 <- -log10(aovres2)
-
-  hc <- hclust(dist(myres))
-  hc <- hc[["order"]]
-  vc <- hclust(dist(t(myres)))
-  vc <- vc[["order"]]
-
-  col_fun = colorRamp2(c(-1, 0, 1), c("blue", "white", "red"))
-  la <- ComplexHeatmap::rowAnnotation(lig_dsc_cor = lig_dsc_cor_all,col=list(lig_dsc_cor=col_fun),
-                                      show_annotation_name=FALSE)
-  ta <- ComplexHeatmap::HeatmapAnnotation(mod_dsc_cor = mod_fact_r_all,col=list(mod_dsc_cor=col_fun),
-                                          show_annotation_name=FALSE)
-  myhmap1 <- Heatmap(as.matrix(myres), name='ligand-mod cor',
-                     row_names_side='left', column_names_side='top',
-                     show_row_dend=FALSE,
-                     show_column_dend=FALSE,
-                     column_names_gp = gpar(fontsize = 8),
-                     row_names_gp = gpar(fontsize = 8),
-                     col=col_fun,
-                     left_annotation=la, top_annotation=ta,
-                     row_order=hc, column_order=vc,
-                     border=TRUE)
-
-  col_fun2 = colorRamp2(c(0, -log10(.05), max(aovres2)), c("white", "white", "green"))
-  col_fun2 = colorRamp2(c(0, -log10(.05), 5), c("white", "white", "green"))
-  myhmap2 <- Heatmap(aovres2, name='rec_sig',
-                     column_names_side='top',
-                     show_row_dend=FALSE,
-                     show_column_dend=FALSE,
-                     column_names_gp = gpar(fontsize = 8),
-                     row_names_gp = gpar(fontsize = 6),
-                     col=col_fun2,
-                     cluster_columns = FALSE,
-                     cluster_rows = FALSE,
-                     show_row_names=FALSE,
-                     row_order=hc, column_order=vc,
-                     top_annotation=ta,
-                     border=TRUE)
-
-  if (show_rec_sig) {
-    hmlist <- myhmap1 + myhmap2
-  } else {
-    hmlist <- myhmap1
-  }
-
-  container$plots$lr_analysis[[paste0('Factor',factor_select)]] <- hmlist
-  container$lr_res_raw[[paste0('Factor',factor_select)]] <- myres
-  return(container)
-}
-
-
-
-compute_LR_interact_v3 <- function(container, lr_pairs, sig_thresh=0.05,
-                               percentile_exp_rec=0.75) {
-  all_eg <- container[["module_eigengenes"]]
-  all_lig <- unique(lr_pairs[,1])
-  ctypes_use <- container$experiment_params$ctypes_use
-
-  ## make matrix to store results
-  lig_ct_rec_names <- sapply(ctypes_use,function(x) {
-    tmp <- sapply(1:nrow(lr_pairs),function(y) {
-      return(paste0(lr_pairs[y,1],'_',x,'_',lr_pairs[y,2]))
-    })
-  })
-
-  mod_ct_names <- sapply(ctypes_use,function(x) {
-    tmp <- sapply(1:length(all_eg[[x]]),function(y) {
-      return(paste0(x,'_m',y))
-    })
-  })
-  mod_ct_names <- unlist(mod_ct_names)
-  names(mod_ct_names) <- NULL
-  myres <- matrix(NA,nrow=length(lig_ct_rec_names),ncol=length(mod_ct_names))
-  colnames(myres) <- mod_ct_names
-  rownames(myres) <- lig_ct_rec_names
-  mask_mat <- myres
-
-  # vector to hold ct-mod associations
-  ct_mod_sig <- c()
-
-  ## loop through lig_ct_rec combos
-  for (lcr_ndx in 1:length(lig_ct_rec_names)) {
-    # if (lcr_ndx %% 100 == 0) {
-    #   print(lcr_ndx)
-    # }
-    print(lcr_ndx)
-    lig_ct_rec <- lig_ct_rec_names[lcr_ndx]
-    split_name <- strsplit(lig_ct_rec,split='_')[[1]]
-    lig <- split_name[[1]]
-    source_ct <- split_name[[2]]
-    n_rec_comps <- length(split_name) - 2
-    rec_elements <- split_name[3:(2+n_rec_comps)]
-
-    # getting ligand expression in source ctype
-    if (!(lig %in% colnames(container$scale_pb_extra[[source_ct]]))) {
-      next
-    }
-
-    lig_ct_exp <- container$scale_pb_extra[[source_ct]][,lig]
-
-    if (sum(lig_ct_exp!=0)==0) {
-      next
-    }
-
-    # loop through target ctypes
-    for (target_ct in ctypes_use) {
-      if (target_ct == source_ct) {
-        next
-      }
-
-      # check if rec elements are all present in target ct
-      rec_pres <- check_rec_pres(container,lig_ct_exp,rec_elements,target_ct,percentile_exp_rec)
-
-      if (!rec_pres) {
-        next
-      }
-
-      MEs <- all_eg[[target_ct]]
-
-      # add indicators in mask mat
-      for (mod_ndx in 1:ncol(MEs)) {
-        mask_mat[lig_ct_rec,paste0(target_ct,"_m",mod_ndx)] <- TRUE
-      }
-
-      # see if already tested this ligand and target ct modules
-      already_test <- paste0(lig,"_",source_ct,'_',target_ct,"_m1") %in% names(ct_mod_sig)
-      if (!already_test) {
-        # loop through modules for target ct and calculate associations
-        for (mod_ndx in 1:ncol(MEs)) {
-          tmp <- cbind.data.frame(MEs[names(lig_ct_exp),mod_ndx],lig_ct_exp)
-          colnames(tmp) <- c('ME','l_exp')
-          lmres <- lm(ME~l_exp,data=tmp)
-          lmres <- summary(lmres)
-          pval <- stats::pf(lmres$fstatistic[1],lmres$fstatistic[2],lmres$fstatistic[3],lower.tail=FALSE)
-          ct_mod_sig[paste0(lig,"_",source_ct,'_',target_ct,"_m",mod_ndx)] <- pval
-        }
-      }
-    }
-  }
-  # adjust p-values
-
-  # fill results matrix with adjusted p-values
-
-  # make heatmap
-}
-
-
-check_rec_pres <- function(container,lig_ct_exp,rec_elements,target_ct,percentile_exp_rec) {
-  nth_quantile <- quantile(lig_ct_exp, probs = c(percentile_exp_rec))
-  d_above <- names(lig_ct_exp)[lig_ct_exp > nth_quantile]
-
-  meta <- container$scMinimal_ctype[[target_ct]]$metadata
-  counts <- container$scMinimal_ctype[[target_ct]]$count_data
-  for (d in d_above) {
-    cells_keep <- rownames(meta)[meta$donors==d]
-    counts_sub <- counts[rec_elements,cells_keep,drop=FALSE]
-    express_cell_counts <- colSums(counts_sub>0)
-    num_cells_expressing <- sum(express_cell_counts==length(rec_elements))
-    if (num_cells_expressing < 5) {
-      return(FALSE)
-    }
-  }
-  return(TRUE)
-}
-
-
-
-
-
-
-# trying to speed it up with plapply
-compute_LR_interact_v4 <- function(container, lr_pairs, sig_thresh=0.05,
-                                   percentile_exp_rec=0.75, add_ld_fact_sig=FALSE) {
-  all_eg <- container[["module_eigengenes"]]
-  all_lig <- unique(lr_pairs[,1])
-  ctypes_use <- container$experiment_params$ctypes_use
-
-  ## make matrix to store results
-  lig_ct_rec_names <- sapply(ctypes_use,function(x) {
-    tmp <- sapply(1:nrow(lr_pairs),function(y) {
-      return(paste0(lr_pairs[y,1],'_',x,'_',lr_pairs[y,2]))
-    })
-  })
-
-  mod_ct_names <- sapply(ctypes_use,function(x) {
-    tmp <- sapply(1:length(all_eg[[x]]),function(y) {
-      return(paste0(x,'_m',y))
-    })
-  })
-  mod_ct_names <- unlist(mod_ct_names)
-  names(mod_ct_names) <- NULL
-  myres_mat <- matrix(NA,nrow=length(lig_ct_rec_names),ncol=length(mod_ct_names))
-  colnames(myres_mat) <- mod_ct_names
-  rownames(myres_mat) <- lig_ct_rec_names
-
-  ## loop through lig_ct_rec combos
-  myres <- plapply(1:length(lig_ct_rec_names), function(lcr_ndx) {
-    ct_mod_sig <- c()
-    lig_ct_rec <- lig_ct_rec_names[lcr_ndx]
-    split_name <- strsplit(lig_ct_rec,split='_')[[1]]
-    lig <- split_name[[1]]
-    source_ct <- split_name[[2]]
-    n_rec_comps <- length(split_name) - 2
-    rec_elements <- split_name[3:(2+n_rec_comps)]
-
-    # getting ligand expression in source ctype
-    if (!(lig %in% colnames(container$scale_pb_extra[[source_ct]]))) {
-      return(NA)
-    }
-
-    lig_ct_exp <- container$scale_pb_extra[[source_ct]][,lig]
-
-    if (sum(lig_ct_exp!=0)==0) {
-      return(NA)
-    }
-
-    # loop through target ctypes
-    for (target_ct in ctypes_use) {
-      if (target_ct == source_ct) {
-        next
-      }
-
-      # check if rec elements in data
-      counts <- container$scMinimal_ctype[[target_ct]]$count_data
-      if (sum(rec_elements %in% rownames(counts))!=length(rec_elements)) {
-        return(NA)
-      }
-
-      # check if rec elements are all present in target ct
-      rec_pres <- check_rec_pres(container,lig_ct_exp,rec_elements,target_ct,percentile_exp_rec)
-
-      if (!rec_pres) {
-        next
-      }
-
-      MEs <- all_eg[[target_ct]]
-
-      # loop through modules for target ct and calculate associations
-      for (mod_ndx in 1:ncol(MEs)) {
-        tmp <- cbind.data.frame(MEs[names(lig_ct_exp),mod_ndx],lig_ct_exp)
-        colnames(tmp) <- c('ME','l_exp')
-        lmres <- lm(ME~l_exp,data=tmp)
-        lmres <- summary(lmres)
-        pval <- stats::pf(lmres$fstatistic[1],lmres$fstatistic[2],lmres$fstatistic[3],lower.tail=FALSE)
-        ct_mod_sig[paste0(lig,"_",source_ct,'_',target_ct,"_m",mod_ndx)] <- pval
-      }
-    }
-    if (length(ct_mod_sig)==0) {
-      return(NA)
-    } else {
-      return(ct_mod_sig)
-    }
-  }, mc.preschedule=TRUE,n.cores=container$experiment_params$ncores,progress=TRUE)
-
-  # copy results and name
-  myres_saved <- myres
-
-  # unlist and remove duplicates
-  myres2 <- unlist(myres)
-  names_keep <- unique(names(myres2))
-  myres2 <- myres2[names_keep]
-  myres2 <- myres2[!is.na(myres2)]
-
-  # adjust p-values
-  myres2 <- p.adjust(myres2,method='fdr')
-
-  # fill results matrix with adjusted p-values
-  names(myres) <- lig_ct_rec_names
-  for (i in 1:length(myres)) {
-    lig_ct_rec <- names(myres)[i]
-    if (!is.na(myres[[i]])) {
-      for (j in 1:length(myres[[i]])) {
-        lig_source_target_mod <- names(myres[[i]][j])
-        split_nm <- strsplit(lig_source_target_mod,split='_')[[1]]
-        mod_nm <- paste0(split_nm[[3]],"_",split_nm[[4]])
-        myres_mat[lig_ct_rec,mod_nm] <- myres2[lig_source_target_mod]
-      }
-    }
-  }
-
-  # make all na to be 1
-  myres_mat[is.na(myres_mat)] <- 1
-
-  # store raw results
-  container$lr_res <- myres_mat
-
-  # reduce to rows/columns with at least one significant hit
-  myres_mat <- myres_mat[rowSums(myres_mat<sig_thresh)>0,]
-  myres_mat <- myres_mat[,colSums(myres_mat<sig_thresh)>0]
-
-  # log transform values
-  myres_mat <- -log10(myres_mat)
-
-  # get split indices
-  rs <- sapply(rownames(myres_mat),function(x){
-    strsplit(x,split='_')[[1]][[2]]
-  })
-  cs <- sapply(colnames(myres_mat),function(x){
-    strsplit(x,split='_')[[1]][[1]]
-  })
-
-  # if have same source and target ctypes, order them same
-  rs <- factor(rs,levels=unique(rs))
-  cs <- factor(cs,levels=levels(rs))
-
-  # put na values back where source ct == target ct
-  myres_mat[outer(rs, cs, "==")] <- NA
-
-  # make new rownames without source ctype in middle
-  new_rnames <- sapply(rownames(myres_mat),function(x){
-    lig_ct_rec_name <- strsplit(x,split='_')[[1]]
-    lig <- lig_ct_rec_name[[1]]
-    source <- lig_ct_rec_name[[2]]
-    n_rec_comps <- length(lig_ct_rec_name) - 2
-    rec_elements <- lig_ct_rec_name[3:(2+n_rec_comps)]
-    rec_nm <- rec_elements[1]
-    if (n_rec_comps>1) {
-      for (j in 2:length(rec_elements)) {
-        rec_nm <- paste0(rec_nm,"_",rec_elements[j])
-      }
-    }
-    return(paste0(lig,"_",rec_nm))
-  })
-  names(new_rnames) <- NULL
-
-  # make heatmap
-  col_fun = colorRamp2(c(0, -log10(.1), 10), c("white", "white", "red"))
-  myhmap1 <- Heatmap(as.matrix(myres_mat), name='lig_mod -log10(padj)',
-                     row_names_side='left', column_names_side='top',
-                     show_row_dend=FALSE,
-                     show_column_dend=FALSE,
-                     column_names_gp = gpar(fontsize = 8),
-                     row_names_gp = gpar(fontsize = 8),
-                     col=col_fun,
-                     border=TRUE,
-                     row_split = rs,
-                     column_split = cs,
-                     cluster_row_slices = FALSE,
-                     cluster_column_slices = FALSE,
-                     na_col = "gray",
-                     row_labels=new_rnames)
-
-  if (add_ld_fact_sig) {
-    fact_res <- matrix(nrow=nrow(myres_mat),ncol=ncol(container$tucker_results[[1]]))
-    colnames(fact_res) <- sapply(1:ncol(container$tucker_results[[1]]),function(x){
-      paste0('Factor_',x)
-    })
-    for (i in 1:ncol(container$tucker_results[[1]])) {
-      for (j in 1:nrow(myres_mat)) {
-        lig <- strsplit(rownames(myres_mat)[j],split='_')[[1]][[1]]
-        ct <- strsplit(rownames(myres_mat)[j],split='_')[[1]][[2]]
-
-        lig_ct_exp <- container$scale_pb_extra[[ct]][,lig]
-
-        if (sum(lig_ct_exp!=0)==0) {
-          pval <- NA
-        } else {
-          tmp <- cbind.data.frame(container$tucker_results[[1]][names(lig_ct_exp),i],lig_ct_exp)
-          colnames(tmp) <- c('dsc','l_exp')
-          lmres <- lm(dsc~l_exp,data=tmp)
-          lmres <- summary(lmres)
-          pval <- stats::pf(lmres$fstatistic[1],lmres$fstatistic[2],lmres$fstatistic[3],lower.tail=FALSE)
-          fact_res[j,i] <- pval
-        }
-      }
-    }
-    # adjust p-values and log-transform
-    fact_res2 <- matrix(p.adjust(fact_res,method='fdr'),ncol=ncol(fact_res),nrow=nrow(fact_res))
-    colnames(fact_res2) <- colnames(fact_res)
-    fact_res2[is.na(fact_res2)] <- 1
-    fact_res2 <- -log10(fact_res2)
-    col_fun = colorRamp2(c(0, -log10(.1), 10), c("white", "white", "purple"))
-    myhmap2 <- Heatmap(fact_res2, name='lig_factor -log10(padj)',
-                       show_row_dend=FALSE,
-                       show_column_dend=FALSE,
-                       cluster_columns = FALSE,
-                       column_names_gp = gpar(fontsize = 8),
-                       row_names_gp = gpar(fontsize = 8),
-                       col=col_fun,
-                       border=TRUE)
-    myhmap1 <- myhmap1 + myhmap2
-
-
-  }
-  return(myhmap1)
-}
 
 
 
