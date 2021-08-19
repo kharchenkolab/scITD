@@ -9,10 +9,12 @@
 #' @param db_use character The database of gene sets to use. Database
 #' options include "GO", "Reactome", "KEGG", "BioCarta", and "Hallmark". More than
 #' one database can be used. (default="GO")
+#' @param signed logical If TRUE, uses signed gsea. If FALSE, uses unsigned gsea.
+#' Currently only works with fgsea method. (default=TRUE)
 #'
 #' @return data.frame of the fgsea results (including non-significant results)
 #' @export
-run_fgsea <- function(container, factor_select, ctype, db_use="GO") {
+run_fgsea <- function(container, factor_select, ctype, db_use="GO", signed=TRUE) {
   donor_scores <- container$tucker_results[[1]]
 
   # select mean exp data for one cell type
@@ -21,15 +23,16 @@ run_fgsea <- function(container, factor_select, ctype, db_use="GO") {
 
   # get transformed expression for each gene by summing d_score * scaled exp
   exp_vals <- sapply(1:ncol(tnsr_slice), function(j) {
-    exp_transform <- tnsr_slice[,j] * donor_scores[rownames(tnsr_slice),factor_select]
-    de_val <- sum(exp_transform)
-
-    # # testing out using undirected statistics. Use with commented out fgsea fn below.
-    # exp_transform <- tnsr_slice[,j] * donor_scores[rownames(tnsr_slice),factor_select]
-    # de_val <- abs(sum(exp_transform))
+    if (signed) {
+      exp_transform <- tnsr_slice[,j] * donor_scores[rownames(tnsr_slice),factor_select]
+      de_val <- sum(exp_transform)
+    } else {
+      # testing out using undirected statistics
+      exp_transform <- tnsr_slice[,j] * donor_scores[rownames(tnsr_slice),factor_select]
+      de_val <- abs(sum(exp_transform))
+    }
 
     return(de_val)
-
   })
 
   names(exp_vals) <- convert_gn(container,colnames(tnsr_slice))
@@ -66,88 +69,24 @@ run_fgsea <- function(container, factor_select, ctype, db_use="GO") {
   my_pathways <- split(m_df$gene_symbol, f = m_df$gs_name)
   # my_pathways <- split(m_df$gene_symbol, f = m_df$gs_exact_source)
 
-  fgsea_res <- fgsea::fgsea(pathways = my_pathways,
-                            stats = exp_vals,
-                            minSize=15,
-                            maxSize=500,
-                            eps=0,
-                            gseaParam=1,
-                            nproc=container$experiment_params$ncores)
-  # fgsea_res <- fgsea::fgsea(pathways = my_pathways,
-  #                           stats = exp_vals,
-  #                           minSize=15,
-  #                           maxSize=500,
-  #                           eps=0,
-  #                           gseaParam=1,
-  #                           scoreType = "pos",
-  #                           nproc=container$experiment_params$ncores)
-
-  fgsea_res <- fgsea_res[order(fgsea_res$padj, decreasing=FALSE),]
-
-  return(fgsea_res)
-}
-
-#' Run fgsea for one cell type of one factor. Note, this uses
-#'
-#' @param container environment Project container that stores sub-containers
-#' for each cell type as well as results and plots from all analyses
-#' @param factor_select numeric The factor of interest
-#' @param ctype character The cell type of interest
-#' @param db_use character The database of gene sets to use. Database
-#' options include "GO", "Reactome", "KEGG", "BioCarta", and "Hallmark". More than
-#' one database can be used. (default="GO")
-#'
-#' @return data.frame of the fgsea results (including non-significant results)
-#' @export
-run_fgsea_old <- function(container, factor_select, ctype, db_use="GO") {
-  donor_scores <- container$tucker_results[[1]]
-
-  f_data <- get_one_factor(pbmc_container, factor_select=factor_select)
-  exp_vals <- f_data[[2]][,ctype]
-
-  m_df <- data.frame()
-  for (db in db_use) {
-    if (db == "GO") {
-      # select the GO Biological Processes group of gene sets
-      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
-                                          category = "C5", subcategory = "BP"))
-    } else if (db == "Reactome") {
-      # select the Reactome gene sets
-      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
-                                          category = "C2", subcategory = "CP:REACTOME"))
-    } else if (db == "KEGG") {
-      # select the KEGG gene sets
-      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
-                                          category = "C2", subcategory = "CP:KEGG"))
-    } else if (db == "BioCarta") {
-      # select the BioCarts gene sets
-      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
-                                          category = "C2", subcategory = "CP:BIOCARTA"))
-    } else if (db == "Hallmark") {
-      # select the BioCarts gene sets
-      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
-                                          category = "H"))
-    }
+  if (signed) {
+    fgsea_res <- fgsea::fgsea(pathways = my_pathways,
+                              stats = exp_vals,
+                              minSize=15,
+                              maxSize=500,
+                              eps=0,
+                              gseaParam=1,
+                              nproc=container$experiment_params$ncores)
+  } else {
+    fgsea_res <- fgsea::fgsea(pathways = my_pathways,
+                              stats = exp_vals,
+                              minSize=15,
+                              maxSize=500,
+                              eps=0,
+                              gseaParam=1,
+                              scoreType = "pos",
+                              nproc=container$experiment_params$ncores)
   }
-
-  my_pathways <- split(m_df$gene_symbol, f = m_df$gs_name)
-  # my_pathways <- split(m_df$gene_symbol, f = m_df$gs_exact_source)
-
-  fgsea_res <- fgsea::fgsea(pathways = my_pathways,
-                            stats = exp_vals,
-                            minSize=15,
-                            maxSize=500,
-                            eps=0,
-                            gseaParam=.5,
-                            nproc=container$experiment_params$ncores)
-  # fgsea_res <- fgsea::fgsea(pathways = my_pathways,
-  #                           stats = exp_vals,
-  #                           minSize=15,
-  #                           maxSize=500,
-  #                           eps=0,
-  #                           gseaParam=1,
-  #                           scoreType = "pos",
-  #                           nproc=container$experiment_params$ncores)
 
   fgsea_res <- fgsea_res[order(fgsea_res$padj, decreasing=FALSE),]
 
@@ -280,6 +219,8 @@ run_hypergeometric_gsea <- function(container, factor_select, ctype, up_down,
 #' @param db_use character The database of gene sets to use. Database
 #' options include "GO", "Reactome", "KEGG", and "BioCarta". More than
 #' one database can be used. (default="GO")
+#' @param signed logical If TRUE, uses signed gsea. If FALSE, uses unsigned gsea.
+#' Currently only works with fgsea method (default=TRUE)
 #' @param reset_other_factor_plots logical Set to TRUE to set all other gsea plots to NULL (default=FALSE)
 #' @param draw_plot logical Set to TRUE to show the plot. Plot is stored regardless. (default=TRUE)
 #'
@@ -287,7 +228,7 @@ run_hypergeometric_gsea <- function(container, factor_select, ctype, up_down,
 #' container$plots$gsea$FactorX
 #' @export
 run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh=0.05,
-                                db_use="GO", reset_other_factor_plots=FALSE, draw_plot=TRUE) {
+                                db_use="GO", signed=TRUE, reset_other_factor_plots=FALSE, draw_plot=TRUE) {
 
   if (reset_other_factor_plots) {
     container$plots$gsea <- NULL
@@ -301,7 +242,7 @@ run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh
     print(ct)
     if (method == 'fgsea') {
       fgsea_res <- run_fgsea(container, factor_select=factor_select,
-                             ctype=ct, db_use=db_use)
+                             ctype=ct, db_use=db_use, signed=signed)
 
       # remove results where NES is na
       fgsea_res <- fgsea_res[!is.na(fgsea_res$NES),]
@@ -415,8 +356,10 @@ plot_gsea_hmap <- function(container,factor_select,thresh) {
     for (i in 1:length(up_down_sets)) {
       ctype_res <- up_down_sets[[i]]
       ctype <- names(up_down_sets)[i]
-      for (j in 1:length(ctype_res)) {
-        res[names(ctype_res)[j],ctype] <- ctype_res[j]
+      if (length(ctype_res)>0) {
+        for (j in 1:length(ctype_res)) {
+          res[names(ctype_res)[j],ctype] <- ctype_res[j]
+        }
       }
     }
 
@@ -910,7 +853,6 @@ plot_select_sets <- function(container, factors_all, sets_plot, color_sets=NULL,
       color_sets <- color_sets[clust_ord]
     }
 
-    # height should depend on number of sets
     if (!is.null(h_w)) {
       myhmap <- Heatmap(as.matrix(res_disc), name = 'signed -log10(padj)',
                         cluster_rows = FALSE,
@@ -942,6 +884,7 @@ plot_select_sets <- function(container, factors_all, sets_plot, color_sets=NULL,
                           }
                         })
     } else {
+      # height should depend on number of sets
       myheight <- (3/5) * nrow(res)
       myhmap <- Heatmap(as.matrix(res_disc), name = 'signed -log10(padj)',
                         cluster_rows = FALSE,

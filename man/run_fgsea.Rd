@@ -4,7 +4,7 @@
 \alias{run_fgsea}
 \title{Run fgsea for one cell type of one factor. Note, this uses}
 \usage{
-run_fgsea(container, factor_select, ctype, db_use = "GO")
+run_fgsea(container, factor_select, ctype, db_use = "GO", signed = TRUE)
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
@@ -17,6 +17,9 @@ for each cell type as well as results and plots from all analyses}
 \item{db_use}{character The database of gene sets to use. Database
 options include "GO", "Reactome", "KEGG", "BioCarta", and "Hallmark". More than
 one database can be used. (default="GO")}
+
+\item{signed}{logical If TRUE, uses signed gsea. If FALSE, uses unsigned gsea.
+Currently only works with fgsea method. (default=TRUE)}
 }
 \value{
 data.frame of the fgsea results (including non-significant results)

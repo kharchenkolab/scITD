@@ -10,6 +10,7 @@ run_gsea_one_factor(
   method = "fgsea",
   thresh = 0.05,
   db_use = "GO",
+  signed = TRUE,
   reset_other_factor_plots = FALSE,
   draw_plot = TRUE
 )
@@ -29,6 +30,9 @@ resulting heatmap if pvalue is below this threshold for at least one cell type. 
 \item{db_use}{character The database of gene sets to use. Database
 options include "GO", "Reactome", "KEGG", and "BioCarta". More than
 one database can be used. (default="GO")}
+
+\item{signed}{logical If TRUE, uses signed gsea. If FALSE, uses unsigned gsea.
+Currently only works with fgsea method (default=TRUE)}
 
 \item{reset_other_factor_plots}{logical Set to TRUE to set all other gsea plots to NULL (default=FALSE)}
 
