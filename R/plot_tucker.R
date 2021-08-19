@@ -136,8 +136,13 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL,
 
     for (j in 1:ncol(meta)) {
       if (colnames(meta)[j]=='sex') {
-        mycol <- RColorBrewer::brewer.pal(n = 3, name = "Accent")
-        names(mycol) <- unique(meta[,j])
+        if (length(unique(meta[,j]))==2) {
+          mycol <- c('#CBC3E3','#FDFD96')
+          names(mycol) <- unique(meta[,j])
+        } else {
+          mycol <- c('#CBC3E3','#FDFD96','#808080')
+          names(mycol) <- unique(meta[,j])
+        }
 
         myhmap <- myhmap +
           Heatmap(as.matrix(meta[,j,drop=FALSE]), name = colnames(meta)[j], cluster_rows = FALSE,
@@ -205,6 +210,8 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL,
 #' @param show_xlab logical If TRUE, displays the xlabel 'genes' (default=TRUE)
 #' @param show_var_explained logical If TRUE then shows an anotation with the explained variance
 #' for each cell type (default=TRUE)
+#' @param clust_method character The hclust method to use for clustering rows (default='median')
+#' @param h_w numeric Vector specifying height and width (defualt=NULL)
 #' @param reset_other_factor_plots logical Set to TRUE to set all other loadings plots to NULL.
 #' Useful if run get_all_lds_factor_plots but then only want to show one or two plots. (default=FALSE)
 #' @param draw_plot logical Set to TRUE to show the plot. Plot is stored regardless. (default=TRUE)
@@ -221,7 +228,7 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
                                 pathways=NULL, sim_de_donor_group=NULL, sig_thresh=0.05, display_genes=FALSE,
                                 gene_callouts=FALSE, callout_n_gene_per_ctype=5, callout_ctypes=NULL, specific_callouts=NULL,
                                 le_set_callouts=NULL, le_set_colormap=NULL, le_set_num_per=5, show_le_legend=FALSE,
-                                show_xlab=TRUE, show_var_explained=TRUE, reset_other_factor_plots=FALSE,
+                                show_xlab=TRUE, show_var_explained=TRUE, clust_method='median', h_w=NULL, reset_other_factor_plots=FALSE,
                                 draw_plot=TRUE) {
 
   # check that Tucker has been run
@@ -357,7 +364,7 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
   # hm_list <- Heatmap(tmp_casted_num, show_row_dend = FALSE, show_column_dend = FALSE,
   #                    name = "loading", show_row_names = display_genes,
   #                    column_names_gp = gpar(fontsize = 12), cluster_columns = FALSE,
-  #                    clustering_method_rows = "median",
+  #                    clustering_method_rows = clust_method,
   #                    row_names_side = "left", col=col_fun,
   #                    column_title = paste0('Factor ', factor_select),
   #                    column_title_gp = gpar(fontsize = 20, fontface = "bold"),
@@ -368,17 +375,33 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
   #                    width = unit(10, "cm"),
   #                    height = unit(14, "cm")) #used to use w=10, h=20, or 6.75, 20 for combo fig. 10,14 most recently
 
-  hm_list <- Heatmap(tmp_casted_num, show_row_dend = FALSE, show_column_dend = FALSE,
-                     name = "loading", show_row_names = display_genes,
-                     column_names_gp = gpar(fontsize = 12), cluster_columns = FALSE,
-                     clustering_method_rows = "median",
-                     row_names_side = "left", col=col_fun,
-                     column_title = paste0('Factor ', factor_select),
-                     column_title_gp = gpar(fontsize = 20, fontface = "bold"),
-                     row_title = rt, row_title_gp = gpar(fontsize = 14), border = TRUE,
-                     row_labels = convert_gn(container,rownames(tmp_casted_num)),
-                     right_annotation = gene_callouts, top_annotation=var_annot,
-                     show_heatmap_legend = FALSE) #used to use w=10, h=20, or 6.75, 20 for combo fig. 10,14 most recently
+  if (!is.null(h_w)) {
+    hm_list <- Heatmap(tmp_casted_num, show_row_dend = FALSE, show_column_dend = FALSE,
+                       name = "loading", show_row_names = display_genes,
+                       column_names_gp = gpar(fontsize = 12), cluster_columns = FALSE,
+                       clustering_method_rows = clust_method,
+                       row_names_side = "left", col=col_fun,
+                       column_title = paste0('Factor ', factor_select),
+                       column_title_gp = gpar(fontsize = 20, fontface = "bold"),
+                       row_title = rt, row_title_gp = gpar(fontsize = 14), border = TRUE,
+                       row_labels = convert_gn(container,rownames(tmp_casted_num)),
+                       right_annotation = gene_callouts, top_annotation=var_annot,
+                       show_heatmap_legend = FALSE,
+                       width = unit(h_w[2], "cm"), height = unit(h_w[1], "cm")) #used to use w=10, h=20, or 6.75, 20 for combo fig. 10,14 most recently
+  } else {
+    hm_list <- Heatmap(tmp_casted_num, show_row_dend = FALSE, show_column_dend = FALSE,
+                       name = "loading", show_row_names = display_genes,
+                       column_names_gp = gpar(fontsize = 12), cluster_columns = FALSE,
+                       clustering_method_rows = clust_method,
+                       row_names_side = "left", col=col_fun,
+                       column_title = paste0('Factor ', factor_select),
+                       column_title_gp = gpar(fontsize = 20, fontface = "bold"),
+                       row_title = rt, row_title_gp = gpar(fontsize = 14), border = TRUE,
+                       row_labels = convert_gn(container,rownames(tmp_casted_num)),
+                       right_annotation = gene_callouts, top_annotation=var_annot,
+                       show_heatmap_legend = FALSE) #used to use w=10, h=20, or 6.75, 20 for combo fig. 10,14 most recently
+  }
+
 
   # turn off heatmap message saying callouts require pdf view or zoom view
   ht_opt$message = FALSE
@@ -725,7 +748,7 @@ render_multi_plots <- function(container,data_type,max_cols=3) {
   # order the list of heatmaps by factor number
   hm_order <- order(as.numeric(names(hm_list)),decreasing=FALSE)
   hm_list <- hm_list[hm_order]
-  if (data_type=='ldngs') {
+  if (data_type=='loadings') {
     hm_legends <- hm_legends[hm_order]
   }
 
@@ -759,6 +782,11 @@ render_multi_plots <- function(container,data_type,max_cols=3) {
       bottom_row <- list(NULL,grob_lst[[num_plots-1]],grob_lst[[num_plots]],NULL)
       bottom_row <- cowplot::plot_grid(plotlist=bottom_row, ncol=4, rel_widths=c((1/3)/2,(1/3),(1/3),(1/3)/2))
       fig <- cowplot::plot_grid(top_rows, bottom_row, ncol=1, rel_heights=c(num_rows,1),align = "v")
+    } else if (num_bottom==3) {
+      bottom_row <- list(NULL,grob_lst[[num_plots-2]],grob_lst[[num_plots-1]],grob_lst[[num_plots]],NULL)
+      bottom_row <- cowplot::plot_grid(plotlist=bottom_row, ncol=4, rel_widths=c((1/4)/2,(1/4),(1/4),(1/4),(1/4)/2))
+      # fig <- cowplot::plot_grid(top_rows, bottom_row, ncol=1, rel_heights=c(num_rows,1),align = "v")
+      fig <- cowplot::plot_grid(top_rows, bottom_row, ncol=1,align = "v")
     } else {
       fig <- top_rows
     }
@@ -957,15 +985,16 @@ plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype,
 #' on the axes of the heatmap
 #' @param meta_anno1 matrix The result of calling get_meta_associations()
 #' corresponding to the first decomposition, which is stored in
-#' container$meta_associations
+#' container$meta_associations (default=NULL)
 #' @param meta_anno2 matrix The result of calling get_meta_associations()
 #' corresponding to the second decomposition, which is stored in
-#' container$meta_associations
+#' container$meta_associations (default=NULL)
 #' @param use_text logical If TRUE, then displays correlation coefficients in cells
 #' (default=TRUE)
 #'
 #' @export
-compare_decompositions <- function(tucker_res1,tucker_res2,decomp_names,meta_anno1,meta_anno2,use_text=TRUE) {
+compare_decompositions <- function(tucker_res1,tucker_res2,decomp_names,meta_anno1=NULL,
+                                   meta_anno2=NULL,use_text=TRUE) {
   ## first get donor scores comparison
   # ensure donors in same order
   tr1 <- tucker_res1[[1]]
@@ -1018,33 +1047,59 @@ compare_decompositions <- function(tucker_res1,tucker_res2,decomp_names,meta_ann
   new_row_order <- match(rownames(res_cor),rownames(res_orig))
   new_col_order <- match(colnames(res_cor),colnames(res_orig))
   col_fun_annot = colorRamp2(c(0, 1), c("white", "forest green"))
-  la <- rowAnnotation(rsq=t(meta_anno1),col = list(rsq = col_fun_annot),
-                      border=TRUE,annotation_name_side = "top")
-  ba <- HeatmapAnnotation(rsq=t(meta_anno2),col = list(rsq = col_fun_annot),
-                          border=TRUE,annotation_name_side = "left",show_legend=FALSE)
-  dscores_hmap <- Heatmap(res_orig, name = "Pearson r",
-                    cluster_columns = FALSE,
-                    cluster_rows = FALSE,
-                    column_names_gp = gpar(fontsize = 8),
-                    row_names_gp = gpar(fontsize = 10),
-                    col = col_fun,border=TRUE, show_column_names=TRUE,
-                    show_row_names=TRUE,show_row_dend = FALSE,
-                    show_column_dend = FALSE,
-                    row_title = decomp_names[1],
-                    row_title_gp = gpar(fontsize = 20),
-                    column_title = decomp_names[2],
-                    column_title_gp = gpar(fontsize = 20),
-                    column_title_side = "bottom",
-                    bottom_annotation=ba,
-                    left_annotation=la,
-                    row_names_side = "left",
-                    row_order = new_row_order,
-                    column_order = new_col_order,
-                    cell_fun = function(j, i, x, y, width, height, fill) {
-                      if (use_text) {
-                        grid::grid.text(sprintf("%.2f", res_orig[i, j]), x, y, gp = gpar(fontsize = 10))
-                      }
-                    })
+  if (is.null(meta_anno1)) {
+    dscores_hmap <- Heatmap(res_orig, name = "Pearson r",
+                            cluster_columns = FALSE,
+                            cluster_rows = FALSE,
+                            column_names_gp = gpar(fontsize = 8),
+                            row_names_gp = gpar(fontsize = 10),
+                            col = col_fun,border=TRUE, show_column_names=TRUE,
+                            show_row_names=TRUE,show_row_dend = FALSE,
+                            show_column_dend = FALSE,
+                            row_title = decomp_names[1],
+                            row_title_gp = gpar(fontsize = 20),
+                            column_title = decomp_names[2],
+                            column_title_gp = gpar(fontsize = 20),
+                            column_title_side = "bottom",
+                            row_names_side = "left",
+                            row_order = new_row_order,
+                            column_order = new_col_order,
+                            cell_fun = function(j, i, x, y, width, height, fill) {
+                              if (use_text) {
+                                grid::grid.text(sprintf("%.2f", res_orig[i, j]), x, y, gp = gpar(fontsize = 10))
+                              }
+                            })
+  } else {
+    la <- rowAnnotation(rsq=t(meta_anno1),col = list(rsq = col_fun_annot),
+                        border=TRUE,annotation_name_side = "top")
+    ba <- HeatmapAnnotation(rsq=t(meta_anno2),col = list(rsq = col_fun_annot),
+                            border=TRUE,annotation_name_side = "left",show_legend=FALSE)
+    dscores_hmap <- Heatmap(res_orig, name = "Pearson r",
+                            cluster_columns = FALSE,
+                            cluster_rows = FALSE,
+                            column_names_gp = gpar(fontsize = 8),
+                            row_names_gp = gpar(fontsize = 10),
+                            col = col_fun,border=TRUE, show_column_names=TRUE,
+                            show_row_names=TRUE,show_row_dend = FALSE,
+                            show_column_dend = FALSE,
+                            row_title = decomp_names[1],
+                            row_title_gp = gpar(fontsize = 20),
+                            column_title = decomp_names[2],
+                            column_title_gp = gpar(fontsize = 20),
+                            column_title_side = "bottom",
+                            bottom_annotation=ba,
+                            left_annotation=la,
+                            row_names_side = "left",
+                            row_order = new_row_order,
+                            column_order = new_col_order,
+                            cell_fun = function(j, i, x, y, width, height, fill) {
+                              if (use_text) {
+                                grid::grid.text(sprintf("%.2f", res_orig[i, j]), x, y, gp = gpar(fontsize = 10))
+                              }
+                            })
+  }
+
+
 
   ## now to get loadings comparison with same factor ordering
   # ensure genes in same order
@@ -1060,30 +1115,56 @@ compare_decompositions <- function(tucker_res1,tucker_res2,decomp_names,meta_ann
   rownames(res_cor) <- sapply(1:ncol(tr1),function(x){paste0('Factor',as.character(x))})
   colnames(res_cor) <- sapply(1:ncol(tr2),function(x){paste0('Factor',as.character(x))})
 
-  loadings_hmap <- Heatmap(res_cor, name = "Loadings Pearson r",
-                    cluster_columns = FALSE,
-                    cluster_rows = FALSE,
-                    column_names_gp = gpar(fontsize = 8),
-                    row_names_gp = gpar(fontsize = 10),
-                    col = col_fun,border=TRUE, show_column_names=TRUE,
-                    show_row_names=TRUE,show_row_dend = FALSE,
-                    show_column_dend = FALSE,
-                    row_title = decomp_names[1],
-                    row_title_gp = gpar(fontsize = 20),
-                    column_title = decomp_names[2],
-                    column_title_gp = gpar(fontsize = 20),
-                    column_title_side = "bottom",
-                    bottom_annotation=ba,
-                    left_annotation=la,
-                    row_names_side = "left",
-                    row_order = new_row_order,
-                    column_order = new_col_order,
-                    show_heatmap_legend = FALSE,
-                    cell_fun = function(j, i, x, y, width, height, fill) {
-                      if (use_text) {
-                        grid::grid.text(sprintf("%.2f", res_cor[i, j]), x, y, gp = gpar(fontsize = 10))
-                      }
-                    })
+  if (is.null(meta_anno1)) {
+    loadings_hmap <- Heatmap(res_cor, name = "Loadings Pearson r",
+                             cluster_columns = FALSE,
+                             cluster_rows = FALSE,
+                             column_names_gp = gpar(fontsize = 8),
+                             row_names_gp = gpar(fontsize = 10),
+                             col = col_fun,border=TRUE, show_column_names=TRUE,
+                             show_row_names=TRUE,show_row_dend = FALSE,
+                             show_column_dend = FALSE,
+                             row_title = decomp_names[1],
+                             row_title_gp = gpar(fontsize = 20),
+                             column_title = decomp_names[2],
+                             column_title_gp = gpar(fontsize = 20),
+                             column_title_side = "bottom",
+                             row_names_side = "left",
+                             row_order = new_row_order,
+                             column_order = new_col_order,
+                             show_heatmap_legend = FALSE,
+                             cell_fun = function(j, i, x, y, width, height, fill) {
+                               if (use_text) {
+                                 grid::grid.text(sprintf("%.2f", res_cor[i, j]), x, y, gp = gpar(fontsize = 10))
+                               }
+                             })
+  } else {
+    loadings_hmap <- Heatmap(res_cor, name = "Loadings Pearson r",
+                             cluster_columns = FALSE,
+                             cluster_rows = FALSE,
+                             column_names_gp = gpar(fontsize = 8),
+                             row_names_gp = gpar(fontsize = 10),
+                             col = col_fun,border=TRUE, show_column_names=TRUE,
+                             show_row_names=TRUE,show_row_dend = FALSE,
+                             show_column_dend = FALSE,
+                             row_title = decomp_names[1],
+                             row_title_gp = gpar(fontsize = 20),
+                             column_title = decomp_names[2],
+                             column_title_gp = gpar(fontsize = 20),
+                             column_title_side = "bottom",
+                             bottom_annotation=ba,
+                             left_annotation=la,
+                             row_names_side = "left",
+                             row_order = new_row_order,
+                             column_order = new_col_order,
+                             show_heatmap_legend = FALSE,
+                             cell_fun = function(j, i, x, y, width, height, fill) {
+                               if (use_text) {
+                                 grid::grid.text(sprintf("%.2f", res_cor[i, j]), x, y, gp = gpar(fontsize = 10))
+                               }
+                             })
+  }
+
 
   hmlist <- list(dscores_hmap,loadings_hmap)
   hmlist <- dscores_hmap + loadings_hmap

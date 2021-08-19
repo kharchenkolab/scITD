@@ -7,26 +7,16 @@
 #' to decompose to using Tucker decomposition.
 #' @param tucker_type character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
 #' with sparsity constraints (default='regular')
-#' @param rotation_type character Set to 'hybrid' to optimize loadings via our hybrid
-#' method (see paper for details). Set to 'ica_dsc' to perform ICA rotation
-#' on resulting donor factor matrix. Set to 'ica_lds' to optimize loadings by the
-#' ICA rotation. (default='hybrid')
+#' @param rotation_type character Set to 'ica' to perform ICA rotation on resulting donor factor
+#' matrix and loadings. Otherwise set to 'varimax' to perform varimax rotation. (default='ica')
 #' @param sparsity numeric To use with sparse tucker. Higher indicates more sparse (default=5)
 #'
 #' @return container with results of the decomposition in container$tucker_results
 #' @export
-run_tucker_ica <- function(container, ranks, tucker_type='regular', rotation_type='hybrid', sparsity=5) {
+run_tucker_ica <- function(container, ranks, tucker_type='regular', rotation_type='ica', sparsity=5) {
 
   if (is.null(container$tensor_data)) {
     stop("need to run form_tensor() first")
-  }
-
-  # check that they picked a valid tucker_type and rotation type
-  if (!(tucker_type %in% c('regular','sparse'))) {
-    stop("tucker_type can only be 'regular' or 'sparse'")
-  }
-  if (!(rotation_type %in% c('hybrid','ica_dsc','ica_lds'))) {
-    stop("rotation_type can only be 'hybrid', 'ica_dsc', or 'ica_lds'")
   }
 
   # run tucker with ica on the tensor
@@ -47,124 +37,6 @@ run_tucker_ica <- function(container, ranks, tucker_type='regular', rotation_typ
   container$exp_var <- explained_variances[order(explained_variances,decreasing=TRUE)]
 
   return(container)
-}
-
-tucker_ica_helper_new <- function(tensor_data, ranks, tucker_type, rotation_type, sparsity) {
-
-  # extract tensor and labels
-  donor_nm <- tensor_data[[1]]
-  gene_nm  <- tensor_data[[2]]
-  ctype_nm  <- tensor_data[[3]]
-  tnsr <- tensor_data[[4]]
-
-  if (tucker_type=='regular') {
-    # run regular tucker
-    invisible(utils::capture.output(
-      tucker_decomp <- rTensor::tucker(rTensor::as.tensor(tnsr), ranks=ranks)
-    ))
-  } else if (tucker_type=='sparse') {
-    # run sparse tucker
-    invisible(utils::capture.output(
-      tucker_decomp <- tucker_sparse(rTensor::as.tensor(tnsr), ranks=ranks, sparsity=sparsity)
-    ))
-  }
-
-  gene_by_factors <- tucker_decomp$U[[2]]
-  rownames(gene_by_factors) <- gene_nm
-  ctype_by_factors <- tucker_decomp$U[[3]]
-  rownames(ctype_by_factors) <- ctype_nm
-  donor_mat <- tucker_decomp$U[[1]]
-  rownames(donor_mat) <- donor_nm
-
-  if (rotation_type=='hybrid') {
-    ## rotate gene matrix
-    # gene_by_factors <- ica::icafast(gene_by_factors,ranks[2],center=FALSE,
-    #                                 alg='def',maxit = 200,tol = 1e-15)$S
-    gene_by_factors <- ica::icafast(gene_by_factors,ranks[2],center=FALSE,alg='def')$S
-
-    # make all vectors length 1 as ICA didn't preserve this
-    all_rss <- c()
-    for (j in 1:ncol(gene_by_factors)) {
-      rss <- sqrt(sum(gene_by_factors[,j]**2))
-      all_rss <- c(all_rss,rss)
-    }
-    gene_by_factors <- sweep(gene_by_factors,2,all_rss,FUN='/')
-
-    # setting ctype factor matrix to identity
-    ctype_by_factors <- diag(ncol(tucker_decomp$U[[3]]))
-    rownames(ctype_by_factors) <- ctype_nm
-
-    # compute kronecker product
-    kron_prod <- kronecker(ctype_by_factors,gene_by_factors,make.dimnames = TRUE)
-
-    # generate counter-rotated core tensor unfolded along donor dimension
-    core_new <- t(as.matrix(donor_mat)) %*% rTensor::k_unfold(rTensor::as.tensor(tnsr),1)@data %*% kron_prod
-
-    # optimize core by rotating it with varimax
-    vari_res <- varimax(t(core_new))
-    core_new <- t(t(core_new) %*% vari_res$rotmat)
-    ldngs <- core_new %*% t(kron_prod)
-
-    # counter-rotate donor scores matrix
-    donor_mat <- donor_mat %*% solve(t(vari_res$rotmat))
-
-  } else if (rotation_type=='ica_dsc') {
-    if (ranks[1]>1) {
-      ## rotate donor scores matrix by ICA
-      # donor_mat <- ica::icafast(donor_mat,ranks[1],center=FALSE,alg='def',
-      #                           maxit = 200,tol = 1e-15)$S
-      donor_mat <- ica::icafast(donor_mat,ranks[1],center=FALSE,alg='def')$S
-
-      # make all vectors length 1 as ICA didn't preserve this
-      all_rss <- c()
-      for (j in 1:ncol(donor_mat)) {
-        rss <- sqrt(sum(donor_mat[,j]**2))
-        all_rss <- c(all_rss,rss)
-      }
-      donor_mat <- sweep(donor_mat,2,all_rss,FUN='/')
-    }
-
-    # compute kronecker product
-    kron_prod <- kronecker(ctype_by_factors,gene_by_factors,make.dimnames = TRUE)
-
-    # generate rotated core tensor unfolded along donor dimension
-    core_new <- t(as.matrix(donor_mat)) %*% rTensor::k_unfold(rTensor::as.tensor(tnsr),1)@data %*% kron_prod
-
-    # compute loadings matrix with rotated core tensor
-    ldngs <- core_new %*% t(kron_prod)
-  } else if (rotation_type=='ica_lds') {
-    # compute kronecker product
-    kron_prod <- kronecker(ctype_by_factors,gene_by_factors,make.dimnames = TRUE)
-
-    # generate rotated core tensor unfolded along donor dimension
-    core_new <- t(as.matrix(donor_mat)) %*% rTensor::k_unfold(rTensor::as.tensor(tnsr),1)@data %*% kron_prod
-
-    # compute loadings matrix with rotated core tensor
-    ldngs <- core_new %*% t(kron_prod)
-
-    ## rotate loadings directly with ICA
-    # ica_res <- ica::icafast(t(ldngs),ranks[1],center=FALSE,alg='def',
-    #                         maxit = 200,tol = 1e-15)
-    ica_res <- ica::icafast(t(ldngs),ranks[1],center=FALSE,alg='def')
-    ldngs <- t(ica_res$S)
-
-    # counter rotate the donor scores matrix
-    donor_mat <- donor_mat %*% solve(ica_res$W)
-
-    # renormalize donor scores vectors and expand factor matrices by these constants
-    all_rss <- c()
-    for (j in 1:ncol(donor_mat)) {
-      rss <- sqrt(sum(donor_mat[,j]**2))
-      all_rss <- c(all_rss,rss)
-    }
-    donor_mat <- sweep(donor_mat,2,all_rss,FUN='/')
-
-    for (j in 1:nrow(ldngs)) {
-      ldngs[j,] <- ldngs[j,] * all_rss[j]
-    }
-  }
-
-  return(list(donor_mat,ldngs))
 }
 
 #' Tucker helper function that actually does the decomposition
@@ -348,9 +220,6 @@ tucker_ica_helper2 <- function(tensor_data, ranks, tucker_type, rotation_type, s
 
 tucker_ica_helper3 <- function(tensor_data, ranks, tucker_type, rotation_type, sparsity) {
 
-  # make third ranks element the num of ctypes because will use identity matrix later
-  ranks[3] <- length(tensor_data[[3]])
-
   # extract tensor and labels
   donor_nm <- tensor_data[[1]]
   gene_nm  <- tensor_data[[2]]
@@ -387,14 +256,14 @@ tucker_ica_helper3 <- function(tensor_data, ranks, tucker_type, rotation_type, s
   }
   gene_by_factors <- sweep(gene_by_factors,2,all_rss,FUN='/')
 
-  # setting ctype factor matrix to identity
+  ## trying to set ctype factor matrix to identity
   ctype_by_factors <- diag(ncol(tucker_decomp$U[[3]]))
   rownames(ctype_by_factors) <- ctype_nm
 
   # compute kronecker product
   kron_prod <- kronecker(ctype_by_factors,gene_by_factors,make.dimnames = TRUE)
 
-  # generate counter-rotated core tensor unfolded along donor dimension
+  # generate rotated core tensor unfolded along donor dimension
   core_new <- t(as.matrix(donor_mat)) %*% rTensor::k_unfold(rTensor::as.tensor(tnsr),1)@data %*% kron_prod
 
   # compute loadings matrix with rotated core tensor

@@ -426,7 +426,7 @@ get_ctype_vargenes <- function(container, method, thresh) {
     }
 
     container$all_vargenes <- unique(all_vargenes)
-  } else {
+  } else if (method == 'anova') {
     var_res <- data.frame(matrix(ncol=3, nrow=0))
     for (ct in container$experiment_params$ctypes_use) {
       pvals <- vargenes_anova(container$scMinimal_ctype[[ct]], ncores)
@@ -448,6 +448,8 @@ get_ctype_vargenes <- function(container, method, thresh) {
       ctype_vargenes <- ctype_res[ctype_res$padj < thresh, 'genes']
       container$scMinimal_ctype[[ct]]$vargenes <- ctype_vargenes
     }
+  } else {
+    stop('need to select one of the available options for vargenes_method parameter')
   }
 
   # reduce ctype data to only significantly variable genes

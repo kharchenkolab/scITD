@@ -24,6 +24,8 @@ plot_loadings_annot(
   show_le_legend = FALSE,
   show_xlab = TRUE,
   show_var_explained = TRUE,
+  clust_method = "median",
+  h_w = NULL,
   reset_other_factor_plots = FALSE,
   draw_plot = TRUE
 )
@@ -86,6 +88,10 @@ If NULL, then selects first n colors of Set3 color palette. (default=NULL)}
 
 \item{show_var_explained}{logical If TRUE then shows an anotation with the explained variance
 for each cell type (default=TRUE)}
+
+\item{clust_method}{character The hclust method to use for clustering rows (default='median')}
+
+\item{h_w}{numeric Vector specifying height and width (defualt=NULL)}
 
 \item{reset_other_factor_plots}{logical Set to TRUE to set all other loadings plots to NULL.
 Useful if run get_all_lds_factor_plots but then only want to show one or two plots. (default=FALSE)}

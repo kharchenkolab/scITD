@@ -4,7 +4,13 @@
 \alias{plot_gsea_hmap_w_similarity}
 \title{Plot already computed enriched gene sets to show semantic similarity between sets}
 \usage{
-plot_gsea_hmap_w_similarity(container, factor_select, direc, thresh)
+plot_gsea_hmap_w_similarity(
+  container,
+  factor_select,
+  direc,
+  thresh,
+  exclude_words = character(0)
+)
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
@@ -15,9 +21,12 @@ for each cell type as well as results and plots from all analyses}
 \item{direc}{character Set to either 'up' or 'down' to use the appropriate sets}
 
 \item{thresh}{numeric Pvalue threshold to use for including gene sets in the heatmap}
+
+\item{exclude_words}{character Vector of words to exclude from word cloud
+(default=character(0))}
 }
 \value{
-the heatmap plot
+the heatmap is drawn
 }
 \description{
 Plot already computed enriched gene sets to show semantic similarity between sets

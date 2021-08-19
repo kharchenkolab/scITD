@@ -490,10 +490,13 @@ plot_gsea_hmap <- function(container,factor_select,thresh) {
 #' @param factor_select numeric The factor to plot
 #' @param direc character Set to either 'up' or 'down' to use the appropriate sets
 #' @param thresh numeric Pvalue threshold to use for including gene sets in the heatmap
+#' @param exclude_words character Vector of words to exclude from word cloud
+#' (default=character(0))
 #'
-#' @return the heatmap plot
+#' @return the heatmap is drawn
 #' @export
-plot_gsea_hmap_w_similarity <- function(container,factor_select,direc,thresh) {
+plot_gsea_hmap_w_similarity <- function(container,factor_select,direc,thresh,
+                                        exclude_words=character(0)) {
   factor_name <- paste0('Factor',as.character(factor_select))
   up_down_sets <- container$gsea_results[[as.character(factor_select)]][[direc]]
 
@@ -542,7 +545,8 @@ plot_gsea_hmap_w_similarity <- function(container,factor_select,direc,thresh) {
 
   mat <- simplifyEnrichment::GO_similarity(tmp_names,ont='BP')
   cl <- simplifyEnrichment::binary_cut(mat)
-  sim_hmap_res <- ht_clusters(mat, cl, word_cloud_grob_param = list(max_width = 80))
+  sim_hmap_res <- ht_clusters(mat, cl, word_cloud_grob_param = list(max_width = 80),
+                              exclude_words=exclude_words)
   sim_hmap <- sim_hmap_res[[1]]
   ordering <- sim_hmap_res[[2]]
 
@@ -595,8 +599,6 @@ plot_gsea_hmap_w_similarity <- function(container,factor_select,direc,thresh) {
 
   # store cluster ordering and assignment if want to select later on
   container$gsea_last_info <- list(res_plot,cl,ordering)
-
-  return(hm_list)
 }
 
 
@@ -663,6 +665,8 @@ ht_clusters = function(mat, cl, dend = NULL, col = c("white", "red"),
                        word_cloud_grob_param = list(), fontsize_range = c(4, 16),
                        column_title = NULL, ht_list = NULL, use_raster = TRUE, ...) {
 
+  print(exclude_words)
+
   if(length(col) == 1) col = c("white", rgb(t(col2rgb(col)), maxColorValue = 255))
   col_fun = colorRamp2(seq(0, quantile(mat, 0.95), length = length(col)), col)
   if(!is.null(dend)) {
@@ -724,6 +728,7 @@ ht_clusters = function(mat, cl, dend = NULL, col = c("white", "red"),
 
     if(draw_word_cloud) {
       go_id = rownames(mat)
+      go_id = AnnotationDbi::select(GO.db::GO.db, keys = go_id, columns = "TERM")$TERM
       if(!is.null(term)) {
         if(length(term) != length(go_id)) {
           stop_wrap("Length of `term` should be the same as the nrow of `mat`.")
@@ -952,7 +957,7 @@ plot_select_sets <- function(container, factors_all, sets_plot, color_sets=NULL,
                         row_title_side = "left",
                         border=TRUE,
                         row_names_side = "right",
-                        row_names_gp = gpar(fontsize = 8, col = color_sets),
+                        row_names_gp = gpar(fontsize = myfontsize, col = color_sets),
                         show_heatmap_legend = FALSE,
                         width = unit(10, "cm"),
                         height = unit(myheight, "cm"),
