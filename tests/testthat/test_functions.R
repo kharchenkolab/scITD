@@ -24,6 +24,20 @@ test_that("form_tensor() functionality", {
   expect_equal(result, expected_result)
 })
 
+test_that("get_lm_pvals() functionality", {
+  expected_result <- test_container[["gene_score_associations"]]
+  test_container <- get_lm_pvals(test_container)
+  result <- test_container[["gene_score_associations"]]
+  expect_equal(result, expected_result)
+})
+
+test_that("get_meta_associations() functionality", {
+  expected_result <- test_container[["meta_associations"]]
+  test_container <- get_meta_associations(test_container, vars_test=c('lanes'), stat_use='pval')
+  result <- test_container[["meta_associations"]]
+  expect_equal(result, expected_result)
+})
+
 # test_that("run_tucker_ica() functionality", {
 #   expected_result <- test_container$tucker_results
 #   test_container <- run_tucker_ica(test_container, ranks=c(2,4),
@@ -32,11 +46,11 @@ test_that("form_tensor() functionality", {
 #   expect_equal(result, expected_result)
 # })
 
-test_that("run_tucker_ica() functionality", {
-  expected_result <- test_df$tucker_results
-  test_df <- run_tucker_ica(test_df, ranks=c(2,4),
-                                   tucker_type = 'regular', rotation_type = 'ica_dsc')
-  result <- test_df$tucker_results
-  expect_equal(result, expected_result)
-})
+# test_that("run_tucker_ica() functionality", {
+#   expected_result <- test_df$tucker_results
+#   test_df <- run_tucker_ica(test_df, ranks=c(2,4),
+#                                    tucker_type = 'regular', rotation_type = 'ica_dsc')
+#   result <- test_df$tucker_results
+#   expect_equal(result, expected_result)
+# })
 

@@ -62,6 +62,8 @@ test_container <- run_tucker_ica(test_container, ranks=c(2,4),
 
 test_container <- get_lm_pvals(test_container)
 
+test_container <- get_meta_associations(test_container, vars_test=c('lanes'), stat_use='pval')
+
 save(test_container,file='/home/jmitchel/scITD/data/test_container.RData',compress = "xz")
 
 
