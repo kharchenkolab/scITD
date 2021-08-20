@@ -1,7 +1,7 @@
 
 utils::globalVariables(c("dscore", "donor_proportion", "ctypes", "AUC", "Specificity",
                          "Precision", "subtype_names","subtype_associations","dsc",
-                         "prop", "cell_types"))
+                         "prop", "cell_types", "myx", "myy"))
 
 #' Compute associations between donor factor scores and donor proportions of cell subtypes
 #'
@@ -251,6 +251,65 @@ get_ctype_prop_associations <- function(container,stat_type,n_col=2) {
   # plot results
   prop_figure <- plot_donor_props(donor_props, donor_scores, sig_res, all_ctypes,
                                   stat_type, n_col=n_col)
+
+  # save results
+  container$plots$ctype_prop_factor_associations <- prop_figure
+
+  return(container)
+}
+
+#' Compute associations between donor factor scores and donor proportions of cell subtypes
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param ctype character The cell type to get results for
+#' @param res numeric The clustering resolution to retrieve
+#' @param n_col numeric The number of columns to organize the plots into (default=2)
+#' @param alt_name character Alternate name for the cell type used in clustering (default=NULL)
+#'
+#' @return the project container with the results plot in container$plots$ctype_prop_factor_associations
+#' @export
+get_ctype_subc_prop_associations <- function(container,ctype,res,n_col=2,alt_name=NULL) {
+
+  scMinimal <- container$scMinimal_ctype[[ctype]]
+  donor_scores <- container$tucker_results[[1]]
+  metadata <- scMinimal$metadata
+
+  # # map cell types to numbers temporarily
+  # all_ctypes <- unique(as.character(metadata$ctypes)) # index of this is the mapping
+  # cell_clusters <- sapply(as.character(metadata$ctypes),function(x){
+  #   return(which(all_ctypes %in% x))
+  # })
+  # names(cell_clusters) <- rownames(metadata)
+
+  if (!is.null(alt_name)) {
+    cell_clusters <- container[["subclusters"]][[alt_name]][[paste0('res:',as.character(res))]]
+  } else {
+    cell_clusters <- container[["subclusters"]][[ctype]][[paste0('res:',as.character(res))]]
+  }
+
+  # make sure same cells are in clusters as in metadata
+  cells_both <- intersect(names(cell_clusters),rownames(metadata))
+  cell_clusters <- cell_clusters[cells_both]
+  metadata <- metadata[cells_both,]
+
+  # get matrix of donor proportions of different cell types
+  donor_props <- compute_donor_props(cell_clusters,metadata)
+
+  # transform from proportions to balances
+  donor_balances <- coda.base::coordinates(donor_props)
+  rownames(donor_balances) <- rownames(donor_props)
+
+  # compute associations
+  sig_res <- compute_associations(donor_balances,donor_scores,'adj_pval')
+  sig_res <- p.adjust(sig_res,method='fdr')
+
+  # plot results
+  all_ctypes <- sapply(1:ncol(donor_props), function(x) {
+    paste0(ctype,"_",x)
+  })
+  prop_figure <- plot_donor_props(donor_props, donor_scores, sig_res, all_ctypes,
+                                  'adj_pval', n_col=n_col)
 
   # save results
   container$plots$ctype_prop_factor_associations <- prop_figure
@@ -671,15 +730,35 @@ get_subclust_enr_dotplot <- function(container,ctype,res,subtype,factor_use) {
   donor_props2 <- cbind(donor_props2,as.character(meta[rownames(donor_props2),'Status']))
   colnames(donor_props2)[ncol(donor_props2)] <- 'Status'
 
-  p <- ggplot(as.data.frame(donor_props2),aes(x=as.numeric(dsc),y=as.numeric(prop),color=as.factor(Status))) +
-    geom_point() +
+  donor_props2 <- as.data.frame(donor_props2)
+  donor_props2$dsc <- as.numeric(donor_props2$dsc)
+  donor_props2$prop <- as.numeric(donor_props2$prop)
+  donor_props2$Status <- as.factor(donor_props2$Status)
+
+  lmres <- lm(prop~dsc,data=donor_props2)
+  line_range <- seq(min(donor_props2$dsc),max(donor_props2$dsc),.001)
+  line_dat <- c(line_range*lmres$coefficients[[2]] + lmres$coefficients[[1]])
+  line_df <- cbind.data.frame(line_range,line_dat)
+  # colnames(line_df) <- c('myx','myy')
+  line_df <- cbind.data.frame(line_df,rep('1',nrow(line_df)))
+  colnames(line_df) <- c('myx','myy','Status')
+
+  p <- ggplot(donor_props2,aes(x=dsc,y=prop,color=Status)) +
+    geom_point(alpha = 0.5,pch=19,size=2) +
+    geom_line(data=line_df,aes(x=myx,y=myy)) +
     xlab(paste0('Factor ',as.character(factor_use),' Donor Score')) +
     ylab(paste0('Proportion of All ',ctype)) +
     ylim(0,1) +
     labs(color = "Status") +
     ggtitle(paste0(ctype,'_',as.character(subtype),' Proportions')) +
     theme_bw() +
-    theme(plot.title = element_text(hjust = 0.5))
+    theme(plot.title = element_text(hjust = 0.5),
+          axis.text=element_text(size=12),
+          axis.title=element_text(size=14)) +
+    scale_color_manual(values = c("Healthy" = '#F8766D',
+                                  "Managed" = '#00BFC4',
+                                  "1" = "black"))
+
   return(p)
 }
 
@@ -976,8 +1055,10 @@ plot_donor_props <- function(donor_props, donor_scores, significance,
       ylab("Cell Type Proportion") +
       theme_bw() +
       theme(plot.title = element_text(hjust = 0.5),legend.position="bottom") +
+      # annotate(geom="text",  x=Inf, y=Inf, hjust=1,vjust=1, col="black",
+      #          label=paste0(plot_stat_name,': ',round(significance[f],digits=round_digits)))
       annotate(geom="text",  x=Inf, y=Inf, hjust=1,vjust=1, col="black",
-               label=paste0(plot_stat_name,': ',round(significance[f],digits=round_digits)))
+               label=paste0(plot_stat_name,': ',format(significance[f], scientific = TRUE, digits=2)))
 
     legend <- cowplot::get_legend(
       p + theme(legend.box.margin = margin(0, 0, 30, 0))

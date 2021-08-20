@@ -8,8 +8,8 @@ compare_decompositions(
   tucker_res1,
   tucker_res2,
   decomp_names,
-  meta_anno1,
-  meta_anno2,
+  meta_anno1 = NULL,
+  meta_anno2 = NULL,
   use_text = TRUE
 )
 }
@@ -23,11 +23,11 @@ on the axes of the heatmap}
 
 \item{meta_anno1}{matrix The result of calling get_meta_associations()
 corresponding to the first decomposition, which is stored in
-container$meta_associations}
+container$meta_associations (default=NULL)}
 
 \item{meta_anno2}{matrix The result of calling get_meta_associations()
 corresponding to the second decomposition, which is stored in
-container$meta_associations}
+container$meta_associations (default=NULL)}
 
 \item{use_text}{logical If TRUE, then displays correlation coefficients in cells
 (default=TRUE)}

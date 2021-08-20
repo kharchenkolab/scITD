@@ -50,19 +50,25 @@ param_list <- initialize_params(ctypes_use = c("CD4+ T", "CD8+ T"),
 test_container <- make_new_container(count_data=baby_counts_rand, meta_data=baby_meta,
                                      params=param_list)
 
-test_container <- form_tensor(test_container, donor_min_cells=0, gene_min_cells=0,
+test_container <- form_tensor(test_container, donor_min_cells=0,
                               norm_method='trim', scale_factor=10000,
                               vargenes_method='norm_var', vargenes_thresh=500,
-                              scale_var = TRUE, var_scale_power = 1.5)
+                              scale_var = TRUE, var_scale_power = .5)
 
-test_container <- run_tucker_ica(test_container, ranks=c(2,4,2),
-                                 tucker_type = 'regular', rotation_type = 'ica')
+test_container <- run_tucker_ica(test_container, ranks=c(2,4),
+                                 tucker_type = 'regular', rotation_type = 'hybrid')
+test_container <- run_tucker_ica(test_container, ranks=c(2,4),
+                                 tucker_type = 'regular', rotation_type = 'ica_dsc')
 
-test_container <- run_jackstraw(test_container, ranks=c(2,4,2),
-                                n_fibers=10, n_iter=500, tucker_type='regular',
-                                rotation_type='ica')
+test_container <- get_lm_pvals(test_container)
+
+test_container <- get_meta_associations(test_container, vars_test=c('lanes'), stat_use='pval')
 
 save(test_container,file='/home/jmitchel/scITD/data/test_container.RData',compress = "xz")
+
+
+
+
 
 
 
@@ -80,13 +86,13 @@ param_list <- initialize_params(ctypes_use = c("CD4+ T", "CD8+ T"),
 test_container2 <- make_new_container(count_data=pbmc_counts, meta_data=pbmc_meta,
                                      params=param_list)
 
-test_container2 <- form_tensor(test_container2, donor_min_cells=0, gene_min_cells=0,
+test_container2 <- form_tensor(test_container2, donor_min_cells=0,
                               norm_method='trim', scale_factor=10000,
                               vargenes_method='norm_var', vargenes_thresh=50,
                               scale_var = TRUE, var_scale_power = 1.5)
 
-test_container2 <- run_tucker_ica(test_container2, ranks=c(2,4,2),
-                                 tucker_type = 'regular', rotation_type = 'ica')
+test_container2 <- run_tucker_ica(test_container2, ranks=c(2,4),
+                                 tucker_type = 'regular', rotation_type = 'ica_dsc')
 
 tensor_data <- test_container2$tensor_data
 tucker_results <- test_container2$tucker_results

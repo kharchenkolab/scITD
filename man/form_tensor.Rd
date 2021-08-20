@@ -7,7 +7,6 @@
 form_tensor(
   container,
   donor_min_cells = 5,
-  gene_min_cells = 5,
   norm_method = "trim",
   scale_factor = 10000,
   vargenes_method = "norm_var",
@@ -24,9 +23,6 @@ for each cell type as well as results and plots from all analyses}
 
 \item{donor_min_cells}{numeric Minimum threshold for number of cells per
 donor (default=5)}
-
-\item{gene_min_cells}{numeric Minimum threshold for number of cells
-with nonzero expression of a gene (default=5)}
 
 \item{norm_method}{character The normalization method to use on the pseudobulked
 count data. Set to 'regular' to do standard normalization of dividing by
@@ -68,7 +64,7 @@ container$tensor_data slot
 Form the tensor and scale the data
 }
 \examples{
-test_container <- form_tensor(test_container, donor_min_cells=0, gene_min_cells=0,
+test_container <- form_tensor(test_container, donor_min_cells=0,
 norm_method='trim', scale_factor=10000, vargenes_method='norm_var', vargenes_thresh=500,
 scale_var = TRUE, var_scale_power = 1.5)
 }

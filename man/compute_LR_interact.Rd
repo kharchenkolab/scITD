@@ -7,10 +7,9 @@
 compute_LR_interact(
   container,
   lr_pairs,
-  factor_select,
   sig_thresh = 0.05,
   percentile_exp_rec = 0.75,
-  show_rec_sig = TRUE
+  add_ld_fact_sig = TRUE
 )
 }
 \arguments{
@@ -22,19 +21,17 @@ be ligands and second column should be one or more receptors separated by an
 underscore such as receptor1_receptor2 in the case that multiple receptors are
 required for signaling.}
 
-\item{factor_select}{numeric The factor to get associated LR-modules for}
-
 \item{sig_thresh}{numeric The p-value significance threshold to use for module-
 factor associations and ligand-factor associations (default=0.05)}
 
 \item{percentile_exp_rec}{numeric The percentile above which the top donors expressing the
 ligand all must be expressing the receptor (default=0.75)}
 
-\item{show_rec_sig}{logical Set to TRUE to append a heatmap showing the significance
-of using the receptor expression in predicting module expression (default=TRUE)}
+\item{add_ld_fact_sig}{logical Set to TRUE to append a heatmap showing significance
+of associations between each ligand hit and each factor (default=TRUE)}
 }
 \value{
-The project container with the plot added in container$plots$lr_analysis$factor_num
+The results heatmap(s)
 }
 \description{
 Compute and plot the LR interactions for one factor

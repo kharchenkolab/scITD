@@ -5,8 +5,6 @@
 #' for each cell type as well as results and plots from all analyses
 #' @param donor_min_cells numeric Minimum threshold for number of cells per
 #' donor (default=5)
-#' @param gene_min_cells numeric Minimum threshold for number of cells
-#' with nonzero expression of a gene (default=5)
 #' @param norm_method character The normalization method to use on the pseudobulked
 #' count data. Set to 'regular' to do standard normalization of dividing by
 #' library size. Set to 'trim' to use edgeR trim-mean normalization, whereby counts
@@ -37,14 +35,13 @@
 #' @export
 #'
 #' @examples
-#' test_container <- form_tensor(test_container, donor_min_cells=0, gene_min_cells=0,
+#' test_container <- form_tensor(test_container, donor_min_cells=0,
 #' norm_method='trim', scale_factor=10000, vargenes_method='norm_var', vargenes_thresh=500,
 #' scale_var = TRUE, var_scale_power = 1.5)
-form_tensor <- function(container, donor_min_cells=5, gene_min_cells=5,
-                        norm_method='trim', scale_factor=10000,
-                        vargenes_method='norm_var', vargenes_thresh=500,
-                        batch_var=NULL, scale_var=TRUE, var_scale_power=.5,
-                        verbose=TRUE) {
+form_tensor <- function(container, donor_min_cells=5, norm_method='trim',
+                        scale_factor=10000, vargenes_method='norm_var',
+                        vargenes_thresh=500, batch_var=NULL, scale_var=TRUE,
+                        var_scale_power=.5, verbose=TRUE) {
   # parse data by cell type
   if (verbose) {
     print('parsing data matrix by cell/tissue type...')
@@ -55,7 +52,7 @@ form_tensor <- function(container, donor_min_cells=5, gene_min_cells=5,
   if (verbose) {
     print('cleaning data...')
   }
-  container <- clean_data(container, donor_min_cells=donor_min_cells, gene_min_cells=gene_min_cells)
+  container <- clean_data(container, donor_min_cells=donor_min_cells)
 
   # collapse data to donor-level
   if (verbose) {
@@ -138,12 +135,10 @@ parse_data_by_ctypes <- function(container) {
 #' for each cell type as well as results and plots from all analyses
 #' @param donor_min_cells numeric Minimum threshold for number of cells per
 #' donor (default=5)
-#' @param gene_min_cells numeric Minimum threshold for number of cells
-#' with nonzero expression of a gene (default=5)
 #'
 #' @return the project container with cleaned counts matrices
 #' @export
-clean_data <- function(container, donor_min_cells=5, gene_min_cells=5) {
+clean_data <- function(container, donor_min_cells=5) {
   for (ct in container$experiment_params$ctypes_use) {
     ctype_sub <- container$scMinimal_ctype[[ct]]
 
@@ -162,34 +157,19 @@ clean_data <- function(container, donor_min_cells=5, gene_min_cells=5) {
     donors_in_all <- intersect(donors_in_all,ctype_donors)
   }
 
-  # reduce data to only the intersection of donors in all ctypes
+  # reduce data to only the intersection of donors that have all ctypes
   for (ct in container$experiment_params$ctypes_use) {
     ctype_sub <- container$scMinimal_ctype[[ct]]
     ctype_sub <- subset_scMinimal(ctype_sub, donors_use=donors_in_all)
   }
 
-  for (ct in container$experiment_params$ctypes_use) {
-    ctype_sub <- container$scMinimal_ctype[[ct]]
+  print(paste0('Keeping ',length(donors_in_all),' donors. All donors have at least ',donor_min_cells,' cells in each cell type included.'))
 
-    # identify genes with few counts across all cells
-    gene_counts <- rowSums(ctype_sub$count_data > 0)
-    genes_keep <- names(gene_counts)[gene_counts > gene_min_cells]
+  # get total num donors
+  total_num_donors <- length(unique(container$scMinimal_full$metadata$donors))
 
-    # subset on genes
-    ctype_sub <- subset_scMinimal(ctype_sub, genes_use = genes_keep)
-  }
-
-  # get genes present in all ctype matrices
-  genes_in_all <- rownames(container$scMinimal_ctype[[1]]$count_data)
-  for (ct in container$experiment_params$ctypes_use) {
-    ctype_genes <- rownames(container$scMinimal_ctype[[ct]]$count_data)
-    genes_in_all <- intersect(genes_in_all,ctype_genes)
-  }
-
-  # reduce data to only the intersection of genes in all ctypes
-  for (ct in container$experiment_params$ctypes_use) {
-    ctype_sub <- container$scMinimal_ctype[[ct]]
-    ctype_sub <- subset_scMinimal(ctype_sub, genes_use=genes_in_all)
+  if (length(donors_in_all) < (.5*total_num_donors)) {
+    print('Consider using fewer cell types or reducing the donor_min_cells parameter to include more donors.')
   }
 
   return(container)
@@ -331,18 +311,15 @@ norm_var_helper <- function(scMinimal) {
   df$m <- log(df$m); df$v <- log(df$v);
   rownames(df) <- colnames(donor_sum_counts);
 
-  gam.k <- 5
+  # min.gene.cells <- round(nrow(scMinimal$pseudobulk)*.02)
   min.gene.cells <- 0
   vi <- which(is.finite(df$v) & df$nobs>=min.gene.cells);
-  if(length(vi)<gam.k*1.5) { gam.k=1 };# too few genes
-  if(gam.k<2) {
-    m <- lm(v ~ m, data = df[vi,])
-  } else {
-    m <- mgcv::gam(stats::as.formula(paste0('v ~ s(m, k = ',gam.k,')')), data = df[vi,])
-  }
+  gam.k <- 5
+  m <- mgcv::gam(stats::as.formula(paste0('v ~ s(m, k = ',gam.k,')')), data = df[vi,])
 
-  df$res <- -Inf;  df$res <- stats::resid(m,type='response')
-  n.obs <- df$nobs;
+  df$res <- -Inf
+  df$res[vi] <- stats::resid(m,type='response')
+  n.obs <- df$nobs
   suppressWarnings(df$lp <- as.numeric(stats::pf(exp(df$res),n.obs,n.obs,lower.tail=FALSE,log.p=FALSE)))
   var_pvals <- log(p.adjust(df$lp,method='fdr'))
   df$lp <- log(df$lp)
@@ -353,9 +330,13 @@ norm_var_helper <- function(scMinimal) {
 
 
   # make sure no scaled_var values == 0 as I use it to scale the variance later
+  scaled_var[is.nan(scaled_var)] <- 0  # first make any nan to 0
   min_non_zero <- min(scaled_var[scaled_var!=0])
   ndx_zero <- which(scaled_var==0)
   scaled_var[ndx_zero] <- min_non_zero
+
+  # make log(pvals) for nan elements to be 0
+  var_pvals[is.nan(var_pvals)] <- 0
 
   return(list(scaled_var,var_pvals))
 }
@@ -425,7 +406,7 @@ get_ctype_vargenes <- function(container, method, thresh) {
     }
 
     container$all_vargenes <- unique(all_vargenes)
-  } else {
+  } else if (method == 'anova') {
     var_res <- data.frame(matrix(ncol=3, nrow=0))
     for (ct in container$experiment_params$ctypes_use) {
       pvals <- vargenes_anova(container$scMinimal_ctype[[ct]], ncores)
@@ -447,6 +428,8 @@ get_ctype_vargenes <- function(container, method, thresh) {
       ctype_vargenes <- ctype_res[ctype_res$padj < thresh, 'genes']
       container$scMinimal_ctype[[ct]]$vargenes <- ctype_vargenes
     }
+  } else {
+    stop('need to select one of the available options for vargenes_method parameter')
   }
 
   # reduce ctype data to only significantly variable genes
@@ -551,6 +534,9 @@ scale_variance <- function(container, var_scale_power) {
 
     # center with unit variance
     pb <- scale(pb, center=TRUE)
+
+    # if gene was all 0's it is now NaN, so need to change the values back
+    pb[is.nan(pb)] <- 0
 
     norm_variances <- container$scMinimal_ctype[[ct]]$norm_variances
     scale_factor <- norm_variances[colnames(pb)]

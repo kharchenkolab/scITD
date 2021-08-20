@@ -18,10 +18,6 @@ utils::globalVariables(c("donor_rank", "min_sig"))
 #'
 #' @return the project container with adjusted pvalues in container$gene_score_associations
 #' @export
-#'
-#' @examples
-#' test_container <- run_jackstraw(test_container, ranks=c(2,4,2), n_fibers=6,
-#' n_iter=50, tucker_type='regular', rotation_type='ica')
 run_jackstraw <- function(container, ranks, n_fibers=100, n_iter=500,
                           tucker_type='regular', rotation_type='ica') {
   # set random seed
@@ -53,13 +49,6 @@ run_jackstraw <- function(container, ranks, n_fibers=100, n_iter=500,
 
   # compute actual F statistics for all real fibers
   fstats_real <- get_real_fstats(container, ncores)
-
-  # # temporary testing getting regular pvalues
-  # pvals_adj <- fstats_real
-  # names(pvals_adj) <- names(fstats_real)
-  # names(pvals_adj) <- sapply(names(pvals_adj),function(x){
-  #   substr(x,1,nchar(x)-6)
-  # })
 
   # calculate p-value by counting how many null F stats greater
   pvals_adj <- get_fstats_pvals(fstats_real, fstats_shuffled)
@@ -282,7 +271,81 @@ get_min_sig_genes <- function(container, donor_rank_range, gene_ranks,
 }
 
 
+#' Compute gene-factor associations
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#'
+#' @return the project container with the adjust p-values for the gene-factor
+#' associations in container$gene_score_associations
+#' @export
+#'
+#' @examples
+#' test_container <- get_lm_pvals(test_container)
+get_lm_pvals <- function(container) {
+  tensor_data <- container$tensor_data
+  tucker_results <- container$tucker_results
 
+  if (is.null(tucker_results)) {
+    stop('Need to run run_tucker_ica() first')
+  }
+
+  n_genes <- length(tensor_data[[2]])
+  n_ctypes <- length(tensor_data[[3]])
+  all_pvals <- data.frame(matrix(ncol=3,nrow=0))
+  ncores <- container$experiment_params$ncores
+  all_pvals <- mclapply(1:n_genes, function(i) {
+    gene <- tensor_data[[2]][i]
+    gene_res <- list()
+    for (j in 1:n_ctypes) {
+      ctype <- tensor_data[[3]][j]
+      gene_res[[ctype]] <- list()
+      for (k in 1:ncol(tucker_results[[1]])) {
+        tmp_fiber <- tensor_data[[4]][,i,j]
+
+        # if expression is 0 for all donors just skip
+        if (sum(tmp_fiber==0)==length(tmp_fiber)) {
+          gene_res[[ctype]][[as.character(k)]]$value <- NA
+        } else {
+          df_test <- as.data.frame(cbind(tmp_fiber, tucker_results[[1]][,k]))
+          colnames(df_test) <- c('fiber','factor')
+          lmres <- lm(factor~fiber,df_test)
+
+          x <- summary(lmres)
+          pval <- stats::pf(x$fstatistic[1],x$fstatistic[2],x$fstatistic[3],lower.tail=FALSE)
+
+          gene_res[[ctype]][[as.character(k)]] <- pval
+        }
+      }
+    }
+    return(gene_res)
+  }, mc.cores = ncores)
+
+  names(all_pvals) <- tensor_data[[2]]
+
+  # unpack the list
+  all_pvals <- unlist(all_pvals)
+
+  all_pvals <- p.adjust(all_pvals,method='fdr')
+
+  # set NA values to 1
+  all_pvals[is.na(all_pvals)] <- 1
+
+  new_names <- sapply(names(all_pvals),function(x) {
+    tmp <- strsplit(x,split = '.', fixed = TRUE)[[1]]
+    if (length(tmp)==4) {
+      return(paste0(tmp[[1]],'.',tmp[[2]],'.',tmp[[3]]))
+    } else if (length(tmp)==5) {
+      return(paste0(tmp[[1]],'.',tmp[[2]],'.',tmp[[3]],'.',tmp[[4]]))
+    } else if (length(tmp)==6) {
+      return(paste0(tmp[[1]],'.',tmp[[2]],'.',tmp[[3]],'.',tmp[[4]],'.',tmp[[5]]))
+    }
+  })
+  names(new_names) <- NULL
+  names(all_pvals) <- new_names
+  container[["gene_score_associations"]] <- all_pvals
+  return(container)
+}
 
 
 

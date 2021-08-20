@@ -5,7 +5,7 @@
 \alias{test_container}
 \title{Data container for testing tensor formation steps}
 \format{
-An object of class \code{environment} of length 9.
+An object of class \code{environment} of length 10.
 }
 \usage{
 test_container

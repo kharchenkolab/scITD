@@ -4,16 +4,18 @@
 \alias{tucker_sparse}
 \title{Tucker Decomposition adapted from rTensor but with sparsity constraints}
 \usage{
-tucker_sparse(tnsr, ranks = NULL, max_iter = 25, tol = 1e-05)
+tucker_sparse(tnsr, ranks = NULL, max_iter = 25, tol = 1e-05, sparsity = 5)
 }
 \arguments{
 \item{tnsr}{Tensor with K modes.}
 
-\item{ranks}{numeric Vector of the modes of the output core Tensor}
+\item{ranks}{numeric Vector of the modes of the output core Tensor (default=NULL)}
 
-\item{max_iter}{numeric Maximum number of iterations if error stays above tol}
+\item{max_iter}{numeric Maximum number of iterations if error stays above tol (default=25)}
 
-\item{tol}{numeric Relative Frobenius norm error tolerance}
+\item{tol}{numeric Relative Frobenius norm error tolerance (default=1e-5)}
+
+\item{sparsity}{numeric Higher is more sparse (default=5)}
 }
 \value{
 a list containing the results

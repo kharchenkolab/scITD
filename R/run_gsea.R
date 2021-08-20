@@ -9,10 +9,12 @@
 #' @param db_use character The database of gene sets to use. Database
 #' options include "GO", "Reactome", "KEGG", "BioCarta", and "Hallmark". More than
 #' one database can be used. (default="GO")
+#' @param signed logical If TRUE, uses signed gsea. If FALSE, uses unsigned gsea.
+#' Currently only works with fgsea method. (default=TRUE)
 #'
 #' @return data.frame of the fgsea results (including non-significant results)
 #' @export
-run_fgsea <- function(container, factor_select, ctype, db_use="GO") {
+run_fgsea <- function(container, factor_select, ctype, db_use="GO", signed=TRUE) {
   donor_scores <- container$tucker_results[[1]]
 
   # select mean exp data for one cell type
@@ -21,15 +23,16 @@ run_fgsea <- function(container, factor_select, ctype, db_use="GO") {
 
   # get transformed expression for each gene by summing d_score * scaled exp
   exp_vals <- sapply(1:ncol(tnsr_slice), function(j) {
-    exp_transform <- tnsr_slice[,j] * donor_scores[rownames(tnsr_slice),factor_select]
-    de_val <- sum(exp_transform)
-
-    ## testing out using undirected statistics. Use with commented out fgsea fn below.
-    # exp_transform <- tnsr_slice[,j] * donor_scores[rownames(tnsr_slice),factor_select]
-    # de_val <- abs(sum(exp_transform))
+    if (signed) {
+      exp_transform <- tnsr_slice[,j] * donor_scores[rownames(tnsr_slice),factor_select]
+      de_val <- sum(exp_transform)
+    } else {
+      # testing out using undirected statistics
+      exp_transform <- tnsr_slice[,j] * donor_scores[rownames(tnsr_slice),factor_select]
+      de_val <- abs(sum(exp_transform))
+    }
 
     return(de_val)
-
   })
 
   names(exp_vals) <- convert_gn(container,colnames(tnsr_slice))
@@ -66,21 +69,24 @@ run_fgsea <- function(container, factor_select, ctype, db_use="GO") {
   my_pathways <- split(m_df$gene_symbol, f = m_df$gs_name)
   # my_pathways <- split(m_df$gene_symbol, f = m_df$gs_exact_source)
 
-  fgsea_res <- fgsea::fgsea(pathways = my_pathways,
-                            stats = exp_vals,
-                            minSize=15,
-                            maxSize=500,
-                            eps=0,
-                            gseaParam=1,
-                            nproc=container$experiment_params$ncores)
-  # fgsea_res <- fgsea::fgsea(pathways = my_pathways,
-  #                           stats = exp_vals,
-  #                           minSize=15,
-  #                           maxSize=500,
-  #                           eps=0,
-  #                           gseaParam=1,
-  #                           scoreType = "pos",
-  #                           nproc=container$experiment_params$ncores)
+  if (signed) {
+    fgsea_res <- fgsea::fgsea(pathways = my_pathways,
+                              stats = exp_vals,
+                              minSize=15,
+                              maxSize=500,
+                              eps=0,
+                              gseaParam=1,
+                              nproc=container$experiment_params$ncores)
+  } else {
+    fgsea_res <- fgsea::fgsea(pathways = my_pathways,
+                              stats = exp_vals,
+                              minSize=15,
+                              maxSize=500,
+                              eps=0,
+                              gseaParam=1,
+                              scoreType = "pos",
+                              nproc=container$experiment_params$ncores)
+  }
 
   fgsea_res <- fgsea_res[order(fgsea_res$padj, decreasing=FALSE),]
 
@@ -213,6 +219,8 @@ run_hypergeometric_gsea <- function(container, factor_select, ctype, up_down,
 #' @param db_use character The database of gene sets to use. Database
 #' options include "GO", "Reactome", "KEGG", and "BioCarta". More than
 #' one database can be used. (default="GO")
+#' @param signed logical If TRUE, uses signed gsea. If FALSE, uses unsigned gsea.
+#' Currently only works with fgsea method (default=TRUE)
 #' @param reset_other_factor_plots logical Set to TRUE to set all other gsea plots to NULL (default=FALSE)
 #' @param draw_plot logical Set to TRUE to show the plot. Plot is stored regardless. (default=TRUE)
 #'
@@ -220,7 +228,7 @@ run_hypergeometric_gsea <- function(container, factor_select, ctype, up_down,
 #' container$plots$gsea$FactorX
 #' @export
 run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh=0.05,
-                                db_use="GO", reset_other_factor_plots=FALSE, draw_plot=TRUE) {
+                                db_use="GO", signed=TRUE, reset_other_factor_plots=FALSE, draw_plot=TRUE) {
 
   if (reset_other_factor_plots) {
     container$plots$gsea <- NULL
@@ -234,7 +242,7 @@ run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh
     print(ct)
     if (method == 'fgsea') {
       fgsea_res <- run_fgsea(container, factor_select=factor_select,
-                             ctype=ct, db_use=db_use)
+                             ctype=ct, db_use=db_use, signed=signed)
 
       # remove results where NES is na
       fgsea_res <- fgsea_res[!is.na(fgsea_res$NES),]
@@ -348,8 +356,10 @@ plot_gsea_hmap <- function(container,factor_select,thresh) {
     for (i in 1:length(up_down_sets)) {
       ctype_res <- up_down_sets[[i]]
       ctype <- names(up_down_sets)[i]
-      for (j in 1:length(ctype_res)) {
-        res[names(ctype_res)[j],ctype] <- ctype_res[j]
+      if (length(ctype_res)>0) {
+        for (j in 1:length(ctype_res)) {
+          res[names(ctype_res)[j],ctype] <- ctype_res[j]
+        }
       }
     }
 
@@ -423,10 +433,13 @@ plot_gsea_hmap <- function(container,factor_select,thresh) {
 #' @param factor_select numeric The factor to plot
 #' @param direc character Set to either 'up' or 'down' to use the appropriate sets
 #' @param thresh numeric Pvalue threshold to use for including gene sets in the heatmap
+#' @param exclude_words character Vector of words to exclude from word cloud
+#' (default=character(0))
 #'
-#' @return the heatmap plot
+#' @return the heatmap is drawn
 #' @export
-plot_gsea_hmap_w_similarity <- function(container,factor_select,direc,thresh) {
+plot_gsea_hmap_w_similarity <- function(container,factor_select,direc,thresh,
+                                        exclude_words=character(0)) {
   factor_name <- paste0('Factor',as.character(factor_select))
   up_down_sets <- container$gsea_results[[as.character(factor_select)]][[direc]]
 
@@ -475,7 +488,8 @@ plot_gsea_hmap_w_similarity <- function(container,factor_select,direc,thresh) {
 
   mat <- simplifyEnrichment::GO_similarity(tmp_names,ont='BP')
   cl <- simplifyEnrichment::binary_cut(mat)
-  sim_hmap_res <- ht_clusters(mat, cl, word_cloud_grob_param = list(max_width = 80))
+  sim_hmap_res <- ht_clusters(mat, cl, word_cloud_grob_param = list(max_width = 80),
+                              exclude_words=exclude_words)
   sim_hmap <- sim_hmap_res[[1]]
   ordering <- sim_hmap_res[[2]]
 
@@ -528,8 +542,6 @@ plot_gsea_hmap_w_similarity <- function(container,factor_select,direc,thresh) {
 
   # store cluster ordering and assignment if want to select later on
   container$gsea_last_info <- list(res_plot,cl,ordering)
-
-  return(hm_list)
 }
 
 
@@ -596,6 +608,8 @@ ht_clusters = function(mat, cl, dend = NULL, col = c("white", "red"),
                        word_cloud_grob_param = list(), fontsize_range = c(4, 16),
                        column_title = NULL, ht_list = NULL, use_raster = TRUE, ...) {
 
+  print(exclude_words)
+
   if(length(col) == 1) col = c("white", rgb(t(col2rgb(col)), maxColorValue = 255))
   col_fun = colorRamp2(seq(0, quantile(mat, 0.95), length = length(col)), col)
   if(!is.null(dend)) {
@@ -657,6 +671,7 @@ ht_clusters = function(mat, cl, dend = NULL, col = c("white", "red"),
 
     if(draw_word_cloud) {
       go_id = rownames(mat)
+      go_id = AnnotationDbi::select(GO.db::GO.db, keys = go_id, columns = "TERM")$TERM
       if(!is.null(term)) {
         if(length(term) != length(go_id)) {
           stop_wrap("Length of `term` should be the same as the nrow of `mat`.")
@@ -838,7 +853,6 @@ plot_select_sets <- function(container, factors_all, sets_plot, color_sets=NULL,
       color_sets <- color_sets[clust_ord]
     }
 
-    # height should depend on number of sets
     if (!is.null(h_w)) {
       myhmap <- Heatmap(as.matrix(res_disc), name = 'signed -log10(padj)',
                         cluster_rows = FALSE,
@@ -870,6 +884,7 @@ plot_select_sets <- function(container, factors_all, sets_plot, color_sets=NULL,
                           }
                         })
     } else {
+      # height should depend on number of sets
       myheight <- (3/5) * nrow(res)
       myhmap <- Heatmap(as.matrix(res_disc), name = 'signed -log10(padj)',
                         cluster_rows = FALSE,
@@ -885,7 +900,7 @@ plot_select_sets <- function(container, factors_all, sets_plot, color_sets=NULL,
                         row_title_side = "left",
                         border=TRUE,
                         row_names_side = "right",
-                        row_names_gp = gpar(fontsize = 8, col = color_sets),
+                        row_names_gp = gpar(fontsize = myfontsize, col = color_sets),
                         show_heatmap_legend = FALSE,
                         width = unit(10, "cm"),
                         height = unit(myheight, "cm"),
