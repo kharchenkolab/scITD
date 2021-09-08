@@ -272,6 +272,7 @@ normalize_counts <- function(count_data, scale_factor=10000) {
 
   # log transform result
   tmp <- log1p(tmp)
+
   return(tmp)
 }
 

@@ -272,7 +272,50 @@ get_one_factor <- function(container, factor_select) {
 }
 
 
+pca_unfolded <- function(container, ranks) {
+  # get tensor data
+  tensor_data <- container$tensor_data
 
+  # extract tensor and labels
+  donor_nm <- tensor_data[[1]]
+  gene_nm  <- tensor_data[[2]]
+  ctype_nm  <- tensor_data[[3]]
+  tnsr <- tensor_data[[4]]
+
+  d_unfold <- rTensor::k_unfold(rTensor::as.tensor(tnsr),1)@data
+
+  rownames(d_unfold) <- donor_nm
+  var_names <- sapply(ctype_nm, function(x) {
+    sapply(gene_nm, function(y) {
+      paste0(x,':',y)
+    })
+  })
+  colnames(d_unfold) <- var_names
+
+  svd_res <- svd(d_unfold,nu = ranks,nv = ranks)
+  svd_res <- svd(d_unfold)
+
+  donor_mat <- svd_res$u[,1:ranks]
+  rownames(donor_mat) <- rownames(d_unfold)
+  ldngs <- t(svd_res$v)[1:ranks,]
+  colnames(ldngs) <- colnames(d_unfold)
+
+  # incorporate d values into ldngs
+  ldngs <- svd_res$d[1:ranks] * ldngs
+
+  container$tucker_results <- list(donor_mat,ldngs)
+
+  # reorder factors by explained variance
+  explained_variances <- c()
+  for (i in 1:ranks[1]) {
+    exp_var <- get_factor_exp_var(container,i)
+    explained_variances[i] <- exp_var
+  }
+  container$tucker_results[[1]] <- container$tucker_results[[1]][,order(explained_variances,decreasing=TRUE)]
+  container$tucker_results[[2]] <- container$tucker_results[[2]][order(explained_variances,decreasing=TRUE),]
+  container$exp_var <- explained_variances[order(explained_variances,decreasing=TRUE)]
+
+}
 
 
 

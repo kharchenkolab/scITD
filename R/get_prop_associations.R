@@ -695,10 +695,11 @@ get_subclust_enr_bplot <- function(container,ctype,factor_use) {
 #' @param subtype numeric The number corresponding with the subtype of the major
 #' cell type to plot
 #' @param factor_use numeric The factor to plot
+#' @param ctype_cut character The name of the major cell type used in the main analysis
 #'
 #' @return the plot in container$plots$subc_bplots$<ctype>
 #' @export
-get_subclust_enr_dotplot <- function(container,ctype,res,subtype,factor_use) {
+get_subclust_enr_dotplot <- function(container,ctype,res,subtype,factor_use,ctype_cur) {
   resolution_name <- paste0('res:',as.character(res))
   subclusts <- container$subclusters[[ctype]][[resolution_name]]
 
@@ -707,12 +708,15 @@ get_subclust_enr_dotplot <- function(container,ctype,res,subtype,factor_use) {
 
   # limit cells in subclusts to those that we actually have scores for
   donor_scores <- container$tucker_results[[1]]
-  donor_vec <- container$scMinimal_full$metadata[names(subclusts),'donors']
+  cell_intersect <- intersect(names(subclusts),rownames(container$scMinimal_full$metadata))
+  # donor_vec <- container$scMinimal_full$metadata[names(subclusts),'donors']
+  donor_vec <- container$scMinimal_full$metadata[cell_intersect,'donors']
+  subclusts <- subclusts[cell_intersect]
   subclusts <- subclusts[donor_vec %in% rownames(donor_scores)]
 
   # make subtype association plot
   subclusts_num <- sapply(subclusts,function(x){as.numeric(strsplit(x,split="_")[[1]][[2]])})
-  scMinimal <- container$scMinimal_ctype[[ctype]]
+  scMinimal <- container$scMinimal_ctype[[ctype_cur]]
   sub_meta_tmp <- scMinimal$metadata[names(subclusts),]
 
   # get donor proportions of subclusters
@@ -724,16 +728,16 @@ get_subclust_enr_dotplot <- function(container,ctype,res,subtype,factor_use) {
   donor_props2 <- cbind(donor_props,donor_scores[rownames(donor_props),factor_use])
   colnames(donor_props2)[ncol(donor_props2)] <- 'dsc'
 
-  # append disease status
-  meta <- unique(container$scMinimal_full$metadata[,c('donors','Status')])
-  rownames(meta) <- meta$donors
-  donor_props2 <- cbind(donor_props2,as.character(meta[rownames(donor_props2),'Status']))
-  colnames(donor_props2)[ncol(donor_props2)] <- 'Status'
+  # # append disease status
+  # meta <- unique(container$scMinimal_full$metadata[,c('donors','Status')])
+  # rownames(meta) <- meta$donors
+  # donor_props2 <- cbind(donor_props2,as.character(meta[rownames(donor_props2),'Status']))
+  # colnames(donor_props2)[ncol(donor_props2)] <- 'Status'
 
   donor_props2 <- as.data.frame(donor_props2)
   donor_props2$dsc <- as.numeric(donor_props2$dsc)
   donor_props2$prop <- as.numeric(donor_props2$prop)
-  donor_props2$Status <- as.factor(donor_props2$Status)
+  # donor_props2$Status <- as.factor(donor_props2$Status)
 
   lmres <- lm(prop~dsc,data=donor_props2)
   line_range <- seq(min(donor_props2$dsc),max(donor_props2$dsc),.001)
@@ -741,23 +745,36 @@ get_subclust_enr_dotplot <- function(container,ctype,res,subtype,factor_use) {
   line_df <- cbind.data.frame(line_range,line_dat)
   # colnames(line_df) <- c('myx','myy')
   line_df <- cbind.data.frame(line_df,rep('1',nrow(line_df)))
-  colnames(line_df) <- c('myx','myy','Status')
+  # colnames(line_df) <- c('myx','myy','Status')
+  colnames(line_df) <- c('myx','myy')
 
-  p <- ggplot(donor_props2,aes(x=dsc,y=prop,color=Status)) +
+  p <- ggplot(donor_props2,aes(x=dsc,y=prop)) +
     geom_point(alpha = 0.5,pch=19,size=2) +
     geom_line(data=line_df,aes(x=myx,y=myy)) +
     xlab(paste0('Factor ',as.character(factor_use),' Donor Score')) +
     ylab(paste0('Proportion of All ',ctype)) +
     ylim(0,1) +
-    labs(color = "Status") +
     ggtitle(paste0(ctype,'_',as.character(subtype),' Proportions')) +
     theme_bw() +
     theme(plot.title = element_text(hjust = 0.5),
           axis.text=element_text(size=12),
-          axis.title=element_text(size=14)) +
-    scale_color_manual(values = c("Healthy" = '#F8766D',
-                                  "Managed" = '#00BFC4',
-                                  "1" = "black"))
+          axis.title=element_text(size=14))
+
+  # p <- ggplot(donor_props2,aes(x=dsc,y=prop,color=Status)) +
+  #   geom_point(alpha = 0.5,pch=19,size=2) +
+  #   geom_line(data=line_df,aes(x=myx,y=myy)) +
+  #   xlab(paste0('Factor ',as.character(factor_use),' Donor Score')) +
+  #   ylab(paste0('Proportion of All ',ctype)) +
+  #   ylim(0,1) +
+  #   labs(color = "Status") +
+  #   ggtitle(paste0(ctype,'_',as.character(subtype),' Proportions')) +
+  #   theme_bw() +
+  #   theme(plot.title = element_text(hjust = 0.5),
+  #         axis.text=element_text(size=12),
+  #         axis.title=element_text(size=14)) +
+  #   scale_color_manual(values = c("Healthy" = '#F8766D',
+  #                                 "Managed" = '#00BFC4',
+  #                                 "1" = "black"))
 
   return(p)
 }
