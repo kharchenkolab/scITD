@@ -399,7 +399,7 @@ get_ctype_vargenes <- function(container, method, thresh) {
     for (ct in container$experiment_params$ctypes_use) {
       var_pvals <- container$scMinimal_ctype[[ct]]$var_pvals
 
-      sig_var <- var_pvals[var_pvals < log(thresh)]
+      sig_var <- var_pvals[var_pvals <= log(thresh)]
 
       all_vargenes <- c(all_vargenes,names(sig_var))
 
