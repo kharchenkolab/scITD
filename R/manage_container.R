@@ -178,7 +178,32 @@ identify_sex_metadata <- function(container,y_gene='RPS4Y1',x_gene='XIST') {
 }
 
 
-
+#' Gets core donor metadata with columns of donors as minimum. Will subset the matrix
+#' to only donors processed in the analysis unless otherwise specified.
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param additional_meta character A vector of other variables to include (default=NULL)
+#' @param only_analyzed logical Set to TRUE to only include donors that were included
+#' in the formed tensor, otherwise set to FALSE (default=TRUE)
+#'
+#' @return the container with the minimal metadata in container$donor_metadata
+#' @export
+get_donor_meta <- function(container,additional_meta=NULL,only_analyzed=TRUE) {
+  if (only_analyzed) {
+    if (is.null(container$tensor_data)) {
+      stop('Need to run form_tensor() first or set only_analyzed to FALSE')
+    }
+    donors <- container$tensor_data[[1]]
+  } else {
+    donors <- unique(container$scMinimal_full$metadata$donors)
+  }
+  meta_sub <- container$scMinimal_full$metadata[container$scMinimal_full$metadata$donors %in% donors,]
+  donor_metadata <- unique(meta_sub[,c('donors',additional_meta),drop=FALSE])
+  rownames(donor_metadata) <- donor_metadata[,'donors']
+  container$donor_metadata <- donor_metadata
+  return(container)
+}
 
 
 
