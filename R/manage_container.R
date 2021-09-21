@@ -205,7 +205,54 @@ get_donor_meta <- function(container,additional_meta=NULL,only_analyzed=TRUE) {
   return(container)
 }
 
+determine_ctype_set <- function(container,min_d_intersect,n_ctypes,donor_min_cells,max_iter) {
+  container <- parse_data_by_ctypes(container)
 
+  ctypes_all <- container$experiment_params$ctypes_use
+  for (ct in ctypes_all) {
+    scMinimal <- container$scMinimal_ctype[[ct]]
+    scMinimal$counts_stored <- scMinimal$count_data
+    scMinimal$meta_stored <- scMinimal$metadata
+  }
+
+  all_scMinimal <- container$scMinimal_ctype
+  # all_scMinimal <- list()
+  # for (ct in ctypes_all) {
+  #   all_scMinimal[[ct]] <- container$scMinimal_ctype[[ct]]
+  # }
+  n_iter <- 1
+  d_set_len <- 0
+  all_combos <- combn(ctypes_all,n_ctypes)
+  all_combos <- all_combos[,sample(1:ncol(all_combos))] #shuffle columns
+
+  if (max_iter>ncol(all_combos)) {
+    max_iter <- ncol(all_combos)
+  }
+
+  while (d_set_len < min_d_intersect && n_iter < max_iter) {
+    # my_samp <- sample(ctypes_all,n_ctypes)
+    my_samp <- all_combos[,n_iter]
+    print(my_samp)
+    container$experiment_params$ctypes_use <- my_samp
+    container$scMinimal_ctype <- container$scMinimal_ctype[my_samp]
+    container <- clean_data(container, donor_min_cells=donor_min_cells)
+    d_set_len <- length(unique(container$scMinimal_ctype[[1]]$metadata$donors))
+    n_iter <- n_iter + 1
+    container$scMinimal_ctype <- all_scMinimal
+    for (ct in ctypes_all) {
+      scMinimal <- container$scMinimal_ctype[[ct]]
+      scMinimal$count_data <- scMinimal$counts_stored
+      scMinimal$metadata <- scMinimal$meta_stored
+    }
+
+    if (d_set_len >= min_d_intersect) {
+      print('success')
+      print(my_samp)
+    } else if (n_iter == max_iter) {
+      print('failure, max_iter reached with no solution')
+    }
+  }
+}
 
 
 

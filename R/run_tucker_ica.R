@@ -340,6 +340,10 @@ nmf_unfolded <- function(container, ranks) {
   col_m <- colMins(d_unfold)
   d_unfold <- sweep(d_unfold,MARGIN=2,col_m,FUN='-')
 
+  # remove columns that are all 0
+  ndx_keep <- which(d_unfold!=0)
+  d_unfold <- d_unfold[,ndx_keep]
+
   nmf_res <- NMF::nmf(d_unfold,ranks)
   donor_mat <- nmf_res@fit@W
   ldngs <- nmf_res@fit@H

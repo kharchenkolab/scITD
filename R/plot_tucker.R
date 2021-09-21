@@ -22,6 +22,7 @@ utils::globalVariables(c("UMAP1", "UMAP2"))
 #' each factor (default=TRUE)
 #' @param donors_sel character A vector of a subset of donors to include in the plot
 #' (default=NULL)
+#' @param h_w numeric Vector specifying height and width (defualt=NULL)
 #'
 #' @return the project container with the plot in container$plots$donor_matrix
 #' @export
@@ -30,7 +31,7 @@ utils::globalVariables(c("UMAP1", "UMAP2"))
 #' test_container <- plot_donor_matrix(test_container, show_donor_ids = TRUE)
 plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL,
                               show_donor_ids=FALSE, add_meta_associations=NULL,
-                              show_var_explained=TRUE, donors_sel=NULL) {
+                              show_var_explained=TRUE, donors_sel=NULL, h_w=NULL) {
 
   # check that Tucker has been run
   if (is.null(container$tucker_results)) {
@@ -84,15 +85,29 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL,
     if (!is.null(donors_sel)) {
       donor_mat <- donor_mat[donors_sel,]
     }
-    myhmap <- Heatmap(as.matrix(donor_mat), name = "score",
-                      cluster_columns = FALSE,show_column_dend = FALSE,
-                      cluster_rows = TRUE, show_row_dend = FALSE,
-                      column_names_gp = gpar(fontsize = 10),
-                      col = col_fun, row_title = "Donors",
-                      row_title_gp = gpar(fontsize = 14),
-                      show_row_names = show_donor_ids,
-                      border = TRUE, top_annotation=ta,
-                      bottom_annotation=ba)
+    if (is.null(h_w)) {
+      myhmap <- Heatmap(as.matrix(donor_mat), name = "score",
+                        cluster_columns = FALSE,show_column_dend = FALSE,
+                        cluster_rows = TRUE, show_row_dend = FALSE,
+                        column_names_gp = gpar(fontsize = 10),
+                        col = col_fun, row_title = "Donors",
+                        row_title_gp = gpar(fontsize = 14),
+                        show_row_names = show_donor_ids,
+                        border = TRUE, top_annotation=ta,
+                        bottom_annotation=ba)
+    } else {
+      myhmap <- Heatmap(as.matrix(donor_mat), name = "score",
+                        cluster_columns = FALSE,show_column_dend = FALSE,
+                        cluster_rows = TRUE, show_row_dend = FALSE,
+                        column_names_gp = gpar(fontsize = 10),
+                        col = col_fun, row_title = "Donors",
+                        row_title_gp = gpar(fontsize = 14),
+                        show_row_names = show_donor_ids,
+                        border = TRUE, top_annotation=ta,
+                        bottom_annotation=ba,
+                        width = unit(h_w[2], "cm"), height = unit(h_w[1], "cm"))
+    }
+
 
   } else {
     meta <- container$scMinimal_full$metadata[,c('donors',meta_vars)]
@@ -125,14 +140,27 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL,
       meta <- meta[donors_sel,]
     }
 
-    myhmap <- Heatmap(as.matrix(donor_mat), name = "score",cluster_columns = FALSE,
-                      cluster_rows = do_row_clust,show_row_dend = FALSE,
-                      column_names_gp = gpar(fontsize = 10),
-                      col = col_fun, row_title = "Donors",
-                      row_title_gp = gpar(fontsize = 14),
-                      show_row_names = show_donor_ids,
-                      border = TRUE, top_annotation=ta,
-                      bottom_annotation=ba)
+    if (is.null(h_w)) {
+      myhmap <- Heatmap(as.matrix(donor_mat), name = "score",cluster_columns = FALSE,
+                        cluster_rows = do_row_clust,show_row_dend = FALSE,
+                        column_names_gp = gpar(fontsize = 10),
+                        col = col_fun, row_title = "Donors",
+                        row_title_gp = gpar(fontsize = 14),
+                        show_row_names = show_donor_ids,
+                        border = TRUE, top_annotation=ta,
+                        bottom_annotation=ba)
+    } else {
+      myhmap <- Heatmap(as.matrix(donor_mat), name = "score",cluster_columns = FALSE,
+                        cluster_rows = do_row_clust,show_row_dend = FALSE,
+                        column_names_gp = gpar(fontsize = 10),
+                        col = col_fun, row_title = "Donors",
+                        row_title_gp = gpar(fontsize = 14),
+                        show_row_names = show_donor_ids,
+                        border = TRUE, top_annotation=ta,
+                        bottom_annotation=ba,
+                        width = unit(h_w[2], "cm"), height = unit(h_w[1], "cm"))
+    }
+
 
     for (j in 1:ncol(meta)) {
       if (colnames(meta)[j]=='sex') {

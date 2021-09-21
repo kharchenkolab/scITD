@@ -11,7 +11,8 @@ plot_donor_matrix(
   show_donor_ids = FALSE,
   add_meta_associations = NULL,
   show_var_explained = TRUE,
-  donors_sel = NULL
+  donors_sel = NULL,
+  h_w = NULL
 )
 }
 \arguments{
@@ -37,6 +38,8 @@ each factor (default=TRUE)}
 
 \item{donors_sel}{character A vector of a subset of donors to include in the plot
 (default=NULL)}
+
+\item{h_w}{numeric Vector specifying height and width (defualt=NULL)}
 }
 \value{
 the project container with the plot in container$plots$donor_matrix
