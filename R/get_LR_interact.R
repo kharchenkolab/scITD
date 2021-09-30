@@ -281,7 +281,7 @@ compute_LR_interact <- function(container, lr_pairs, sig_thresh=0.05,
 
   # reduce to rows/columns with at least one significant hit
   myres_mat <- myres_mat[rowSums(myres_mat<sig_thresh)>0,]
-  myres_mat <- myres_mat[,colSums(myres_mat<sig_thresh)>0]
+  myres_mat <- myres_mat[,colSums(myres_mat<.001)>0]
 
   # log transform values
   myres_mat <- -log10(myres_mat)
@@ -324,15 +324,15 @@ compute_LR_interact <- function(container, lr_pairs, sig_thresh=0.05,
                      row_names_side='left', column_names_side='top',
                      show_row_dend=FALSE,
                      show_column_dend=FALSE,
-                     column_names_gp = gpar(fontsize = 8),
-                     row_names_gp = gpar(fontsize = 8),
+                     column_names_gp = gpar(fontsize = 9),
+                     row_names_gp = gpar(fontsize = 9),
                      col=col_fun,
                      border=TRUE,
                      row_split = rs,
                      column_split = cs,
                      cluster_row_slices = FALSE,
                      cluster_column_slices = FALSE,
-                     na_col = "gray",
+                     na_col = "gray", column_names_rot = 55,
                      row_labels=new_rnames)
 
   if (add_ld_fact_sig) {
@@ -363,15 +363,16 @@ compute_LR_interact <- function(container, lr_pairs, sig_thresh=0.05,
     fact_res2 <- matrix(p.adjust(fact_res,method='fdr'),ncol=ncol(fact_res),nrow=nrow(fact_res))
     colnames(fact_res2) <- colnames(fact_res)
     fact_res2[is.na(fact_res2)] <- 1
+    fact_res2 <- fact_res2[,colSums(fact_res2<sig_thresh)>0]
     fact_res2 <- -log10(fact_res2)
     col_fun = colorRamp2(c(0, -log10(.1), 10), c("white", "white", "purple"))
     myhmap2 <- Heatmap(fact_res2, name='lig_factor -log10(padj)',
                        show_row_dend=FALSE,
                        show_column_dend=FALSE,
                        cluster_columns = FALSE,
-                       column_names_gp = gpar(fontsize = 8),
-                       row_names_gp = gpar(fontsize = 8),
-                       col=col_fun,
+                       column_names_gp = gpar(fontsize = 9),
+                       row_names_gp = gpar(fontsize = 9),
+                       col=col_fun, column_names_rot = 55,
                        border=TRUE)
     myhmap1 <- myhmap1 + myhmap2
   }
