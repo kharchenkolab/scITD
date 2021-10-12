@@ -30,6 +30,7 @@ Imports:
     fgsea,
     circlize,
     reshape2,
+    ComplexHeatmap,
     parallel,
     ggplot2,
     mgcv,
