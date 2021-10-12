@@ -5,6 +5,7 @@ jobs:
       - image: rocker/verse:4.0.3
     environment:
             _R_CHECK_FORCE_SUGGESTS_: false
+            _GITHUB_PAT_: 53b5dde802369272464ca0a8447e1c619f80b2db
     steps:
       - checkout
       - run:
