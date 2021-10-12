@@ -69,8 +69,6 @@ Suggests:
     stringr,
     cowplot,
     betareg
-Remotes:
-    jokergoo/ComplexHeatmap
 RoxygenNote: 7.1.1
 LinkingTo: Rcpp, RcppArmadillo, RcppProgress
 NeedsCompilation: yes
