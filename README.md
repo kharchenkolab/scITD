@@ -17,7 +17,7 @@ RNA-sequencing data. These programs may be represented by patterns of genes whic
 Many of our visualizations require the development version of ComplexHeatmap package, so this should be installed first:
     
 ``` r
-devtools::install_github("kharchenkolab/scITD")
+devtools::install_github("jokergoo/ComplexHeatmap")
 ```  
 
 Then, install scITD with the following:
