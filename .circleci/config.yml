@@ -9,7 +9,7 @@ jobs:
       - checkout
       - run:
           name: Install package dependencies
-          command: 
+          command: |
             Rscript \
               -e 'if (!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")' \
               -e 'devtools::install_github("jokergoo/ComplexHeatmap")'
