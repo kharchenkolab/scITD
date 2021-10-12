@@ -1508,6 +1508,40 @@ get_leading_edge_genes <- function(container,factor_select,gsets,num_genes_per=5
 }
 
 
+get_donor_umap <- function(container,factors_use=NULL,color_by_meta=NULL) {
+  dsc <- container$tucker_results[[1]]
+  exp_var <- container[["exp_var"]]
+
+  # scale factors by explained variance
+  dsc_scaled <- t(t(dsc) * (exp_var**2))
+
+  dsc_umap <- umap(dsc_scaled)
+  dsc_umap <- dsc_umap$layout
+  colnames(dsc_umap) <- c('UMAP1','UMAP2')
+  dsc_umap <- as.data.frame(dsc_umap)
+
+  if (!is.null(color_by_meta)) {
+    container <- get_donor_meta(container,color_by_meta)
+    mymeta <- container[["donor_metadata"]]
+    colnames(mymeta)[2] <- 'mymeta'
+    dsc_umap$mymeta <- mymeta$mymeta
+    p <- ggplot(dsc_umap,aes(x=UMAP1,y=UMAP2,color=mymeta)) +
+      geom_point()
+  } else {
+    p <- ggplot(dsc_umap,aes(x=UMAP1,y=UMAP2)) +
+      geom_point()
+  }
+  return(p)
+}
+
+
+
+
+
+
+
+
+
 
 
 

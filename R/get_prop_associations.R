@@ -7,13 +7,18 @@ utils::globalVariables(c("dscore", "donor_proportion", "ctypes", "AUC", "Specifi
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
-#' @param max_res numeric The maximum clustering resolution to use
+#' @param max_res numeric The maximum clustering resolution to use. Minimum is 0.5.
 #' @param stat_type character Either "fstat" to get F-Statistics, "adj_rsq" to get adjusted
 #' R-squared values, or "adj_pval" to get adjusted pvalues.
 #' @param integration_var character The meta data variable to use for creating
 #' the joint embedding with Conos if not already provided in container$embedding (default=NULL)
 #' @param min_cells_group numeric The minimum allowable size for cell subpopulations
 #' (default=50)
+#' @param use_existing_subc logical Set to TRUE to use existing subcluster annotations
+#' (default=FALSE)
+#' @param alt_ct_names character Cell type names used in clustering if different from those
+#' used in the main analysis. Should match the order of container$experiment_params$ctypes_use.
+#'(default=NULL)
 #' @param n_col numeric The number of columns to organize the plots into (default=2)
 #'
 #' @return the project container with a plot of association results in
@@ -21,7 +26,8 @@ utils::globalVariables(c("dscore", "donor_proportion", "ctypes", "AUC", "Specifi
 #' @export
 get_subtype_prop_associations <- function(container, max_res, stat_type,
                                           integration_var=NULL, min_cells_group=50,
-                                          n_col=2) {
+                                          use_existing_subc=FALSE,
+                                          alt_ct_names=NULL,n_col=2) {
   if (!(stat_type %in% c("fstat","adj_rsq","adj_pval"))) {
     stop("stat_type parameter is not one of the three options")
   }
@@ -45,29 +51,45 @@ get_subtype_prop_associations <- function(container, max_res, stat_type,
   colnames(res) <- c(stat_type,'resolution','factor','ctype')
 
   # make list to store subclustering results
-  subc_all <- list()
-
+  if (!use_existing_subc) {
+    subc_all <- container$subclusters
+  } else {
+    subc_all <- list()
+  }
   # loop through cell types
   for (ct in container$experiment_params$ctypes_use) {
     print(ct)
     scMinimal <- container[["scMinimal_ctype"]][[ct]]
 
     # loop through increasing clustering resolutions
-    cluster_res <- seq(.4,max_res,by=.1)
+    cluster_res <- seq(.5,max_res,by=.1)
     for (r in cluster_res) {
-      print(r)
-      # run clustering
-      # subclusts <- get_subclusters(container,ct,r,min_cells_group=min_cells_group,
-      #                              small_clust_action='merge')
-      subclusts <- get_subclusters(container,ct,r,min_cells_group=min_cells_group,
-                                   small_clust_action='remove')
-      subclusts <- subclusts + 1 # moves subcluster index from 0 to 1
-      subc_all[[ct]][[paste0('res:',as.character(r))]] <- subclusts
+      if (!use_existing_subc) {
+        print(r)
+        # run clustering
+        # subclusts <- get_subclusters(container,ct,r,min_cells_group=min_cells_group,
+        #                              small_clust_action='merge')
+        subclusts <- get_subclusters(container,ct,r,min_cells_group=min_cells_group,
+                                     small_clust_action='remove')
+        subclusts <- subclusts + 1 # moves subcluster index from 0 to 1
+        subc_all[[ct]][[paste0('res:',as.character(r))]] <- subclusts
+      } else {
+        if (!is.null(alt_ct_names)) {
+          ct_ndx <- which(container$experiment_params$ctypes_use==ct)
+          ct_new <- alt_ct_names[ct_ndx]
+          subclusts <- container$subclusters[[ct_new]][[paste0('res:',as.character(r))]]
+        } else {
+          subclusts <- container$subclusters[[ct]][[paste0('res:',as.character(r))]]
+        }
+      }
 
       num_subclusts <- length(unique(subclusts))
 
       if (num_subclusts > 1) {
-        sub_meta_tmp <- scMinimal$metadata[names(subclusts),]
+        # get cells in both metadata and subclusts
+        cell_intersect <- intersect(names(subclusts),rownames(scMinimal$metadata))
+
+        sub_meta_tmp <- scMinimal$metadata[cell_intersect,]
 
         # get donor proportions of subclusters
         donor_props <- compute_donor_props(subclusts,sub_meta_tmp)
@@ -79,7 +101,7 @@ get_subtype_prop_associations <- function(container, max_res, stat_type,
         # compute regression statistics
         reg_stats <- compute_associations(donor_balances,donor_scores,stat_type)
 
-        # generate plot of donor proportions and scores
+        # rename donor_props columns for generating plot of donor proportions and scores
         colnames(donor_props) <- sapply(1:ncol(donor_props),function(x){paste0(ct,'_',x)})
 
       } else {
@@ -97,6 +119,11 @@ get_subtype_prop_associations <- function(container, max_res, stat_type,
         res <- rbind(res,new_row)
       }
     }
+  }
+
+  # adjust p-values if using adj_pval stat_type
+  if (stat_type=='adj_pval') {
+    res$adj_pval <- p.adjust(res$adj_pval,method = 'fdr')
   }
 
   # generate plot of associations

@@ -10,6 +10,7 @@ get_subtype_prop_associations(
   stat_type,
   integration_var = NULL,
   min_cells_group = 50,
+  use_existing_subc = FALSE,
   n_col = 2
 )
 }
@@ -27,6 +28,9 @@ the joint embedding with Conos if not already provided in container$embedding (d
 
 \item{min_cells_group}{numeric The minimum allowable size for cell subpopulations
 (default=50)}
+
+\item{use_existing_subc}{logical Set to TRUE to use existing subcluster annotations
+(default=FALSE)}
 
 \item{n_col}{numeric The number of columns to organize the plots into (default=2)}
 }
