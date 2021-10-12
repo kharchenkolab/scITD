@@ -8,19 +8,19 @@
 
 # scITD
 
-Single-Cell Interpretable Tensor Decomposition (scITD) is capable of
-extracting multi-cell type expression programs from single-cell
-RNA-sequencing data. This tool is useful for scRNA-seq datasets derived
-from many donors. The multicellular processes can be interpreted with
-standard methods such as gene set enrichment analysis (GSEA) and
-ligand-receptor analysis. Overall, this package provides the basic tools
-necessary to extracting multicellular expression processes from
-scRNA-seq datasets that will be useful in understanding complex and
-heterogeneous diseases.
+Single-Cell Interpretable Tensor Decomposition (scITD) is computational method capable of
+extracting multicellular gene expression programs from single-cell
+RNA-sequencing data. These programs may be represented by patterns of genes which are relevant in one or more unique cell types. Specifically, our tool enables one to find such patterns that are most variable across donors in multi-donor single-cell dataset collections. Therefore, scITD has a wide range of potential applications, including the study of population-level inter-individual variation, patient sub-grouping/stratification, and interrogating sample-level batch effects. The multicellular information provided by our method allows one to gain a deeper understanding of the ways that cells might be interacting or responding cetain stimuli. To enable such insights, we also provide an integrated suite of downstream data processing tools to transform the scITD output into succinct, yet informative summaries of the data.
 
 ## Installation
 
-You can install scITD with the following:
+Many of our visualizations require the development version of ComplexHeatmap package, so this should be installed first:
+    
+``` r
+devtools::install_github("kharchenkolab/scITD")
+```  
+
+Then, install scITD with the following:
 
 ``` r
 devtools::install_github("kharchenkolab/scITD")
