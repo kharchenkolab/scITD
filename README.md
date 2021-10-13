@@ -9,8 +9,7 @@
 # scITD
 
 Single-Cell Interpretable Tensor Decomposition (scITD) is computational method capable of
-extracting multicellular gene expression programs from single-cell
-RNA-sequencing data. These programs may be represented by patterns of genes which are relevant in one or more unique cell types. Specifically, our tool enables one to find such patterns that are most variable across donors in multi-donor single-cell dataset collections. Therefore, scITD has a wide range of potential applications, including the study of population-level inter-individual variation, patient sub-grouping/stratification, and interrogating sample-level batch effects. The multicellular information provided by our method allows one to gain a deeper understanding of the ways that cells might be interacting or responding cetain stimuli. To enable such insights, we also provide an integrated suite of downstream data processing tools to transform the scITD output into succinct, yet informative summaries of the data.
+extracting multicellular gene expression programs that vary across donors or samples. The approach is premised on the idea that higher-level biological processes often involve the coordinated actions and interactions of multiple cell types. Given single-cell expression data from multiple heterogenous samples, scITD aims to detect these joint patterns of dysregulation impacting multiple cell types. This method has a wide range of potential applications, including the study of inter-individual variation at the population-level, patient sub-grouping/stratification, and sample-level batch effects. The multicellular information provided by our method allows one to gain a deeper understanding of the ways that cells might be interacting or responding cetain stimuli. To enable such insights, we also provide an integrated suite of downstream data processing tools to transform the scITD output into succinct, yet informative summaries of the data.
 
 ## Installation
 
