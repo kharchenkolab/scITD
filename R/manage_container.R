@@ -49,6 +49,11 @@ make_new_container <- function(params, count_data=NULL, meta_data=NULL,
       count_data <- methods::as(as.matrix(count_data),'sparseMatrix')
     }
 
+    # throw error if data is pre-normalized
+    if (any(count_data%%1!=0)) {
+      stop('It seems your count_data might already be normalized. The count_data matrix should only contain integer UMI counts.')
+    }
+
     # throw error if metadata is not a dataframe
     if (class(meta_data)[1]!='data.frame') {
       stop('meta_data must be a data.frame')
