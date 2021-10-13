@@ -49,6 +49,11 @@ make_new_container <- function(params, count_data=NULL, meta_data=NULL,
       count_data <- methods::as(as.matrix(count_data),'sparseMatrix')
     }
 
+    # throw error if metadata is not a dataframe
+    if (class(meta_data)[1]!='data.frame') {
+      stop('meta_data must be a data.frame')
+    }
+
     scMinimal <- instantiate_scMinimal(count_data, meta_data,
                                        metadata_cols=metadata_cols,
                                        metadata_col_nm=metadata_col_nm)
