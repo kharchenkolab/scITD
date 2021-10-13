@@ -8,8 +8,8 @@ utils::globalVariables(c("num_ranks", "rec_error", "num_iter", "run_type", "erro
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
-#' @param max_ranks_test numeric Vector of length 3 with maximum number of
-#' ranks to test for donor, gene, and cell type modes in that order
+#' @param max_ranks_test numeric Vector of length 2 specifying the maximum number of
+#' donor and gene ranks to test
 #' @param shuffle_level character Either "cells" to shuffle cell-donor linkages or
 #' "tensor" to shuffle values within the tensor. Currently "tensor" only works with
 #' the svd method (default="cells")
@@ -139,8 +139,8 @@ determine_ranks_tucker <- function(container, max_ranks_test,
     all_bar_plots[[i]] <- bar_plot
   }
   p <- ggpubr::ggarrange(all_line_plots[[1]], all_bar_plots[[1]], all_line_plots[[2]],
-                         all_bar_plots[[2]], all_line_plots[[3]], all_bar_plots[[3]],
-                         ncol = 2, nrow = 3)
+                         all_bar_plots[[2]],
+                         ncol = 2, nrow = 2)
 
   # save data and plot
   container$rank_determination_results <- list(rec_errors_real,null_res)

@@ -16,8 +16,11 @@ run_tucker_ica(
 \item{container}{environment Project container that stores sub-containers
 for each cell type as well as results and plots from all analyses}
 
-\item{ranks}{numeric The number of donor and gene factors, respectively,
-to decompose to using Tucker decomposition.}
+\item{ranks}{numeric The number of donor factors and gene factors, respectively,
+to decompose the data into. Since we rearrange the standard output of
+the Tucker decomposition to be 'donor centric', the number of donor factors will
+also be the total number of main factors that can be used for downstream analysis.
+The number of gene factors will only impact the quality of the decomposition.}
 
 \item{tucker_type}{character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
 with sparsity constraints (default='regular')}

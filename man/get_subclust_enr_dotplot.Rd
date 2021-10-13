@@ -19,7 +19,7 @@ cell type to plot}
 
 \item{factor_use}{numeric The factor to plot}
 
-\item{ctype_cut}{character The name of the major cell type used in the main analysis}
+\item{ctype_cur}{character The name of the major cell type used in the main analysis}
 }
 \value{
 the plot in container$plots$subc_bplots$<ctype>

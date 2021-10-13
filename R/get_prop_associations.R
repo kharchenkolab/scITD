@@ -33,8 +33,10 @@ get_subtype_prop_associations <- function(container, max_res, stat_type,
   }
 
   if (is.null(integration_var)) {
-    if (is.null(container$embedding)) {
-      stop("need to set integration_var parameter to get an embedding")
+    if (!use_existing_subc) {
+      if (is.null(container$embedding)) {
+        stop("need to set integration_var parameter to get an embedding")
+      }
     }
   } else {
     container <- reduce_dimensions(container,integration_var)
@@ -51,7 +53,7 @@ get_subtype_prop_associations <- function(container, max_res, stat_type,
   colnames(res) <- c(stat_type,'resolution','factor','ctype')
 
   # make list to store subclustering results
-  if (!use_existing_subc) {
+  if (use_existing_subc) {
     subc_all <- container$subclusters
   } else {
     subc_all <- list()
@@ -722,7 +724,7 @@ get_subclust_enr_bplot <- function(container,ctype,factor_use) {
 #' @param subtype numeric The number corresponding with the subtype of the major
 #' cell type to plot
 #' @param factor_use numeric The factor to plot
-#' @param ctype_cut character The name of the major cell type used in the main analysis
+#' @param ctype_cur character The name of the major cell type used in the main analysis
 #'
 #' @return the plot in container$plots$subc_bplots$<ctype>
 #' @export

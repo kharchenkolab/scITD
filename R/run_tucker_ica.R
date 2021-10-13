@@ -3,8 +3,11 @@
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
-#' @param ranks numeric The number of donor and gene factors, respectively,
-#' to decompose to using Tucker decomposition.
+#' @param ranks numeric The number of donor factors and gene factors, respectively,
+#' to decompose the data into. Since we rearrange the standard output of
+#' the Tucker decomposition to be 'donor centric', the number of donor factors will
+#' also be the total number of main factors that can be used for downstream analysis.
+#' The number of gene factors will only impact the quality of the decomposition.
 #' @param tucker_type character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
 #' with sparsity constraints (default='regular')
 #' @param rotation_type character Set to 'hybrid' to optimize loadings via our hybrid
@@ -272,6 +275,15 @@ get_one_factor <- function(container, factor_select) {
 }
 
 
+#' Computes singular-value decomposition on the unfolded tensor
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param ranks numeric The number of factors to extract. Unlike with the Tucker
+#' decomposition, this should be a single number.
+#'
+#' @return container with results of the decomposition in container$tucker_results
+#' @export
 pca_unfolded <- function(container, ranks) {
   # get tensor data
   tensor_data <- container$tensor_data
@@ -314,8 +326,18 @@ pca_unfolded <- function(container, ranks) {
   container$tucker_results[[2]] <- container$tucker_results[[2]][order(explained_variances,decreasing=TRUE),]
   container$exp_var <- explained_variances[order(explained_variances,decreasing=TRUE)]
 
+  return(container)
 }
 
+#' Computes non-negative matrix factorization on the unfolded tensor
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param ranks numeric The number of factors to extract. Unlike with the Tucker
+#' decomposition, this should be a single number.
+#'
+#' @return container with results of the decomposition in container$tucker_results
+#' @export
 nmf_unfolded <- function(container, ranks) {
   # get tensor data
   tensor_data <- container$tensor_data
@@ -337,7 +359,7 @@ nmf_unfolded <- function(container, ranks) {
   colnames(d_unfold) <- var_names
 
   # make data non-negative by adding the minimum value of each gene
-  col_m <- colMins(d_unfold)
+  col_m <- matrixStats::colMins(d_unfold)
   d_unfold <- sweep(d_unfold,MARGIN=2,col_m,FUN='-')
 
   # remove columns that are all 0
@@ -369,6 +391,7 @@ nmf_unfolded <- function(container, ranks) {
   container$tucker_results[[2]] <- container$tucker_results[[2]][order(explained_variances,decreasing=TRUE),]
   container$exp_var <- explained_variances[order(explained_variances,decreasing=TRUE)]
 
+  return(container)
 }
 
 
