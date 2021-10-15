@@ -7,13 +7,18 @@ utils::globalVariables(c("dscore", "donor_proportion", "ctypes", "AUC", "Specifi
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
-#' @param max_res numeric The maximum clustering resolution to use
+#' @param max_res numeric The maximum clustering resolution to use. Minimum is 0.5.
 #' @param stat_type character Either "fstat" to get F-Statistics, "adj_rsq" to get adjusted
 #' R-squared values, or "adj_pval" to get adjusted pvalues.
 #' @param integration_var character The meta data variable to use for creating
 #' the joint embedding with Conos if not already provided in container$embedding (default=NULL)
 #' @param min_cells_group numeric The minimum allowable size for cell subpopulations
 #' (default=50)
+#' @param use_existing_subc logical Set to TRUE to use existing subcluster annotations
+#' (default=FALSE)
+#' @param alt_ct_names character Cell type names used in clustering if different from those
+#' used in the main analysis. Should match the order of container$experiment_params$ctypes_use.
+#'(default=NULL)
 #' @param n_col numeric The number of columns to organize the plots into (default=2)
 #'
 #' @return the project container with a plot of association results in
@@ -21,14 +26,17 @@ utils::globalVariables(c("dscore", "donor_proportion", "ctypes", "AUC", "Specifi
 #' @export
 get_subtype_prop_associations <- function(container, max_res, stat_type,
                                           integration_var=NULL, min_cells_group=50,
-                                          n_col=2) {
+                                          use_existing_subc=FALSE,
+                                          alt_ct_names=NULL,n_col=2) {
   if (!(stat_type %in% c("fstat","adj_rsq","adj_pval"))) {
     stop("stat_type parameter is not one of the three options")
   }
 
   if (is.null(integration_var)) {
-    if (is.null(container$embedding)) {
-      stop("need to set integration_var parameter to get an embedding")
+    if (!use_existing_subc) {
+      if (is.null(container$embedding)) {
+        stop("need to set integration_var parameter to get an embedding")
+      }
     }
   } else {
     container <- reduce_dimensions(container,integration_var)
@@ -45,29 +53,45 @@ get_subtype_prop_associations <- function(container, max_res, stat_type,
   colnames(res) <- c(stat_type,'resolution','factor','ctype')
 
   # make list to store subclustering results
-  subc_all <- list()
-
+  if (use_existing_subc) {
+    subc_all <- container$subclusters
+  } else {
+    subc_all <- list()
+  }
   # loop through cell types
   for (ct in container$experiment_params$ctypes_use) {
     print(ct)
     scMinimal <- container[["scMinimal_ctype"]][[ct]]
 
     # loop through increasing clustering resolutions
-    cluster_res <- seq(.4,max_res,by=.1)
+    cluster_res <- seq(.5,max_res,by=.1)
     for (r in cluster_res) {
-      print(r)
-      # run clustering
-      # subclusts <- get_subclusters(container,ct,r,min_cells_group=min_cells_group,
-      #                              small_clust_action='merge')
-      subclusts <- get_subclusters(container,ct,r,min_cells_group=min_cells_group,
-                                   small_clust_action='remove')
-      subclusts <- subclusts + 1 # moves subcluster index from 0 to 1
-      subc_all[[ct]][[paste0('res:',as.character(r))]] <- subclusts
+      if (!use_existing_subc) {
+        print(r)
+        # run clustering
+        # subclusts <- get_subclusters(container,ct,r,min_cells_group=min_cells_group,
+        #                              small_clust_action='merge')
+        subclusts <- get_subclusters(container,ct,r,min_cells_group=min_cells_group,
+                                     small_clust_action='remove')
+        subclusts <- subclusts + 1 # moves subcluster index from 0 to 1
+        subc_all[[ct]][[paste0('res:',as.character(r))]] <- subclusts
+      } else {
+        if (!is.null(alt_ct_names)) {
+          ct_ndx <- which(container$experiment_params$ctypes_use==ct)
+          ct_new <- alt_ct_names[ct_ndx]
+          subclusts <- container$subclusters[[ct_new]][[paste0('res:',as.character(r))]]
+        } else {
+          subclusts <- container$subclusters[[ct]][[paste0('res:',as.character(r))]]
+        }
+      }
 
       num_subclusts <- length(unique(subclusts))
 
       if (num_subclusts > 1) {
-        sub_meta_tmp <- scMinimal$metadata[names(subclusts),]
+        # get cells in both metadata and subclusts
+        cell_intersect <- intersect(names(subclusts),rownames(scMinimal$metadata))
+
+        sub_meta_tmp <- scMinimal$metadata[cell_intersect,]
 
         # get donor proportions of subclusters
         donor_props <- compute_donor_props(subclusts,sub_meta_tmp)
@@ -79,7 +103,7 @@ get_subtype_prop_associations <- function(container, max_res, stat_type,
         # compute regression statistics
         reg_stats <- compute_associations(donor_balances,donor_scores,stat_type)
 
-        # generate plot of donor proportions and scores
+        # rename donor_props columns for generating plot of donor proportions and scores
         colnames(donor_props) <- sapply(1:ncol(donor_props),function(x){paste0(ct,'_',x)})
 
       } else {
@@ -97,6 +121,11 @@ get_subtype_prop_associations <- function(container, max_res, stat_type,
         res <- rbind(res,new_row)
       }
     }
+  }
+
+  # adjust p-values if using adj_pval stat_type
+  if (stat_type=='adj_pval') {
+    res$adj_pval <- p.adjust(res$adj_pval,method = 'fdr')
   }
 
   # generate plot of associations
@@ -695,10 +724,11 @@ get_subclust_enr_bplot <- function(container,ctype,factor_use) {
 #' @param subtype numeric The number corresponding with the subtype of the major
 #' cell type to plot
 #' @param factor_use numeric The factor to plot
+#' @param ctype_cur character The name of the major cell type used in the main analysis
 #'
 #' @return the plot in container$plots$subc_bplots$<ctype>
 #' @export
-get_subclust_enr_dotplot <- function(container,ctype,res,subtype,factor_use) {
+get_subclust_enr_dotplot <- function(container,ctype,res,subtype,factor_use,ctype_cur) {
   resolution_name <- paste0('res:',as.character(res))
   subclusts <- container$subclusters[[ctype]][[resolution_name]]
 
@@ -707,12 +737,15 @@ get_subclust_enr_dotplot <- function(container,ctype,res,subtype,factor_use) {
 
   # limit cells in subclusts to those that we actually have scores for
   donor_scores <- container$tucker_results[[1]]
-  donor_vec <- container$scMinimal_full$metadata[names(subclusts),'donors']
+  cell_intersect <- intersect(names(subclusts),rownames(container$scMinimal_full$metadata))
+  # donor_vec <- container$scMinimal_full$metadata[names(subclusts),'donors']
+  donor_vec <- container$scMinimal_full$metadata[cell_intersect,'donors']
+  subclusts <- subclusts[cell_intersect]
   subclusts <- subclusts[donor_vec %in% rownames(donor_scores)]
 
   # make subtype association plot
   subclusts_num <- sapply(subclusts,function(x){as.numeric(strsplit(x,split="_")[[1]][[2]])})
-  scMinimal <- container$scMinimal_ctype[[ctype]]
+  scMinimal <- container$scMinimal_ctype[[ctype_cur]]
   sub_meta_tmp <- scMinimal$metadata[names(subclusts),]
 
   # get donor proportions of subclusters
@@ -724,16 +757,16 @@ get_subclust_enr_dotplot <- function(container,ctype,res,subtype,factor_use) {
   donor_props2 <- cbind(donor_props,donor_scores[rownames(donor_props),factor_use])
   colnames(donor_props2)[ncol(donor_props2)] <- 'dsc'
 
-  # append disease status
-  meta <- unique(container$scMinimal_full$metadata[,c('donors','Status')])
-  rownames(meta) <- meta$donors
-  donor_props2 <- cbind(donor_props2,as.character(meta[rownames(donor_props2),'Status']))
-  colnames(donor_props2)[ncol(donor_props2)] <- 'Status'
+  # # append disease status
+  # meta <- unique(container$scMinimal_full$metadata[,c('donors','Status')])
+  # rownames(meta) <- meta$donors
+  # donor_props2 <- cbind(donor_props2,as.character(meta[rownames(donor_props2),'Status']))
+  # colnames(donor_props2)[ncol(donor_props2)] <- 'Status'
 
   donor_props2 <- as.data.frame(donor_props2)
   donor_props2$dsc <- as.numeric(donor_props2$dsc)
   donor_props2$prop <- as.numeric(donor_props2$prop)
-  donor_props2$Status <- as.factor(donor_props2$Status)
+  # donor_props2$Status <- as.factor(donor_props2$Status)
 
   lmres <- lm(prop~dsc,data=donor_props2)
   line_range <- seq(min(donor_props2$dsc),max(donor_props2$dsc),.001)
@@ -741,23 +774,36 @@ get_subclust_enr_dotplot <- function(container,ctype,res,subtype,factor_use) {
   line_df <- cbind.data.frame(line_range,line_dat)
   # colnames(line_df) <- c('myx','myy')
   line_df <- cbind.data.frame(line_df,rep('1',nrow(line_df)))
-  colnames(line_df) <- c('myx','myy','Status')
+  # colnames(line_df) <- c('myx','myy','Status')
+  colnames(line_df) <- c('myx','myy')
 
-  p <- ggplot(donor_props2,aes(x=dsc,y=prop,color=Status)) +
+  p <- ggplot(donor_props2,aes(x=dsc,y=prop)) +
     geom_point(alpha = 0.5,pch=19,size=2) +
     geom_line(data=line_df,aes(x=myx,y=myy)) +
     xlab(paste0('Factor ',as.character(factor_use),' Donor Score')) +
     ylab(paste0('Proportion of All ',ctype)) +
     ylim(0,1) +
-    labs(color = "Status") +
     ggtitle(paste0(ctype,'_',as.character(subtype),' Proportions')) +
     theme_bw() +
     theme(plot.title = element_text(hjust = 0.5),
           axis.text=element_text(size=12),
-          axis.title=element_text(size=14)) +
-    scale_color_manual(values = c("Healthy" = '#F8766D',
-                                  "Managed" = '#00BFC4',
-                                  "1" = "black"))
+          axis.title=element_text(size=14))
+
+  # p <- ggplot(donor_props2,aes(x=dsc,y=prop,color=Status)) +
+  #   geom_point(alpha = 0.5,pch=19,size=2) +
+  #   geom_line(data=line_df,aes(x=myx,y=myy)) +
+  #   xlab(paste0('Factor ',as.character(factor_use),' Donor Score')) +
+  #   ylab(paste0('Proportion of All ',ctype)) +
+  #   ylim(0,1) +
+  #   labs(color = "Status") +
+  #   ggtitle(paste0(ctype,'_',as.character(subtype),' Proportions')) +
+  #   theme_bw() +
+  #   theme(plot.title = element_text(hjust = 0.5),
+  #         axis.text=element_text(size=12),
+  #         axis.title=element_text(size=14)) +
+  #   scale_color_manual(values = c("Healthy" = '#F8766D',
+  #                                 "Managed" = '#00BFC4',
+  #                                 "1" = "black"))
 
   return(p)
 }

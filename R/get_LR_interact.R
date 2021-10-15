@@ -199,9 +199,15 @@ compute_LR_interact <- function(container, lr_pairs, sig_thresh=0.05,
 
     lig_ct_exp <- container$scale_pb_extra[[source_ct]][,lig]
 
-    if (sum(lig_ct_exp!=0)==0) {
+    # checking ligand expressed to some minimal extent in n% of donors
+    if (sum(lig_ct_exp>.2)<(.01*length(lig_ct_exp))) {
       return(NA)
     }
+
+    # # to simply check that ligand is expressed in any donor
+    # if (sum(lig_ct_exp!=0)==0) {
+    #   return(NA)
+    # }
 
     # loop through target ctypes
     for (target_ct in ctypes_use) {
@@ -275,7 +281,7 @@ compute_LR_interact <- function(container, lr_pairs, sig_thresh=0.05,
 
   # reduce to rows/columns with at least one significant hit
   myres_mat <- myres_mat[rowSums(myres_mat<sig_thresh)>0,]
-  myres_mat <- myres_mat[,colSums(myres_mat<sig_thresh)>0]
+  myres_mat <- myres_mat[,colSums(myres_mat<.001)>0]
 
   # log transform values
   myres_mat <- -log10(myres_mat)
@@ -318,15 +324,15 @@ compute_LR_interact <- function(container, lr_pairs, sig_thresh=0.05,
                      row_names_side='left', column_names_side='top',
                      show_row_dend=FALSE,
                      show_column_dend=FALSE,
-                     column_names_gp = gpar(fontsize = 8),
-                     row_names_gp = gpar(fontsize = 8),
+                     column_names_gp = gpar(fontsize = 9),
+                     row_names_gp = gpar(fontsize = 9),
                      col=col_fun,
                      border=TRUE,
                      row_split = rs,
                      column_split = cs,
                      cluster_row_slices = FALSE,
                      cluster_column_slices = FALSE,
-                     na_col = "gray",
+                     na_col = "gray", column_names_rot = 55,
                      row_labels=new_rnames)
 
   if (add_ld_fact_sig) {
@@ -357,15 +363,16 @@ compute_LR_interact <- function(container, lr_pairs, sig_thresh=0.05,
     fact_res2 <- matrix(p.adjust(fact_res,method='fdr'),ncol=ncol(fact_res),nrow=nrow(fact_res))
     colnames(fact_res2) <- colnames(fact_res)
     fact_res2[is.na(fact_res2)] <- 1
+    fact_res2 <- fact_res2[,colSums(fact_res2<sig_thresh)>0]
     fact_res2 <- -log10(fact_res2)
     col_fun = colorRamp2(c(0, -log10(.1), 10), c("white", "white", "purple"))
     myhmap2 <- Heatmap(fact_res2, name='lig_factor -log10(padj)',
                        show_row_dend=FALSE,
                        show_column_dend=FALSE,
                        cluster_columns = FALSE,
-                       column_names_gp = gpar(fontsize = 8),
-                       row_names_gp = gpar(fontsize = 8),
-                       col=col_fun,
+                       column_names_gp = gpar(fontsize = 9),
+                       row_names_gp = gpar(fontsize = 9),
+                       col=col_fun, column_names_rot = 55,
                        border=TRUE)
     myhmap1 <- myhmap1 + myhmap2
   }
@@ -517,10 +524,11 @@ get_module_enr <- function(container,ctype,mod_select,db_use='GO',adjust_pval=TR
 #' "immuno". More than one database can be used. (default="GO")
 #' @param max_plt_pval max pvalue shown on plot, but not used to remove rows like
 #' sig_thresh (default=.1)
+#' @param h_w numeric Vector specifying height and width (defualt=NULL)
 #'
 #' @return the heatmap plot of enrichment results
 #' @export
-plot_multi_module_enr <- function(container, ctypes, modules, sig_thresh=0.05, db_use='TF', max_plt_pval=.1) {
+plot_multi_module_enr <- function(container, ctypes, modules, sig_thresh=0.05, db_use='TF', max_plt_pval=.1, h_w=NULL) {
   ct_mod <- sapply(1:length(ctypes), function(x) {paste0(ctypes[x],"_",modules[x])})
 
   mod_res <- list()
@@ -606,17 +614,34 @@ plot_multi_module_enr <- function(container, ctypes, modules, sig_thresh=0.05, d
   #         column_title = 'Co-expression Modules',
   #         column_title_gp = gpar(fontsize = 12),
   #         column_title_side = "bottom")
-  myhmap <- Heatmap(myres2,name='adj pval',
-                    show_row_dend=FALSE,
-                    show_column_dend=FALSE,
-                    col=col_fun,
-                    row_names_gp = gpar(fontsize = 6.5),
-                    border=TRUE,
-                    row_names_side='right',
-                    column_title = 'Co-expression Modules',
-                    column_title_gp = gpar(fontsize = 12),
-                    column_title_side = "bottom",
-                    clustering_method_rows = "single")
+
+  if (!is.null(h_w)) {
+    myhmap <- Heatmap(myres2,name='adj pval',
+                      show_row_dend=FALSE,
+                      show_column_dend=FALSE,
+                      col=col_fun,
+                      row_names_gp = gpar(fontsize = 6.5),
+                      border=TRUE,
+                      row_names_side='right',
+                      column_title = 'Co-expression Modules',
+                      column_title_gp = gpar(fontsize = 12),
+                      column_title_side = "bottom",
+                      clustering_method_rows = "single",
+                      width = unit(h_w[2], "cm"), height = unit(h_w[1], "cm"))
+  } else {
+    myhmap <- Heatmap(myres2,name='adj pval',
+                      show_row_dend=FALSE,
+                      show_column_dend=FALSE,
+                      col=col_fun,
+                      row_names_gp = gpar(fontsize = 6.5),
+                      border=TRUE,
+                      row_names_side='right',
+                      column_title = 'Co-expression Modules',
+                      column_title_gp = gpar(fontsize = 12),
+                      column_title_side = "bottom",
+                      clustering_method_rows = "single")
+  }
+
 
   return(myhmap)
 }

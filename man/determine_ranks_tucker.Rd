@@ -21,8 +21,8 @@ determine_ranks_tucker(
 \item{container}{environment Project container that stores sub-containers
 for each cell type as well as results and plots from all analyses}
 
-\item{max_ranks_test}{numeric Vector of length 3 with maximum number of
-ranks to test for donor, gene, and cell type modes in that order}
+\item{max_ranks_test}{numeric Vector of length 2 specifying the maximum number of
+donor and gene ranks to test}
 
 \item{shuffle_level}{character Either "cells" to shuffle cell-donor linkages or
 "tensor" to shuffle values within the tensor. Currently "tensor" only works with

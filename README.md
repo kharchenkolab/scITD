@@ -1,6 +1,5 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-
 <!-- badges: start -->
 
 [![<kharchenkolab>](https://circleci.com/gh/kharchenkolab/scITD.svg?style=svg)](https://app.circleci.com/pipelines/github/kharchenkolab/scITD)
@@ -8,16 +7,31 @@
 
 # scITD
 
-Single-Cell Interpretable Tensor Decomposition (scITD) is computational method capable of
-extracting multicellular gene expression programs that vary across donors or samples. The approach is premised on the idea that higher-level biological processes often involve the coordinated actions and interactions of multiple cell types. Given single-cell expression data from multiple heterogenous samples, scITD aims to detect these joint patterns of dysregulation impacting multiple cell types. This method has a wide range of potential applications, including the study of inter-individual variation at the population-level, patient sub-grouping/stratification, and sample-level batch effects. The multicellular information provided by our method allows one to gain a deeper understanding of the ways that cells might be interacting or responding cetain stimuli. To enable such insights, we also provide an integrated suite of downstream data processing tools to transform the scITD output into succinct, yet informative summaries of the data.
+Single-Cell Interpretable Tensor Decomposition (scITD) is computational
+method capable of extracting multicellular gene expression programs that
+vary across donors or samples. The approach is premised on the idea that
+higher-level biological processes often involve the coordinated actions
+and interactions of multiple cell types. Given single-cell expression
+data from multiple heterogenous samples, scITD aims to detect these
+joint patterns of dysregulation impacting multiple cell types. This
+method has a wide range of potential applications, including the study
+of inter-individual variation at the population-level, patient
+sub-grouping/stratification, and the analysis of sample-level batch
+effects. The multicellular information provided by our method allows one
+to gain a deeper understanding of the ways that cells might be
+interacting or responding to certain stimuli. To enable such insights,
+we also provide an integrated suite of downstream data processing tools
+to transform the scITD output into succinct, yet informative summaries
+of the data.
 
 ## Installation
 
-Many of our visualizations require the development version of ComplexHeatmap package, so this should be installed first:
-    
+Many of our visualizations require the development version of
+ComplexHeatmap package, so this should be installed first:
+
 ``` r
 devtools::install_github("jokergoo/ComplexHeatmap")
-```  
+```
 
 Then, install scITD with the following:
 
@@ -28,9 +42,8 @@ devtools::install_github("kharchenkolab/scITD")
 ## Walkthrough
 
 Follow the [walkthrough](http://pklab.med.harvard.edu/jonathan/) to
-learn how to use scITD. The tutorial walks through the standard
-processing pipeline and applies it to a dataset of PBMC’s from 45
-healthy donors.
+learn how to use scITD. The tutorial introduces the standard processing
+pipeline and applies it to a dataset of PBMC’s from 45 healthy donors.
 
 ## Citation
 

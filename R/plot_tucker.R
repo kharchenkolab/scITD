@@ -1,6 +1,4 @@
 
-utils::globalVariables(c("UMAP1", "UMAP2"))
-
 #' Plot matrix of donor scores extracted from Tucker decomposition
 #' @importFrom circlize colorRamp2
 #' @import ComplexHeatmap
@@ -22,6 +20,7 @@ utils::globalVariables(c("UMAP1", "UMAP2"))
 #' each factor (default=TRUE)
 #' @param donors_sel character A vector of a subset of donors to include in the plot
 #' (default=NULL)
+#' @param h_w numeric Vector specifying height and width (defualt=NULL)
 #'
 #' @return the project container with the plot in container$plots$donor_matrix
 #' @export
@@ -30,7 +29,7 @@ utils::globalVariables(c("UMAP1", "UMAP2"))
 #' test_container <- plot_donor_matrix(test_container, show_donor_ids = TRUE)
 plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL,
                               show_donor_ids=FALSE, add_meta_associations=NULL,
-                              show_var_explained=TRUE, donors_sel=NULL) {
+                              show_var_explained=TRUE, donors_sel=NULL, h_w=NULL) {
 
   # check that Tucker has been run
   if (is.null(container$tucker_results)) {
@@ -84,15 +83,29 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL,
     if (!is.null(donors_sel)) {
       donor_mat <- donor_mat[donors_sel,]
     }
-    myhmap <- Heatmap(as.matrix(donor_mat), name = "score",
-                      cluster_columns = FALSE,show_column_dend = FALSE,
-                      cluster_rows = TRUE, show_row_dend = FALSE,
-                      column_names_gp = gpar(fontsize = 10),
-                      col = col_fun, row_title = "Donors",
-                      row_title_gp = gpar(fontsize = 14),
-                      show_row_names = show_donor_ids,
-                      border = TRUE, top_annotation=ta,
-                      bottom_annotation=ba)
+    if (is.null(h_w)) {
+      myhmap <- Heatmap(as.matrix(donor_mat), name = "score",
+                        cluster_columns = FALSE,show_column_dend = FALSE,
+                        cluster_rows = TRUE, show_row_dend = FALSE,
+                        column_names_gp = gpar(fontsize = 10),
+                        col = col_fun, row_title = "Donors",
+                        row_title_gp = gpar(fontsize = 14),
+                        show_row_names = show_donor_ids,
+                        border = TRUE, top_annotation=ta,
+                        bottom_annotation=ba)
+    } else {
+      myhmap <- Heatmap(as.matrix(donor_mat), name = "score",
+                        cluster_columns = FALSE,show_column_dend = FALSE,
+                        cluster_rows = TRUE, show_row_dend = FALSE,
+                        column_names_gp = gpar(fontsize = 10),
+                        col = col_fun, row_title = "Donors",
+                        row_title_gp = gpar(fontsize = 14),
+                        show_row_names = show_donor_ids,
+                        border = TRUE, top_annotation=ta,
+                        bottom_annotation=ba,
+                        width = unit(h_w[2], "cm"), height = unit(h_w[1], "cm"))
+    }
+
 
   } else {
     meta <- container$scMinimal_full$metadata[,c('donors',meta_vars)]
@@ -125,14 +138,27 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL,
       meta <- meta[donors_sel,]
     }
 
-    myhmap <- Heatmap(as.matrix(donor_mat), name = "score",cluster_columns = FALSE,
-                      cluster_rows = do_row_clust,show_row_dend = FALSE,
-                      column_names_gp = gpar(fontsize = 10),
-                      col = col_fun, row_title = "Donors",
-                      row_title_gp = gpar(fontsize = 14),
-                      show_row_names = show_donor_ids,
-                      border = TRUE, top_annotation=ta,
-                      bottom_annotation=ba)
+    if (is.null(h_w)) {
+      myhmap <- Heatmap(as.matrix(donor_mat), name = "score",cluster_columns = FALSE,
+                        cluster_rows = do_row_clust,show_row_dend = FALSE,
+                        column_names_gp = gpar(fontsize = 10),
+                        col = col_fun, row_title = "Donors",
+                        row_title_gp = gpar(fontsize = 14),
+                        show_row_names = show_donor_ids,
+                        border = TRUE, top_annotation=ta,
+                        bottom_annotation=ba)
+    } else {
+      myhmap <- Heatmap(as.matrix(donor_mat), name = "score",cluster_columns = FALSE,
+                        cluster_rows = do_row_clust,show_row_dend = FALSE,
+                        column_names_gp = gpar(fontsize = 10),
+                        col = col_fun, row_title = "Donors",
+                        row_title_gp = gpar(fontsize = 14),
+                        show_row_names = show_donor_ids,
+                        border = TRUE, top_annotation=ta,
+                        bottom_annotation=ba,
+                        width = unit(h_w[2], "cm"), height = unit(h_w[1], "cm"))
+    }
+
 
     for (j in 1:ncol(meta)) {
       if (colnames(meta)[j]=='sex') {
@@ -1285,79 +1311,6 @@ plot_scores_by_meta <- function(container,meta_var) {
 }
 
 
-
-#' Create UMAP for donor distances
-#'
-#' @param container environment Project container that stores sub-containers
-#' for each cell type as well as results and plots from all analyses
-#' @param color_by_factor numeric Number of factor to color donors by. Can be a
-#' vector of multiple factor numbers to make several plots. (default=NULL)
-#' @param color_by_meta character Names of meta variables to color donors by.
-#' Can be a vector of multiple names to make several plots. (default=NULL)
-#' @param n_col numeric The number of columns to orde the figure into (default=1)
-#'
-#' @return the project container with the figure in container$plots$dscores_umap
-#' @export
-plot_donor_umap <- function(container, color_by_factor=NULL, color_by_meta=NULL, n_col=1) {
-
-  dscores <- container$tucker_results[[1]]
-  um <- as.data.frame(umap::umap(dscores)$layout)
-  colnames(um) <- c('UMAP1','UMAP2')
-
-  all_plots <- list()
-  if (!is.null(color_by_factor)) {
-    for (i in 1:length(color_by_factor)) {
-      fact <- color_by_factor[i]
-      score <- container$tucker_results[[1]][,fact]
-      tmp <- as.data.frame(cbind(um,score))
-      p <- ggplot(tmp,aes(x=UMAP1, y=UMAP2, color=score)) +
-        geom_point() +
-        scale_color_gradient2(midpoint = 0, low = "blue", mid = "white",
-                              high = "red", space = "Lab" ) +
-        xlab('') +
-        ylab('') +
-        ggtitle(paste0("Factor ",as.character(fact))) +
-        theme(plot.title = element_text(hjust = 0.5))
-
-      all_plots[[i]] <- p
-    }
-
-    fig <- cowplot::plot_grid(plotlist=all_plots,ncol=n_col,scale = 0.95)
-
-  } else if (!is.null(color_by_meta)) {
-    for (i in 1:length(color_by_meta)) {
-      mv <- color_by_meta[i]
-      meta <- container$scMinimal_full$metadata[,c('donors',mv)]
-      meta <- unique(meta)
-      rownames(meta) <- meta$donors
-      meta$donors <- NULL
-      score <- meta[rownames(dscores),]
-      tmp <- as.data.frame(cbind(um,score))
-      p <- ggplot(tmp,aes(x=UMAP1, y=UMAP2, color=score)) +
-        geom_point() +
-        xlab('') +
-        ylab('') +
-        ggtitle(mv) +
-        theme(plot.title = element_text(hjust = 0.5))
-
-      all_plots[[i]] <- p
-    }
-
-    fig <- cowplot::plot_grid(plotlist=all_plots,ncol=n_col,scale = 0.95)
-
-  } else {
-    fig <- ggplot(tmp,aes(x=UMAP1, y=UMAP2)) +
-      geom_point()
-  }
-
-  container$plots$dscores_umap <- fig
-
-  return(container)
-
-}
-
-
-
 #' Compute enrichment of categorical variables at either end of a factor
 #'
 #' @param container environment Project container that stores sub-containers
@@ -1478,6 +1431,13 @@ get_leading_edge_genes <- function(container,factor_select,gsets,num_genes_per=5
   }
   return(unlist(final_le))
 }
+
+
+
+
+
+
+
 
 
 

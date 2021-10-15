@@ -31,10 +31,12 @@ run_stability_analysis <- function(container, ranks, tucker_type='regular',
                                    subset_type='subset', sub_prop=.75,
                                    n_iterations=100) {
 
-  # run tucker with the above parameters in case they changed them
+  ## run tucker with the above parameters in case they changed them
   container <- run_tucker_ica(container, ranks=ranks,
                               tucker_type = tucker_type,
                               rotation_type = rotation_type)
+  # pca_unfolded(pbmc_container,2)
+
 
   dnr_full <- container$tucker_results[[1]]
   lds_full <- container$tucker_results[[2]]
@@ -63,6 +65,7 @@ run_stability_analysis <- function(container, ranks, tucker_type='regular',
                                 tucker_type = tucker_type,
                                 rotation_type = rotation_type,
                                 sparsity=sparsity)
+    # pca_unfolded(pbmc_container,2)
 
     donor_mat <- container$tucker_results[[1]]
     ldngs <- container$tucker_results[[2]]

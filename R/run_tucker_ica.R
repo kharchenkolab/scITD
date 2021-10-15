@@ -3,8 +3,11 @@
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
-#' @param ranks numeric The number of donor and gene factors, respectively,
-#' to decompose to using Tucker decomposition.
+#' @param ranks numeric The number of donor factors and gene factors, respectively,
+#' to decompose the data into. Since we rearrange the standard output of
+#' the Tucker decomposition to be 'donor centric', the number of donor factors will
+#' also be the total number of main factors that can be used for downstream analysis.
+#' The number of gene factors will only impact the quality of the decomposition.
 #' @param tucker_type character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
 #' with sparsity constraints (default='regular')
 #' @param rotation_type character Set to 'hybrid' to optimize loadings via our hybrid
@@ -272,9 +275,124 @@ get_one_factor <- function(container, factor_select) {
 }
 
 
+#' Computes singular-value decomposition on the unfolded tensor
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param ranks numeric The number of factors to extract. Unlike with the Tucker
+#' decomposition, this should be a single number.
+#'
+#' @return container with results of the decomposition in container$tucker_results
+#' @export
+pca_unfolded <- function(container, ranks) {
+  # get tensor data
+  tensor_data <- container$tensor_data
 
+  # extract tensor and labels
+  donor_nm <- tensor_data[[1]]
+  gene_nm  <- tensor_data[[2]]
+  ctype_nm  <- tensor_data[[3]]
+  tnsr <- tensor_data[[4]]
 
+  d_unfold <- rTensor::k_unfold(rTensor::as.tensor(tnsr),1)@data
 
+  rownames(d_unfold) <- donor_nm
+  var_names <- sapply(ctype_nm, function(x) {
+    sapply(gene_nm, function(y) {
+      paste0(x,':',y)
+    })
+  })
+  colnames(d_unfold) <- var_names
+
+  svd_res <- svd(d_unfold)
+
+  donor_mat <- svd_res$u[,1:ranks]
+  rownames(donor_mat) <- rownames(d_unfold)
+  ldngs <- t(svd_res$v)[1:ranks,]
+  colnames(ldngs) <- colnames(d_unfold)
+
+  # incorporate d values into ldngs
+  ldngs <- svd_res$d[1:ranks] * ldngs
+
+  container$tucker_results <- list(donor_mat,ldngs)
+
+  # reorder factors by explained variance
+  explained_variances <- c()
+  for (i in 1:ranks[1]) {
+    exp_var <- get_factor_exp_var(container,i)
+    explained_variances[i] <- exp_var
+  }
+  container$tucker_results[[1]] <- container$tucker_results[[1]][,order(explained_variances,decreasing=TRUE)]
+  container$tucker_results[[2]] <- container$tucker_results[[2]][order(explained_variances,decreasing=TRUE),]
+  container$exp_var <- explained_variances[order(explained_variances,decreasing=TRUE)]
+
+  return(container)
+}
+
+#' Computes non-negative matrix factorization on the unfolded tensor
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param ranks numeric The number of factors to extract. Unlike with the Tucker
+#' decomposition, this should be a single number.
+#'
+#' @return container with results of the decomposition in container$tucker_results
+#' @export
+nmf_unfolded <- function(container, ranks) {
+  # get tensor data
+  tensor_data <- container$tensor_data
+
+  # extract tensor and labels
+  donor_nm <- tensor_data[[1]]
+  gene_nm  <- tensor_data[[2]]
+  ctype_nm  <- tensor_data[[3]]
+  tnsr <- tensor_data[[4]]
+
+  d_unfold <- rTensor::k_unfold(rTensor::as.tensor(tnsr),1)@data
+
+  rownames(d_unfold) <- donor_nm
+  var_names <- sapply(ctype_nm, function(x) {
+    sapply(gene_nm, function(y) {
+      paste0(x,':',y)
+    })
+  })
+  colnames(d_unfold) <- var_names
+
+  # make data non-negative by adding the minimum value of each gene
+  col_m <- matrixStats::colMins(d_unfold)
+  d_unfold <- sweep(d_unfold,MARGIN=2,col_m,FUN='-')
+
+  # remove columns that are all 0
+  ndx_keep <- which(d_unfold!=0)
+  d_unfold <- d_unfold[,ndx_keep]
+
+  nmf_res <- NMF::nmf(d_unfold,ranks)
+  donor_mat <- nmf_res@fit@W
+  ldngs <- nmf_res@fit@H
+
+  # incorporate magnitude values into ldngs
+  all_rss <- c()
+  for (j in 1:ncol(donor_mat)) {
+    rss <- sqrt(sum(donor_mat[,j]**2))
+    all_rss <- c(all_rss,rss)
+  }
+  donor_mat <- sweep(donor_mat,2,all_rss,FUN='/')
+  ldngs <- t(sweep(t(ldngs),2,all_rss,FUN='*'))
+
+  container$tucker_results <- list(donor_mat,ldngs)
+
+  # reorder factors by explained variance
+  explained_variances <- c()
+  for (i in 1:ranks[1]) {
+    exp_var <- get_factor_exp_var(container,i)
+    explained_variances[i] <- exp_var
+  }
+  container$tucker_results[[1]] <- container$tucker_results[[1]][,order(explained_variances,decreasing=TRUE)]
+  container$tucker_results[[2]] <- container$tucker_results[[2]][order(explained_variances,decreasing=TRUE),]
+  container$exp_var <- explained_variances[order(explained_variances,decreasing=TRUE)]
+
+  return(container)
+}
 
 
 

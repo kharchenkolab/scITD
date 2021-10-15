@@ -10,7 +10,8 @@ plot_multi_module_enr(
   modules,
   sig_thresh = 0.05,
   db_use = "TF",
-  max_plt_pval = 0.1
+  max_plt_pval = 0.1,
+  h_w = NULL
 )
 }
 \arguments{
@@ -33,6 +34,8 @@ options include "GO", "Reactome", "KEGG", "BioCarta", "Hallmark", "TF", and
 
 \item{max_plt_pval}{max pvalue shown on plot, but not used to remove rows like
 sig_thresh (default=.1)}
+
+\item{h_w}{numeric Vector specifying height and width (defualt=NULL)}
 }
 \value{
 the heatmap plot of enrichment results

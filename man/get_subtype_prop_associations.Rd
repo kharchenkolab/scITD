@@ -10,6 +10,8 @@ get_subtype_prop_associations(
   stat_type,
   integration_var = NULL,
   min_cells_group = 50,
+  use_existing_subc = FALSE,
+  alt_ct_names = NULL,
   n_col = 2
 )
 }
@@ -17,7 +19,7 @@ get_subtype_prop_associations(
 \item{container}{environment Project container that stores sub-containers
 for each cell type as well as results and plots from all analyses}
 
-\item{max_res}{numeric The maximum clustering resolution to use}
+\item{max_res}{numeric The maximum clustering resolution to use. Minimum is 0.5.}
 
 \item{stat_type}{character Either "fstat" to get F-Statistics, "adj_rsq" to get adjusted
 R-squared values, or "adj_pval" to get adjusted pvalues.}
@@ -27,6 +29,13 @@ the joint embedding with Conos if not already provided in container$embedding (d
 
 \item{min_cells_group}{numeric The minimum allowable size for cell subpopulations
 (default=50)}
+
+\item{use_existing_subc}{logical Set to TRUE to use existing subcluster annotations
+(default=FALSE)}
+
+\item{alt_ct_names}{character Cell type names used in clustering if different from those
+used in the main analysis. Should match the order of container$experiment_params$ctypes_use.
+(default=NULL)}
 
 \item{n_col}{numeric The number of columns to organize the plots into (default=2)}
 }

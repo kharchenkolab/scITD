@@ -272,6 +272,7 @@ normalize_counts <- function(count_data, scale_factor=10000) {
 
   # log transform result
   tmp <- log1p(tmp)
+
   return(tmp)
 }
 
@@ -398,7 +399,11 @@ get_ctype_vargenes <- function(container, method, thresh) {
     for (ct in container$experiment_params$ctypes_use) {
       var_pvals <- container$scMinimal_ctype[[ct]]$var_pvals
 
-      sig_var <- var_pvals[var_pvals < log(thresh)]
+      if (thresh==1) {
+        sig_var <- var_pvals[var_pvals <= log(thresh)]
+      } else {
+        sig_var <- var_pvals[var_pvals < log(thresh)]
+      }
 
       all_vargenes <- c(all_vargenes,names(sig_var))
 

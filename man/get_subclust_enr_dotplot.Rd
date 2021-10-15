@@ -4,7 +4,7 @@
 \alias{get_subclust_enr_dotplot}
 \title{Get barplot showing significance of associations for cell subtypes}
 \usage{
-get_subclust_enr_dotplot(container, ctype, res, subtype, factor_use)
+get_subclust_enr_dotplot(container, ctype, res, subtype, factor_use, ctype_cur)
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
@@ -18,6 +18,8 @@ for each cell type as well as results and plots from all analyses}
 cell type to plot}
 
 \item{factor_use}{numeric The factor to plot}
+
+\item{ctype_cur}{character The name of the major cell type used in the main analysis}
 }
 \value{
 the plot in container$plots$subc_bplots$<ctype>
