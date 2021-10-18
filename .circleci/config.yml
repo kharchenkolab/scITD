@@ -9,7 +9,10 @@ jobs:
       - checkout
       - run:
           name: Install package dependencies
-          command: R -e "devtools::install_deps(dep = TRUE)"
+          command: |
+            Rscript \
+              -e 'if (!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")' \
+              -e 'devtools::install_deps(dependencies = NA)'
       - run:
           name: Build package
           command: R CMD build .
