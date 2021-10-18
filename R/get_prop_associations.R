@@ -1136,6 +1136,10 @@ plot_subclust_associations <- function(res,n_col=2) {
 
   stat_type <- colnames(res)[1]
 
+  if (stat_type == 'adj_pval') {
+    res[,stat_type] <- -log10(res[,stat_type])
+  }
+
   if (stat_type=='fstat') {
     y_axis_name <- 'F-Statistic'
   } else if (stat_type=='adj_rsq') {
