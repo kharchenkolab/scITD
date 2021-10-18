@@ -484,7 +484,7 @@ get_module_enr <- function(container,ctype,mod_select,db_use='GO',adjust_pval=TR
     pth_name <- names(my_pathways)[i]
 
     # A: total num genes in pathway in tmp_casted_num
-    pth_in_df <- pth[which(pth %in% all_genes)]
+    pth_in_df <- unique(pth[which(pth %in% all_genes)])
     num_pth_in_df <- length(pth_in_df)
 
     # if set is too small continue
