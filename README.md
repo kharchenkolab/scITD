@@ -26,14 +26,7 @@ of the data.
 
 ## Installation
 
-Many of our visualizations require the development version of
-ComplexHeatmap package, so this should be installed first:
-
-``` r
-devtools::install_github("jokergoo/ComplexHeatmap")
-```
-
-Then, install scITD with the following:
+Install scITD with the following:
 
 ``` r
 devtools::install_github("kharchenkolab/scITD")

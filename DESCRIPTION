@@ -1,23 +1,22 @@
 Package: scITD
 Title: Single-Cell Interpretable Tucker Decomposition
-Version: 0.1.0
+Version: 1.0.0
 Date: 2020-10-18
-Authors@R: c(person("Jonathan", "Mitchel", email="mitchel@mit.edu", role=c("cre","aut")), person("Evan", "Biederstedt", email="evan.biederstedt@gmail.com", role="aut"))
-Maintainer: Jonathan Mitchel <mitchel@mit.edu>
-Description: Employs the Tucker tensor decomposition method
-    to extract multicell-type gene expression patterns that are variably
-    expressed across donors/individuals in a single-cell dataset of interest.
-    Extracted factors consist of a) a multi cell type loadings matrix and b) a
+Authors@R: c(person("Jonathan", "Mitchel", email="jonathan.mitchel3@gmail.com", role=c("cre","aut")), person("Evan", "Biederstedt", email="evan.biederstedt@gmail.com", role="aut"), person("Peter", "Kharchenko", email="peter_kharchenko@hms.harvard.edu", role="aut"))
+Maintainer: Jonathan Mitchel <jonathan.mitchel3@gmail.com>
+Description: Single-cell Interpretable Tensor Decomposition (scITD) employs the 
+    Tucker tensor decomposition to extract multicell-type gene expression patterns 
+    that vary across donors/individuals. This tool is geared for use with single-cell
+    RNA-sequencing datasets consisting of many source donors. The method has a wide
+    range of potential applications, including the study of inter-individual variation
+    at the population-level, patient sub-grouping/stratification, and the analysis
+    of sample-level batch effects. Each "multicellular process" that is extracted 
+    consists of (A) a multi cell type gene loadings matrix and (B) a
     corresponding donor scores vector indicating the level at which the corresponding
     loadings matrix is expressed in each donor. Additional methods are implemented
     to aid in selecting an appropriate number of factors and to evaluate stability
-    of the decomposition. Other functions are included to improve interpretability of
-    the results, and these include a jackstraw-like method for computing genes
-    significantly associated with a factor as well as gene set enrichment analysis
-    to understand the biological processes taking place in each cell type. Further
-    methods are implemented to evaluate associations between factors and
-    metadata variables as well as associations between factors and cell type/subtype
-    proportions.
+    of the decomposition. Additional tools are provided for downstream analysis,
+    including integration of gene set enrichment analysis and ligand-receptor analysis.
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
