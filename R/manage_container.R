@@ -59,6 +59,13 @@ make_new_container <- function(params, count_data=NULL, meta_data=NULL,
       stop('meta_data must be a data.frame')
     }
 
+    # throw error if dimensions or cell names don't match
+    if (ncol(count_data)!=nrow(meta_data)) {
+      stop('ncol(count_data) must match nrow(meta_data)')
+    } else if (!identical(colnames(count_data),rownames(meta_data))) {
+      stop('cell names must be identical in both count_data and meta_data')
+    }
+
     scMinimal <- instantiate_scMinimal(count_data, meta_data,
                                        metadata_cols=metadata_cols,
                                        metadata_col_nm=metadata_col_nm)
