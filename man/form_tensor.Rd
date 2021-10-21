@@ -14,6 +14,7 @@ form_tensor(
   batch_var = NULL,
   scale_var = TRUE,
   var_scale_power = 0.5,
+  custom_genes = NULL,
   verbose = TRUE
 )
 }
@@ -53,6 +54,9 @@ Variance for each gene is then scaled by multiplying the unit scaled values
 by each gene's normalized variance (where the effect of the mean-variance
 dependence is taken into account) to the exponent specified here.
 If NULL, uses var_scale_power from container$experiment_params. (default=.5)}
+
+\item{custom_genes}{character A vector of genes to include in the tensor.
+Overrides the default gene selection if not NULL. (default=NULL)}
 
 \item{verbose}{logical Set to TRUE to print out progress (default=TRUE)}
 }
