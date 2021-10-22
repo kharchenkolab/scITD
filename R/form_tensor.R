@@ -480,8 +480,13 @@ vargenes_anova <- function(scMinimal, ncores) {
   pvals <- mclapply(1:ncol(dge_sparse),function(x) {
     tmp <- cbind(dge_sparse[,x],scMinimal$metadata$donors)
 
-    anova_res <- aov(tmp[,1]~tmp[,2])
-    pval <- summary(anova_res)[[1]][["Pr(>F)"]][[1]]
+    # check if expression is 0 for all donors
+    if (all(dge_sparse[,x]==0)) {
+      pval <- 1
+    } else {
+      anova_res <- aov(tmp[,1]~tmp[,2])
+      pval <- summary(anova_res)[[1]][["Pr(>F)"]][[1]]
+    }
   }, mc.cores = ncores)
 
   names(pvals) <- colnames(dge_sparse)
