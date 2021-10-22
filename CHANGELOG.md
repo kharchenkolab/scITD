@@ -8,6 +8,7 @@
 
 ### Removed
 - Removed `optimize_var_scale_power()` and helpers as they're no longer used
+- Removed `compare_factors()` and helpers as they're no longer used
 
 ### Changed
 - Updated `run_jackstraw()` and `get_min_sig_genes()` to work with new rotations
