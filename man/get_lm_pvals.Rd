@@ -20,5 +20,5 @@ associations in container$gene_score_associations
 Compute gene-factor associations
 }
 \examples{
-test_container <- get_lm_pvals(test_container, mc.cores=1)
+test_container <- get_lm_pvals(test_container, n.cores=1)
 }

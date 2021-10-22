@@ -288,7 +288,7 @@ get_min_sig_genes <- function(container, donor_rank_range, gene_ranks,
 #' @export
 #'
 #' @examples
-#' test_container <- get_lm_pvals(test_container, mc.cores=1)
+#' test_container <- get_lm_pvals(test_container, n.cores=1)
 get_lm_pvals <- function(container, n.cores = container$experiment_params$ncores) {
   tensor_data <- container$tensor_data
   tucker_results <- container$tucker_results
