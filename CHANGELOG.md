@@ -11,6 +11,7 @@
 - Removed `compare_factors()` and helpers as they're no longer used
 
 ### Changed
+- Fixed `anova` vargenes method for genes with zero expression across donors
 - Updated `run_jackstraw()` and `get_min_sig_genes()` to work with new rotations
 - Fixed bug in `plot_subclust_associations()`
 - Enabled storage of results from `get_subtype_prop_associations()`
