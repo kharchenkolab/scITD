@@ -161,7 +161,7 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL,
 
 
     for (j in 1:ncol(meta)) {
-      if (colnames(meta)[j]=='sex') {
+      if (colnames(meta)[j]=='sex') { # use contrasting colors
         if (length(unique(meta[,j]))==2) {
           mycol <- c('#CBC3E3','#FDFD96')
           names(mycol) <- unique(meta[,j])

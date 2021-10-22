@@ -12,9 +12,11 @@
 #' @param scale_factor numeric The number that gets multiplied by fractional counts
 #' during normalization of the pseudobulked data (default=10000)
 #' @param vargenes_method character The method by which to select highly variable
-#' genes from each cell type. Set to 'anova' or 'norm_var' (default='norm_var')
+#' genes from each cell type. Set to 'anova' to select genes by anova. Set to
+#' 'norm_var' to select the top genes by normalized variance or 'norm_var_pvals'
+#' to select genes by significance of their overdispersion (default='norm_var')
 #' @param vargenes_thresh numeric The threshold to use in variable gene selection.
-#' For 'anova' and 'empir' this should be a p-value threshold. For 'norm_var' this
+#' For 'anova' and 'norm_var_pvals' this should be a p-value threshold. For 'norm_var' this
 #' should be the number of most variably expressed genes to select from each cell
 #' type (default=500)
 #' @param batch_var character A batch variable from metadata to remove (default=NULL)
