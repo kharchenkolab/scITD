@@ -12,9 +12,11 @@
 #' @param scale_factor numeric The number that gets multiplied by fractional counts
 #' during normalization of the pseudobulked data (default=10000)
 #' @param vargenes_method character The method by which to select highly variable
-#' genes from each cell type. Set to 'anova' or 'norm_var' (default='norm_var')
+#' genes from each cell type. Set to 'anova' to select genes by anova. Set to
+#' 'norm_var' to select the top genes by normalized variance or 'norm_var_pvals'
+#' to select genes by significance of their overdispersion (default='norm_var')
 #' @param vargenes_thresh numeric The threshold to use in variable gene selection.
-#' For 'anova' and 'empir' this should be a p-value threshold. For 'norm_var' this
+#' For 'anova' and 'norm_var_pvals' this should be a p-value threshold. For 'norm_var' this
 #' should be the number of most variably expressed genes to select from each cell
 #' type (default=500)
 #' @param batch_var character A batch variable from metadata to remove (default=NULL)
@@ -28,6 +30,8 @@
 #' by each gene's normalized variance (where the effect of the mean-variance
 #' dependence is taken into account) to the exponent specified here.
 #' If NULL, uses var_scale_power from container$experiment_params. (default=.5)
+#' @param custom_genes character A vector of genes to include in the tensor.
+#' Overrides the default gene selection if not NULL. (default=NULL)
 #' @param verbose logical Set to TRUE to print out progress (default=TRUE)
 #'
 #' @return the project container with tensor data added in the
@@ -41,7 +45,7 @@
 form_tensor <- function(container, donor_min_cells=5, norm_method='trim',
                         scale_factor=10000, vargenes_method='norm_var',
                         vargenes_thresh=500, batch_var=NULL, scale_var=TRUE,
-                        var_scale_power=.5, verbose=TRUE) {
+                        var_scale_power=.5, custom_genes=NULL, verbose=TRUE) {
   # parse data by cell type
   if (verbose) {
     print('parsing data matrix by cell/tissue type...')
@@ -72,11 +76,26 @@ form_tensor <- function(container, donor_min_cells=5, norm_method='trim',
   }
   container <- get_normalized_variance(container)
 
-  # select highly variable genes
-  if (verbose) {
-    print('selecting highly variable genes from each cell type...')
+  # reduce number of genes to use in the tensor
+  if (!is.null(custom_genes)) {
+    if (verbose) {
+      print('reducing tensor to selected genes...')
+    }
+    # check custom genes all in tensor
+    all_genes <- colnames(container$scMinimal_ctype[[1]]$pseudobulk)
+    if (any(!(custom_genes %in% all_genes))) {
+      stop('some of custom_genes are not present in the count data')
+    }
+    # set them as "vargenes" and reduce data to just these
+    container$all_vargenes <- custom_genes
+    container <- reduce_to_vargenes(container)
+  } else {
+    # select highly variable genes
+    if (verbose) {
+      print('selecting highly variable genes from each cell type...')
+    }
+    container <- get_ctype_vargenes(container, method=vargenes_method, thresh=vargenes_thresh)
   }
-  container <- get_ctype_vargenes(container, method=vargenes_method, thresh=vargenes_thresh)
 
   if (scale_var) {
     # scale gene expression
@@ -461,8 +480,13 @@ vargenes_anova <- function(scMinimal, ncores) {
   pvals <- mclapply(1:ncol(dge_sparse),function(x) {
     tmp <- cbind(dge_sparse[,x],scMinimal$metadata$donors)
 
-    anova_res <- aov(tmp[,1]~tmp[,2])
-    pval <- summary(anova_res)[[1]][["Pr(>F)"]][[1]]
+    # check if expression is 0 for all donors
+    if (all(dge_sparse[,x]==0)) {
+      pval <- 1
+    } else {
+      anova_res <- aov(tmp[,1]~tmp[,2])
+      pval <- summary(anova_res)[[1]][["Pr(>F)"]][[1]]
+    }
   }, mc.cores = ncores)
 
   names(pvals) <- colnames(dge_sparse)

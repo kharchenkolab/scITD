@@ -9,7 +9,8 @@
 #' also be the total number of main factors that can be used for downstream analysis.
 #' The number of gene factors will only impact the quality of the decomposition.
 #' @param tucker_type character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
-#' with sparsity constraints (default='regular')
+#' with sparsity constraints. The 'sparse' method is still under development, so we recommend
+#' using 'regular'. (default='regular')
 #' @param rotation_type character Set to 'hybrid' to optimize loadings via our hybrid
 #' method (see paper for details). Set to 'ica_dsc' to perform ICA rotation
 #' on resulting donor factor matrix. Set to 'ica_lds' to optimize loadings by the

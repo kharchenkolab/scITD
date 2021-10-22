@@ -14,6 +14,7 @@ form_tensor(
   batch_var = NULL,
   scale_var = TRUE,
   var_scale_power = 0.5,
+  custom_genes = NULL,
   verbose = TRUE
 )
 }
@@ -33,10 +34,12 @@ are divided by library size times a normalization factor. (default='trim')}
 during normalization of the pseudobulked data (default=10000)}
 
 \item{vargenes_method}{character The method by which to select highly variable
-genes from each cell type. Set to 'anova' or 'norm_var' (default='norm_var')}
+genes from each cell type. Set to 'anova' to select genes by anova. Set to
+'norm_var' to select the top genes by normalized variance or 'norm_var_pvals'
+to select genes by significance of their overdispersion (default='norm_var')}
 
 \item{vargenes_thresh}{numeric The threshold to use in variable gene selection.
-For 'anova' and 'empir' this should be a p-value threshold. For 'norm_var' this
+For 'anova' and 'norm_var_pvals' this should be a p-value threshold. For 'norm_var' this
 should be the number of most variably expressed genes to select from each cell
 type (default=500)}
 
@@ -53,6 +56,9 @@ Variance for each gene is then scaled by multiplying the unit scaled values
 by each gene's normalized variance (where the effect of the mean-variance
 dependence is taken into account) to the exponent specified here.
 If NULL, uses var_scale_power from container$experiment_params. (default=.5)}
+
+\item{custom_genes}{character A vector of genes to include in the tensor.
+Overrides the default gene selection if not NULL. (default=NULL)}
 
 \item{verbose}{logical Set to TRUE to print out progress (default=TRUE)}
 }

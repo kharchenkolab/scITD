@@ -11,7 +11,7 @@ get_num_batch_ranks(
   batch_var,
   thresh = 0.5,
   tucker_type = "regular",
-  rotation_type = "ica"
+  rotation_type = "hybrid"
 )
 }
 \arguments{
@@ -31,8 +31,10 @@ at varying thresholds. (default=0.5)}
 \item{tucker_type}{character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
 with sparsity constraints (default='regular')}
 
-\item{rotation_type}{character Set to 'ica' to perform ICA rotation on resulting donor factor
-matrix and loadings. Otherwise set to 'varimax' to perform varimax rotation. (default='ica')}
+\item{rotation_type}{character Set to 'hybrid' to optimize loadings via our hybrid
+method (see paper for details). Set to 'ica_dsc' to perform ICA rotation
+on resulting donor factor matrix. Set to 'ica_lds' to optimize loadings by the
+ICA rotation. (default='hybrid')}
 }
 \value{
 plots placed in container$plots$num_batch_factors slot

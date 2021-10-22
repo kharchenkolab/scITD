@@ -299,7 +299,6 @@ run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh
 #' @return a vector of pathways selectively enriched in the listed cell types
 #' @export
 get_intersecting_pathways <- function(container, factor_select, these_ctypes_only, up_down, thresh=0.05) {
-  factor_select <- paste0('Factor',factor_select)
   ct_1_paths <- container$gsea_results[[factor_select]][[up_down]][[these_ctypes_only[1]]]
   intersect_pathways <- names(ct_1_paths)[ct_1_paths<thresh]
   if (length(these_ctypes_only) > 1) {

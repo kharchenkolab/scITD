@@ -134,6 +134,7 @@ get_subtype_prop_associations <- function(container, max_res, stat_type,
   # save results
   container$plots$subtype_prop_factor_associations <- reg_stat_plots
   container$subclusters <- subc_all
+  container$subc_factor_association_res <- res
 
   return(container)
 }
@@ -1135,9 +1136,7 @@ plot_subclust_associations <- function(res,n_col=2) {
 
   stat_type <- colnames(res)[1]
 
-  # if plotting pvalues, fdr adjust and transform to -log10(pval)
   if (stat_type == 'adj_pval') {
-    res[,stat_type] <- stats::p.adjust(res[,stat_type], method = 'fdr')
     res[,stat_type] <- -log10(res[,stat_type])
   }
 
