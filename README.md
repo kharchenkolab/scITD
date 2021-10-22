@@ -43,4 +43,4 @@ pipeline and applies it to a dataset of PBMC’s from 45 healthy donors.
 If you find `scITD` useful for your publication, please cite:
 
     Jonathan Mitchel, Evan Biederstedt, and Peter Kharchenko (2021). scITD: Single-Cell
-    Interpretable Tucker Decomposition. R package version 1.0.0.
+    Interpretable Tensor Decomposition. R package version 1.0.0.
