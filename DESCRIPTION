@@ -1,5 +1,5 @@
 Package: scITD
-Title: Single-Cell Interpretable Tucker Decomposition
+Title: Single-Cell Interpretable Tensor Decomposition
 Version: 1.0.0
 Date: 2021-10-22
 Authors@R: c(person("Jonathan", "Mitchel", email="jonathan.mitchel3@gmail.com", role=c("cre","aut")), person("Evan", "Biederstedt", email="evan.biederstedt@gmail.com", role="aut"), person("Peter", "Kharchenko", email="peter_kharchenko@hms.harvard.edu", role="aut"))
