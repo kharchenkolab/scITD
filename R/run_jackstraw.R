@@ -221,6 +221,8 @@ get_fstats_pvals <- function(fstats_real, fstats_shuffled) {
 #' @param n_fibers numeric The number of fibers the randomly shuffle in each iteration
 #' (default=100)
 #' @param n_iter numeric The number of shuffling iterations to complete (default=500)
+#' @param n.cores Number of cores to use in get_lm_pvals() (default = container$experiment_params$ncores)
+#'
 #' @param thresh numeric Pvalue threshold for significant genes in calculating the
 #' number of significant genes identified per factor. (default=0.05)
 #'
@@ -231,7 +233,7 @@ get_fstats_pvals <- function(fstats_real, fstats_shuffled) {
 get_min_sig_genes <- function(container, donor_rank_range, gene_ranks,
                               use_lm=TRUE, tucker_type='regular',
                               rotation_type='hybrid', n_fibers=100, n_iter=500,
-                              thresh=0.05) {
+                              n.cores = container$experiment_params$ncores, thresh=0.05) {
 
   min_per_decomp <- data.frame(matrix(ncol=2,nrow=0))
   colnames(min_per_decomp) <- c('donor_rank','min_sig')
@@ -239,7 +241,7 @@ get_min_sig_genes <- function(container, donor_rank_range, gene_ranks,
     container <- run_tucker_ica(container, c(i,gene_ranks),
                                 tucker_type=tucker_type, rotation_type=rotation_type)
     if (use_lm) {
-      container <- get_lm_pvals(container)
+      container <- get_lm_pvals(container, n.cores=n.cores)
     } else {
       container <- run_jackstraw(container, ranks=c(i,gene_ranks),
                                  n_fibers=n_fibers, n_iter=n_iter,
@@ -279,14 +281,15 @@ get_min_sig_genes <- function(container, donor_rank_range, gene_ranks,
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
+#' @param n.cores Number of cores to use (default = container$experiment_params$ncores)
 #'
 #' @return the project container with the adjust p-values for the gene-factor
 #' associations in container$gene_score_associations
 #' @export
 #'
 #' @examples
-#' test_container <- get_lm_pvals(test_container)
-get_lm_pvals <- function(container) {
+#' test_container <- get_lm_pvals(test_container, mc.cores=1)
+get_lm_pvals <- function(container, n.cores = container$experiment_params$ncores) {
   tensor_data <- container$tensor_data
   tucker_results <- container$tucker_results
 
@@ -297,7 +300,9 @@ get_lm_pvals <- function(container) {
   n_genes <- length(tensor_data[[2]])
   n_ctypes <- length(tensor_data[[3]])
   all_pvals <- data.frame(matrix(ncol=3,nrow=0))
-  ncores <- container$experiment_params$ncores
+  if (is.null(container$experiment_params$ncores)){
+    n.cores = 1
+  }
   all_pvals <- mclapply(1:n_genes, function(i) {
     gene <- tensor_data[[2]][i]
     gene_res <- list()
@@ -323,7 +328,7 @@ get_lm_pvals <- function(container) {
       }
     }
     return(gene_res)
-  }, mc.cores = ncores)
+  }, mc.cores = n.cores)
 
   names(all_pvals) <- tensor_data[[2]]
 

@@ -4,11 +4,13 @@
 \alias{get_lm_pvals}
 \title{Compute gene-factor associations}
 \usage{
-get_lm_pvals(container)
+get_lm_pvals(container, n.cores = container$experiment_params$ncores)
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
 for each cell type as well as results and plots from all analyses}
+
+\item{n.cores}{Number of cores to use (default = container$experiment_params$ncores)}
 }
 \value{
 the project container with the adjust p-values for the gene-factor
@@ -18,5 +20,5 @@ associations in container$gene_score_associations
 Compute gene-factor associations
 }
 \examples{
-test_container <- get_lm_pvals(test_container)
+test_container <- get_lm_pvals(test_container, mc.cores=1)
 }

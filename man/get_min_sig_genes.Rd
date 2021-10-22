@@ -14,6 +14,7 @@ get_min_sig_genes(
   rotation_type = "hybrid",
   n_fibers = 100,
   n_iter = 500,
+  n.cores = container$experiment_params$ncores,
   thresh = 0.05
 )
 }
@@ -38,6 +39,8 @@ ica_dsc to perform ica on donor scores. (default='hybrid')}
 (default=100)}
 
 \item{n_iter}{numeric The number of shuffling iterations to complete (default=500)}
+
+\item{n.cores}{Number of cores to use in get_lm_pvals() (default = container$experiment_params$ncores)}
 
 \item{thresh}{numeric Pvalue threshold for significant genes in calculating the
 number of significant genes identified per factor. (default=0.05)}
