@@ -11,15 +11,15 @@ run_jackstraw(
   n_fibers = 100,
   n_iter = 500,
   tucker_type = "regular",
-  rotation_type = "ica"
+  rotation_type = "hybrid"
 )
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
 for each cell type as well as results and plots from all analyses}
 
-\item{ranks}{numeric The number of donor, gene, and cell type ranks, respectively,
-to decompose to using Tucker decomposition.}
+\item{ranks}{numeric The number of donor ranks and gene ranks to decompose to
+using Tucker decomposition}
 
 \item{n_fibers}{numeric The number of fibers the randomly shuffle in each iteration
 (default=100)}
@@ -29,8 +29,9 @@ to decompose to using Tucker decomposition.}
 \item{tucker_type}{character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
 with sparsity constraints (default='regular')}
 
-\item{rotation_type}{character Set to 'ica' to perform ICA rotation on resulting donor factor
-matrix and loadings. Otherwise set to 'varimax' to perform varimax rotation. (default='ica')}
+\item{rotation_type}{character Set to 'hybrid' to perform hybrid rotation on resulting donor factor
+matrix and loadings. Otherwise set to 'ica_lds' to perform ica rotation on loadings or
+ica_dsc to perform ica on donor scores. (default='hybrid')}
 }
 \value{
 the project container with adjusted pvalues in container$gene_score_associations

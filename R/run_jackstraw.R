@@ -6,20 +6,21 @@ utils::globalVariables(c("donor_rank", "min_sig"))
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
-#' @param ranks numeric The number of donor, gene, and cell type ranks, respectively,
-#' to decompose to using Tucker decomposition.
+#' @param ranks numeric The number of donor ranks and gene ranks to decompose to
+#' using Tucker decomposition
 #' @param n_fibers numeric The number of fibers the randomly shuffle in each iteration
 #' (default=100)
 #' @param n_iter numeric The number of shuffling iterations to complete (default=500)
 #' @param tucker_type character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
 #' with sparsity constraints (default='regular')
-#' @param rotation_type character Set to 'ica' to perform ICA rotation on resulting donor factor
-#' matrix and loadings. Otherwise set to 'varimax' to perform varimax rotation. (default='ica')
+#' @param rotation_type character Set to 'hybrid' to perform hybrid rotation on resulting donor factor
+#' matrix and loadings. Otherwise set to 'ica_lds' to perform ica rotation on loadings or
+#' ica_dsc to perform ica on donor scores. (default='hybrid')
 #'
 #' @return the project container with adjusted pvalues in container$gene_score_associations
 #' @export
 run_jackstraw <- function(container, ranks, n_fibers=100, n_iter=500,
-                          tucker_type='regular', rotation_type='ica') {
+                          tucker_type='regular', rotation_type='hybrid') {
   # set random seed
   RNGkind("L'Ecuyer-CMRG")
   set.seed(container$experiment_params$rand_seed)
@@ -27,9 +28,12 @@ run_jackstraw <- function(container, ranks, n_fibers=100, n_iter=500,
   # extract needed inputs from experiment parameters
   ncores <- container$experiment_params$ncores
 
-  fstats_shuffled <- mclapply(1:n_iter, function(x) {
+  fstats_shuffled <- sccore::plapply(1:n_iter, function(x) {
     # extract tensor data as we dont want to overwrite container
     tensor_data <- container$tensor_data
+
+    # set third element of ranks to the number of cell types
+    ranks[3] <- length(tensor_data[[3]])
 
     # sample fibers and shuffle them across donors
     s_fibers <- sample_fibers(tensor_data, n_fibers)
@@ -43,7 +47,7 @@ run_jackstraw <- function(container, ranks, n_fibers=100, n_iter=500,
     # compute fiber-factor association F statistics for sampled fibers
     fiber_fstats <- calculate_fiber_fstats(tensor_data, tucker_results, s_fibers)
     return(fiber_fstats)
-  }, mc.cores = ncores)
+  }, n.cores = ncores, mc.preschedule=TRUE, progress = TRUE)
 
   fstats_shuffled <- unlist(fstats_shuffled)
 
@@ -65,7 +69,6 @@ run_jackstraw <- function(container, ranks, n_fibers=100, n_iter=500,
 #' @param n_fibers numeric The number of fibers to get
 #'
 #' @return a list of gene and cell type indices for the randomly selected fibers
-#' @export
 sample_fibers <- function(tensor_data, n_fibers) {
   n_genes <- length(tensor_data[[2]])
   n_ctypes <- length(tensor_data[[3]])
@@ -89,7 +92,6 @@ sample_fibers <- function(tensor_data, n_fibers) {
 #' @param s_fibers list Gene and cell type indices for the randomly selected fibers
 #'
 #' @return the tensor_data with the values for the selected fibers shuffled
-#' @export
 shuffle_fibers <- function(tensor_data, s_fibers) {
   for (f in s_fibers) {
     gene_ndx <- f[[1]]
@@ -110,7 +112,6 @@ shuffle_fibers <- function(tensor_data, s_fibers) {
 #' @param s_fibers list Gene and cell type indices for the randomly selected fibers
 #'
 #' @return the F-Statistics for associations between all shuffled fibers and donor scores
-#' @export
 calculate_fiber_fstats <- function(tensor_data, tucker_results, s_fibers) {
   all_fstats <- c()
   for (f in s_fibers) {
@@ -137,7 +138,6 @@ calculate_fiber_fstats <- function(tensor_data, tucker_results, s_fibers) {
 #' @param ncores numeric The number of cores to use
 #'
 #' @return a vector F-Statistics for each gene-celltype-factor combination
-#' @export
 get_real_fstats <- function(container, ncores) {
   tensor_data <- container$tensor_data
   tucker_results <- container$tucker_results
@@ -154,14 +154,14 @@ get_real_fstats <- function(container, ncores) {
       gene_res[[ctype]] <- list()
       for (k in 1:ncol(tucker_results[[1]])) {
         tmp_fiber <- tensor_data[[4]][,i,j]
-        df_test <- as.data.frame(cbind(tmp_fiber, tucker_results[[1]][,k]))
-        colnames(df_test) <- c('fiber','factor')
-        lmres <- lm(factor~fiber,df_test)
-        fstat <- summary(lmres)$fstatistic[[1]]
-
-        # # testing getting pval instead of fstat
-        # x <- summary(lmres)
-        # fstat <- stats::pf(x$fstatistic[1],x$fstatistic[2],x$fstatistic[3],lower.tail=FALSE)
+        if (all(tmp_fiber==0)) {
+          fstat <- 0
+        } else {
+          df_test <- as.data.frame(cbind(tmp_fiber, tucker_results[[1]][,k]))
+          colnames(df_test) <- c('fiber','factor')
+          lmres <- lm(factor~fiber,df_test)
+          fstat <- summary(lmres)$fstatistic[[1]]
+        }
 
         gene_res[[ctype]][[as.character(k)]] <- fstat
       }
@@ -183,7 +183,6 @@ get_real_fstats <- function(container, ncores) {
 #' @param fstats_shuffled numeric A vector of null F-Statistics
 #'
 #' @return adjusted pvalues for associations of the unshuffled fibers with factor donor scores
-#' @export
 get_fstats_pvals <- function(fstats_real, fstats_shuffled) {
   raw_pvals <- c()
   for (i in 1:length(fstats_real)) {
@@ -213,11 +212,12 @@ get_fstats_pvals <- function(fstats_real, fstats_shuffled) {
 #' for each cell type as well as results and plots from all analyses. Should have
 #' @param donor_rank_range numeric Range of possible number of donor factors to use.
 #' @param gene_ranks numeric The number of gene ranks to use in the decomposition
-#' @param ctype_ranks numeric The number of cell type ranks to use in the decomposition
+#' @param use_lm logical Set to true to use get_lm_pvals otherwise uses jackstraw (default=TRUE)
 #' @param tucker_type character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
 #' with sparsity constraints (default='regular')
-#' @param rotation_type character Set to 'ica' to perform ICA rotation on resulting donor factor
-#' matrix and loadings. Otherwise set to 'varimax' to perform varimax rotation. (default='ica')
+#' @param rotation_type character Set to 'hybrid' to perform hybrid rotation on resulting donor factor
+#' matrix and loadings. Otherwise set to 'ica_lds' to perform ica rotation on loadings or
+#' ica_dsc to perform ica on donor scores. (default='hybrid')
 #' @param n_fibers numeric The number of fibers the randomly shuffle in each iteration
 #' (default=100)
 #' @param n_iter numeric The number of shuffling iterations to complete (default=500)
@@ -229,18 +229,22 @@ get_fstats_pvals <- function(fstats_real, fstats_shuffled) {
 #' container$plots$min_sig_genes
 #' @export
 get_min_sig_genes <- function(container, donor_rank_range, gene_ranks,
-                              ctype_ranks, tucker_type='regular',
-                              rotation_type='ica', n_fibers=100, n_iter=500,
+                              use_lm=TRUE, tucker_type='regular',
+                              rotation_type='hybrid', n_fibers=100, n_iter=500,
                               thresh=0.05) {
 
   min_per_decomp <- data.frame(matrix(ncol=2,nrow=0))
   colnames(min_per_decomp) <- c('donor_rank','min_sig')
   for (i in donor_rank_range) {
-    container <- run_tucker_ica(container, c(i,gene_ranks,ctype_ranks),
+    container <- run_tucker_ica(container, c(i,gene_ranks),
                                 tucker_type=tucker_type, rotation_type=rotation_type)
-    container <- run_jackstraw(container, ranks=c(i,gene_ranks,ctype_ranks),
-                               n_fibers=n_fibers, n_iter=n_iter,
-                               tucker_type=tucker_type, rotation_type=rotation_type)
+    if (use_lm) {
+      container <- get_lm_pvals(container)
+    } else {
+      container <- run_jackstraw(container, ranks=c(i,gene_ranks),
+                                 n_fibers=n_fibers, n_iter=n_iter,
+                                 tucker_type=tucker_type, rotation_type=rotation_type)
+    }
 
     padj <- container$gene_score_associations
     padj_factors <- sapply(names(padj),function(x) {

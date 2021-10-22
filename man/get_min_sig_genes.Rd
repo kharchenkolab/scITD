@@ -9,9 +9,9 @@ get_min_sig_genes(
   container,
   donor_rank_range,
   gene_ranks,
-  ctype_ranks,
+  use_lm = TRUE,
   tucker_type = "regular",
-  rotation_type = "ica",
+  rotation_type = "hybrid",
   n_fibers = 100,
   n_iter = 500,
   thresh = 0.05
@@ -25,13 +25,14 @@ for each cell type as well as results and plots from all analyses. Should have}
 
 \item{gene_ranks}{numeric The number of gene ranks to use in the decomposition}
 
-\item{ctype_ranks}{numeric The number of cell type ranks to use in the decomposition}
+\item{use_lm}{logical Set to true to use get_lm_pvals otherwise uses jackstraw (default=TRUE)}
 
 \item{tucker_type}{character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
 with sparsity constraints (default='regular')}
 
-\item{rotation_type}{character Set to 'ica' to perform ICA rotation on resulting donor factor
-matrix and loadings. Otherwise set to 'varimax' to perform varimax rotation. (default='ica')}
+\item{rotation_type}{character Set to 'hybrid' to perform hybrid rotation on resulting donor factor
+matrix and loadings. Otherwise set to 'ica_lds' to perform ica rotation on loadings or
+ica_dsc to perform ica on donor scores. (default='hybrid')}
 
 \item{n_fibers}{numeric The number of fibers the randomly shuffle in each iteration
 (default=100)}
