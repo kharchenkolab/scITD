@@ -353,10 +353,11 @@ get_ctype_subc_prop_associations <- function(container,ctype,res,n_col=2,alt_nam
 #' for each cell type as well as results and plots from all analyses
 #' @param integration_var character The meta data variable to use for creating
 #' the joint embedding with Conos.
+#' @param ncores numeric The number of cores to use (default=container$experiment_params$ncores)
+#'
 #' @return a dataframe with umap coordinates of each cell in the dataset
 #' @export
-reduce_dimensions <- function(container, integration_var) {
-  ncores <- container$experiment_params$ncores
+reduce_dimensions <- function(container, integration_var, ncores =container$experiment_params$ncores) {
 
   # some cells have been removed because donors had too few cells per ctype
   # need to make sure the full data is limited to the cells used in analysis

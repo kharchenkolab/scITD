@@ -11,10 +11,11 @@
 #' one database can be used. (default="GO")
 #' @param signed logical If TRUE, uses signed gsea. If FALSE, uses unsigned gsea.
 #' Currently only works with fgsea method. (default=TRUE)
+#' @param ncores numeric The number of cores to use (default=container$experiment_params$ncores)
 #'
 #' @return data.frame of the fgsea results (including non-significant results)
 #' @export
-run_fgsea <- function(container, factor_select, ctype, db_use="GO", signed=TRUE) {
+run_fgsea <- function(container, factor_select, ctype, db_use="GO", signed=TRUE, reset_other_factor_plots, ncores=container$experiment_params$ncores) {
   donor_scores <- container$tucker_results[[1]]
 
   # select mean exp data for one cell type
@@ -76,7 +77,7 @@ run_fgsea <- function(container, factor_select, ctype, db_use="GO", signed=TRUE)
                               maxSize=500,
                               eps=0,
                               gseaParam=1,
-                              nproc=container$experiment_params$ncores)
+                              nproc=ncores)
   } else {
     fgsea_res <- fgsea::fgsea(pathways = my_pathways,
                               stats = exp_vals,
@@ -85,7 +86,7 @@ run_fgsea <- function(container, factor_select, ctype, db_use="GO", signed=TRUE)
                               eps=0,
                               gseaParam=1,
                               scoreType = "pos",
-                              nproc=container$experiment_params$ncores)
+                              nproc=ncores)
   }
 
   fgsea_res <- fgsea_res[order(fgsea_res$padj, decreasing=FALSE),]

@@ -16,17 +16,18 @@ utils::globalVariables(c("donor_rank", "min_sig"))
 #' @param rotation_type character Set to 'hybrid' to perform hybrid rotation on resulting donor factor
 #' matrix and loadings. Otherwise set to 'ica_lds' to perform ica rotation on loadings or
 #' ica_dsc to perform ica on donor scores. (default='hybrid')
+#' @param seed numeric Seed passed to set.seed() (default=container$experiment_params$rand_seed)
+#' @param ncores numeric The number of cores to use (default=container$experiment_params$ncores)
 #'
 #' @return the project container with adjusted pvalues in container$gene_score_associations
 #' @export
 run_jackstraw <- function(container, ranks, n_fibers=100, n_iter=500,
-                          tucker_type='regular', rotation_type='hybrid') {
+                          tucker_type='regular', rotation_type='hybrid', 
+                          seed=container$experiment_params$rand_seed, ncores=container$experiment_params$ncores) {
   # set random seed
   RNGkind("L'Ecuyer-CMRG")
-  set.seed(container$experiment_params$rand_seed)
+  set.seed(seed)
 
-  # extract needed inputs from experiment parameters
-  ncores <- container$experiment_params$ncores
 
   fstats_shuffled <- sccore::plapply(1:n_iter, function(x) {
     # extract tensor data as we dont want to overwrite container

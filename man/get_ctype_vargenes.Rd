@@ -5,7 +5,13 @@
 \title{Partition main gene by cell matrix into per cell type matrices with significantly
 variable genes only}
 \usage{
-get_ctype_vargenes(container, method, thresh)
+get_ctype_vargenes(
+  container,
+  method,
+  thresh,
+  ncores = container$experiment_params$ncores,
+  seed = container$experiment_params$rand_seed
+)
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
@@ -20,6 +26,10 @@ p-values as calculated in pagoda2.}
 \item{thresh}{numeric A pvalue threshold to use for gene significance when
 method is set to "anova" or "empir". For the method "norm_var" thresh is the
 number of top overdispersed genes from each cell type to include.}
+
+\item{ncores}{numeric The number of cores to use (default=container$experiment_params$ncores)}
+
+\item{seed}{numeric Seed passed to set.seed() (default=container$experiment_params$rand_seed)}
 }
 \value{
 the project container with scMinimal environments added for each

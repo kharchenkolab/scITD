@@ -377,6 +377,8 @@ norm_var_helper <- function(scMinimal) {
 #' @param thresh numeric A pvalue threshold to use for gene significance when
 #' method is set to "anova" or "empir". For the method "norm_var" thresh is the
 #' number of top overdispersed genes from each cell type to include.
+#' @param seed numeric Seed passed to set.seed() (default=container$experiment_params$rand_seed)
+#' @param ncores numeric The number of cores to use (default=container$experiment_params$ncores)
 #'
 #' @return the project container with scMinimal environments added for each
 #' cell type. The scMinimal environments contain expression count matrices
@@ -385,13 +387,11 @@ norm_var_helper <- function(scMinimal) {
 #' in any cell type. Metadata is also present in these sub-containers for the
 #' corresponding included cells and is in the "metadata" slot.
 #' @export
-get_ctype_vargenes <- function(container, method, thresh) {
+get_ctype_vargenes <- function(container, method, thresh, ncores=container$experiment_params$ncores, seed=container$experiment_params$rand_seed) {
 
   # set random seed to work with mclapply
   RNGkind("L'Ecuyer-CMRG")
-  set.seed(container$experiment_params$rand_seed)
-
-  ncores <- container$experiment_params$ncores
+  set.seed(seed)
 
   if (method == "norm_var") {
     all_vargenes <- c()

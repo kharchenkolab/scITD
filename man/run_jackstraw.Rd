@@ -11,7 +11,9 @@ run_jackstraw(
   n_fibers = 100,
   n_iter = 500,
   tucker_type = "regular",
-  rotation_type = "hybrid"
+  rotation_type = "hybrid",
+  seed = container$experiment_params$rand_seed,
+  ncores = container$experiment_params$ncores
 )
 }
 \arguments{
@@ -32,6 +34,10 @@ with sparsity constraints (default='regular')}
 \item{rotation_type}{character Set to 'hybrid' to perform hybrid rotation on resulting donor factor
 matrix and loadings. Otherwise set to 'ica_lds' to perform ica rotation on loadings or
 ica_dsc to perform ica on donor scores. (default='hybrid')}
+
+\item{seed}{numeric Seed passed to set.seed() (default=container$experiment_params$rand_seed)}
+
+\item{ncores}{numeric The number of cores to use (default=container$experiment_params$ncores)}
 }
 \value{
 the project container with adjusted pvalues in container$gene_score_associations

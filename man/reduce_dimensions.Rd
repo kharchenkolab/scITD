@@ -4,7 +4,11 @@
 \alias{reduce_dimensions}
 \title{Gets umap coordinates if not already provided in container$scMinimal_full$umap}
 \usage{
-reduce_dimensions(container, integration_var)
+reduce_dimensions(
+  container,
+  integration_var,
+  ncores = container$experiment_params$ncores
+)
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
@@ -12,6 +16,8 @@ for each cell type as well as results and plots from all analyses}
 
 \item{integration_var}{character The meta data variable to use for creating
 the joint embedding with Conos.}
+
+\item{ncores}{numeric The number of cores to use (default=container$experiment_params$ncores)}
 }
 \value{
 a dataframe with umap coordinates of each cell in the dataset

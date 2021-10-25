@@ -27,7 +27,7 @@ utils::globalVariables(c("myx", "myy"))
 #' the tensor with additional ligands and receptors
 #' @export
 prep_LR_interact <- function(container, lr_pairs, norm_method='trim', scale_factor=10000,
-                             var_scale_power=.5, batch_var=NULL) {
+                             var_scale_power=0.5, batch_var=NULL) {
   # store original pseudobulk matrices because they will be altered
   orig_pb <- list()
   for (ct in container$experiment_params$ctypes_use) {
@@ -155,11 +155,13 @@ get_gene_modules <- function(container,sft_thresh) {
 #' ligand all must be expressing the receptor (default=0.75)
 #' @param add_ld_fact_sig logical Set to TRUE to append a heatmap showing significance
 #' of associations between each ligand hit and each factor (default=TRUE)
+#' @param ncores numeric The number of cores to use (default=container$experiment_params$ncores)
 #'
 #' @return The results heatmap(s)
 #' @export
 compute_LR_interact <- function(container, lr_pairs, sig_thresh=0.05,
-                                percentile_exp_rec=0.75, add_ld_fact_sig=TRUE) {
+                                percentile_exp_rec=0.75, add_ld_fact_sig=TRUE, reset_other_factor_plots, 
+                                ncores=container$experiment_params$ncores) {
   all_eg <- container[["module_eigengenes"]]
   all_lig <- unique(lr_pairs[,1])
   ctypes_use <- container$experiment_params$ctypes_use
@@ -245,7 +247,7 @@ compute_LR_interact <- function(container, lr_pairs, sig_thresh=0.05,
     } else {
       return(ct_mod_sig)
     }
-  }, mc.preschedule=TRUE,n.cores=container$experiment_params$ncores,progress=TRUE)
+  }, mc.preschedule=TRUE,n.cores=ncores,progress=TRUE)
 
   # copy results and name
   myres_saved <- myres

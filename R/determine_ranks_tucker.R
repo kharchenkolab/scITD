@@ -34,6 +34,8 @@ utils::globalVariables(c("num_ranks", "rec_error", "num_iter", "run_type", "erro
 #' by each gene's normalized variance (where the effect of the mean-variance
 #' dependence is taken into account) to the exponent specified here.
 #' If NULL, uses var_scale_power from container$experiment_params. (default=.5)
+#' @param seed numeric Seed passed to set.seed() (default=container$experiment_params$rand_seed)
+#' @param ncores numeric The number of cores to use (default=container$experiment_params$ncores)
 #'
 #' @return the project container with rank determination plot in
 #' container$plots$rank_determination_plot
@@ -44,7 +46,9 @@ determine_ranks_tucker <- function(container, max_ranks_test,
                                    norm_method='trim',
                                    scale_factor=10000,
                                    scale_var=TRUE,
-                                   var_scale_power=.5) {
+                                   var_scale_power=.5,
+                                   seed=container$experiment_params$rand_seed,
+                                   ncores=container$experiment_params$ncores) {
 
   # check if run tensor formation yet...
   if (is.null(container$tensor_data)) {
@@ -53,10 +57,10 @@ determine_ranks_tucker <- function(container, max_ranks_test,
 
   # set random seed
   RNGkind("L'Ecuyer-CMRG")
-  set.seed(container$experiment_params$rand_seed)
+  set.seed(seed)
 
   # extract needed inputs from experiment parameters
-  ncores <- container$experiment_params$ncores
+  ## ncores <- container$experiment_params$ncores
 
   # generate reconstruction errors under the null condition
   null_res <- lapply(1:num_iter, function(x) {

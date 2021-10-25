@@ -4,7 +4,15 @@
 \alias{run_fgsea}
 \title{Run fgsea for one cell type of one factor. Note, this uses}
 \usage{
-run_fgsea(container, factor_select, ctype, db_use = "GO", signed = TRUE)
+run_fgsea(
+  container,
+  factor_select,
+  ctype,
+  db_use = "GO",
+  signed = TRUE,
+  reset_other_factor_plots,
+  ncores = container$experiment_params$ncores
+)
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
@@ -20,6 +28,8 @@ one database can be used. (default="GO")}
 
 \item{signed}{logical If TRUE, uses signed gsea. If FALSE, uses unsigned gsea.
 Currently only works with fgsea method. (default=TRUE)}
+
+\item{ncores}{numeric The number of cores to use (default=container$experiment_params$ncores)}
 }
 \value{
 data.frame of the fgsea results (including non-significant results)

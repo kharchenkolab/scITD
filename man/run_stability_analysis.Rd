@@ -14,7 +14,8 @@ run_stability_analysis(
   sparsity = sqrt(2),
   subset_type = "subset",
   sub_prop = 0.75,
-  n_iterations = 100
+  n_iterations = 100,
+  n.cores = container$experiment_params$ncores
 )
 }
 \arguments{
@@ -39,6 +40,8 @@ ICA rotation. (default='hybrid')}
 \item{sub_prop}{numeric The proportion of donors to keep when using subset_type='subset' (default=.75)}
 
 \item{n_iterations}{numeric The number of iterations to perform (default=100)}
+
+\item{ncores}{numeric The number of cores to use (default=container$experiment_params$ncores)}
 }
 \value{
 The project container with the donor scores stability in

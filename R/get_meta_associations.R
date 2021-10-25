@@ -12,7 +12,7 @@
 get_meta_associations <- function(container, vars_test, stat_use='rsq') {
   # check that tucker has already been run
   if (is.null(container$tucker_results)) {
-    stop("need to run tucker first")
+    stop("Need to run tucker first")
   }
 
   meta <- container$scMinimal_full$metadata

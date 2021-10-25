@@ -14,7 +14,9 @@ determine_ranks_tucker(
   norm_method = "trim",
   scale_factor = 10000,
   scale_var = TRUE,
-  var_scale_power = 0.5
+  var_scale_power = 0.5,
+  seed = container$experiment_params$rand_seed,
+  ncores = container$experiment_params$ncores
 )
 }
 \arguments{
@@ -55,6 +57,10 @@ Variance for each gene is then scaled by multiplying the unit scaled values
 by each gene's normalized variance (where the effect of the mean-variance
 dependence is taken into account) to the exponent specified here.
 If NULL, uses var_scale_power from container$experiment_params. (default=.5)}
+
+\item{seed}{numeric Seed passed to set.seed() (default=container$experiment_params$rand_seed)}
+
+\item{ncores}{numeric The number of cores to use (default=container$experiment_params$ncores)}
 }
 \value{
 the project container with rank determination plot in
