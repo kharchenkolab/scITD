@@ -60,14 +60,12 @@ get_subtype_prop_associations <- function(container, max_res, stat_type,
   }
   # loop through cell types
   for (ct in container$experiment_params$ctypes_use) {
-    print(ct)
     scMinimal <- container[["scMinimal_ctype"]][[ct]]
 
     # loop through increasing clustering resolutions
     cluster_res <- seq(.5,max_res,by=.1)
     for (r in cluster_res) {
       if (!use_existing_subc) {
-        print(r)
         # run clustering
         # subclusts <- get_subclusters(container,ct,r,min_cells_group=min_cells_group,
         #                              small_clust_action='merge')
@@ -826,7 +824,6 @@ get_subclust_de_hmaps <- function(container,all_ctypes,all_res) {
 
   for (j in 1:length(all_ctypes)) {
     ctype <- all_ctypes[j]
-    print(ctype)
     res <- all_res[j]
     ct_res <- paste0(ctype,':',as.character(res))
     resolution_name <- paste0('res:',as.character(res))
@@ -894,7 +891,6 @@ get_subclust_umap <- function(container,all_ctypes,all_res,n_col=3) {
   plots_store <- list()
   for (i in 1:length(all_ctypes)) {
     ctype <- all_ctypes[i]
-    print(ctype)
     res <- all_res[i]
     con <- container[["embedding"]]
     ct_res <- paste0(ctype,':',as.character(res))

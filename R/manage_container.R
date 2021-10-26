@@ -188,7 +188,7 @@ identify_sex_metadata <- function(container,y_gene='RPS4Y1',x_gene='XIST') {
   }
 
   if (make_note) {
-    print('Some assignments are ambiguous and are labeled A in the metadata.
+    message('Some assignments are ambiguous and are labeled A in the metadata.
           We recommend correcting these manually or providing the sex metadata when
           instantiating scMinimal.')
   }

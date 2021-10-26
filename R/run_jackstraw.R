@@ -198,7 +198,7 @@ get_fstats_pvals <- function(fstats_real, fstats_shuffled) {
   adj_pvals_no_zero <- adj_pvals[adj_pvals > 0]
   min_nonzero_padj <- min(adj_pvals_no_zero)
   if (min_nonzero_padj > 0.05) {
-    print('Warning: smallest non-zero pvalue > 0.05. Do not trust zero pvalues.')
+    warning('Warning: smallest non-zero pvalue > 0.05. Do not trust zero pvalues.')
   }
 
   return(adj_pvals)
@@ -260,7 +260,6 @@ get_min_sig_genes <- function(container, donor_rank_range, gene_ranks,
       padj_use <- padj[which(padj_factors == as.character(j))]
       num_sig_genes <- c(num_sig_genes, sum(padj_use < thresh))
     }
-    print(num_sig_genes)
     tmp <- as.data.frame(t(c(i,min(num_sig_genes))))
     colnames(tmp) <- colnames(min_per_decomp)
     min_per_decomp <- rbind(min_per_decomp,tmp)

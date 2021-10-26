@@ -240,7 +240,6 @@ run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh
   down_sets_all <- list()
   ctypes_use <- container$experiment_params$ctypes_use
   for (ct in ctypes_use) {
-    print(ct)
     if (method == 'fgsea') {
       fgsea_res <- run_fgsea(container, factor_select=factor_select,
                              ctype=ct, db_use=db_use, signed=signed)
@@ -608,7 +607,6 @@ ht_clusters = function(mat, cl, dend = NULL, col = c("white", "red"),
                        word_cloud_grob_param = list(), fontsize_range = c(4, 16),
                        column_title = NULL, ht_list = NULL, use_raster = TRUE, ...) {
 
-  print(exclude_words)
 
   if(length(col) == 1) col = c("white", rgb(t(col2rgb(col)), maxColorValue = 255))
   col_fun = colorRamp2(seq(0, quantile(mat, 0.95), length = length(col)), col)

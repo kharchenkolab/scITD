@@ -1336,9 +1336,7 @@ plot_dscore_enr <- function(container,factor_use,meta_var) {
                     stats    = myranks,
                     minSize  = 0,
                     maxSize  = 5000)
-
-  print(fgseaRes)
-
+  
   plt_lst <- list()
   for (i in 1:length(meta_vals)) {
     plt <- fgsea::plotEnrichment(mypaths[[meta_vals[i]]],

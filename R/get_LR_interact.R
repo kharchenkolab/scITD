@@ -86,7 +86,6 @@ prep_LR_interact <- function(container, lr_pairs, norm_method='trim', scale_fact
   # Choose a set of soft-thresholding powers
   powers = c(c(1:10), seq(from = 12, to=20, by=2))
   for (ct in container$experiment_params$ctypes_use) {
-    print(ct)
 
     datExpr <- container$scale_pb_extra[[ct]]
 
@@ -585,7 +584,7 @@ plot_multi_module_enr <- function(container, ctypes, modules, sig_thresh=0.05, d
   # myres2 <- myres2[rowSums(myres2<sig_thresh)>0,,drop=FALSE]
 
   if (nrow(myres2)<1) {
-    print('no significant gene sets')
+    message('no significant gene sets')
     return(NULL)
   }
 

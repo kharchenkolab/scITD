@@ -48,38 +48,38 @@ form_tensor <- function(container, donor_min_cells=5, norm_method='trim',
                         var_scale_power=.5, custom_genes=NULL, verbose=TRUE) {
   # parse data by cell type
   if (verbose) {
-    print('parsing data matrix by cell/tissue type...')
+    message('parsing data matrix by cell/tissue type...')
   }
   container <- parse_data_by_ctypes(container)
 
   # clean counts
   if (verbose) {
-    print('cleaning data...')
+    message('cleaning data...')
   }
   container <- clean_data(container, donor_min_cells=donor_min_cells)
 
   # collapse data to donor-level
   if (verbose) {
-    print('collapsing count matrices from cells to donors (aka pseudobulk operation)...')
+    message('collapsing count matrices from cells to donors (aka pseudobulk operation)...')
   }
   container <- get_pseudobulk(container)
 
   # normalize data
   if (verbose) {
-    print('normalizing data...')
+    message('normalizing data...')
   }
   container <- normalize_pseudobulk(container, method=norm_method, scale_factor=scale_factor)
 
   # get normalized variances
   if (verbose) {
-    print('calculating gene overdispersion factors...')
+    message('calculating gene overdispersion factors...')
   }
   container <- get_normalized_variance(container)
 
   # reduce number of genes to use in the tensor
   if (!is.null(custom_genes)) {
     if (verbose) {
-      print('reducing tensor to selected genes...')
+      message('reducing tensor to selected genes...')
     }
     # check custom genes all in tensor
     all_genes <- colnames(container$scMinimal_ctype[[1]]$pseudobulk)
@@ -92,7 +92,7 @@ form_tensor <- function(container, donor_min_cells=5, norm_method='trim',
   } else {
     # select highly variable genes
     if (verbose) {
-      print('selecting highly variable genes from each cell type...')
+      message('selecting highly variable genes from each cell type...')
     }
     container <- get_ctype_vargenes(container, method=vargenes_method, thresh=vargenes_thresh)
   }
@@ -100,7 +100,7 @@ form_tensor <- function(container, donor_min_cells=5, norm_method='trim',
   if (scale_var) {
     # scale gene expression
     if (verbose) {
-      print('scaling variance...')
+      message('scaling variance...')
     }
     container <- scale_variance(container,var_scale_power=var_scale_power)
   }
@@ -108,19 +108,19 @@ form_tensor <- function(container, donor_min_cells=5, norm_method='trim',
   # apply batch correction if specified
   if (!is.null(batch_var)) {
     if (verbose) {
-      print('applying ComBat for batch correction...')
+      message('applying ComBat for batch correction...')
     }
     container <- apply_combat(container,batch_var=batch_var)
   }
 
   # build the tensor
   if (verbose) {
-    print('forming tensor...')
+    message('forming tensor...')
   }
   container <- stack_tensor(container)
 
   if (verbose) {
-    print('Complete!')
+    message('Complete!')
   }
 
   return(container)
@@ -182,13 +182,13 @@ clean_data <- function(container, donor_min_cells=5) {
     ctype_sub <- subset_scMinimal(ctype_sub, donors_use=donors_in_all)
   }
 
-  print(paste0('Keeping ',length(donors_in_all),' donors. All donors have at least ',donor_min_cells,' cells in each cell type included.'))
+  message(paste0('Keeping ',length(donors_in_all),' donors. All donors have at least ',donor_min_cells,' cells in each cell type included.'))
 
   # get total num donors
   total_num_donors <- length(unique(container$scMinimal_full$metadata$donors))
 
   if (length(donors_in_all) < (.5*total_num_donors)) {
-    print('Consider using fewer cell types or reducing the donor_min_cells parameter to include more donors.')
+    message('Consider using fewer cell types or reducing the donor_min_cells parameter to include more donors.')
   }
 
   return(container)
