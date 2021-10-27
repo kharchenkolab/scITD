@@ -42,3 +42,7 @@ plots placed in container$plots$num_batch_factors slot
 \description{
 Plot factor-batch associations for increasing number of donor factors
 }
+\examples{
+test_container <- get_num_batch_ranks(test_container, donor_ranks_test=c(2:4), 
+gene_ranks=10, batch_var='lanes', thresh=0.5, tucker_type='regular', rotation_type='hybrid')
+}

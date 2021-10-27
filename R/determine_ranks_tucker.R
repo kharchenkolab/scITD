@@ -162,7 +162,6 @@ determine_ranks_tucker <- function(container, max_ranks_test,
 #' @param shuffle_tensor logical Set to TRUE to shuffle values within the tensor
 #'
 #' @return reconstruction errors
-#' @export
 get_reconstruct_errors_svd <- function(tnsr, max_ranks_test, shuffle_tensor) {
   tnsr <- rTensor::as.tensor(tnsr)
 
@@ -206,7 +205,6 @@ get_reconstruct_errors_svd <- function(tnsr, max_ranks_test, shuffle_tensor) {
 #' @param mode_to_show numeric The mode to plot the results for
 #'
 #' @return plot
-#' @export
 plot_rec_errors_line_svd <- function(real,shuffled,mode_to_show) {
   plot_res <- data.frame(matrix(ncol=2,nrow=0))
   for (i in 1:length(shuffled)) {
@@ -255,7 +253,6 @@ plot_rec_errors_line_svd <- function(real,shuffled,mode_to_show) {
 #' @param mode_to_show numeric The mode to plot the results for
 #'
 #' @return plot
-#' @export
 plot_rec_errors_bar_svd <- function(real,shuffled,mode_to_show) {
   plot_res <- data.frame(matrix(ncol=2,nrow=0))
   for (i in 1:length(shuffled)) {
@@ -327,6 +324,10 @@ plot_rec_errors_bar_svd <- function(real,shuffled,mode_to_show) {
 #'
 #' @return plots placed in container$plots$num_batch_factors slot
 #' @export
+#' 
+#' @examples
+#' test_container <- get_num_batch_ranks(test_container, donor_ranks_test=c(2:4), 
+#' gene_ranks=10, batch_var='lanes', thresh=0.5, tucker_type='regular', rotation_type='hybrid')
 get_num_batch_ranks <- function(container, donor_ranks_test, gene_ranks, batch_var, thresh=0.5,
                                 tucker_type='regular',rotation_type='hybrid') {
   n_ctypes <- length(container$experiment_params$ctypes_use)
