@@ -43,6 +43,7 @@ Imports:
     stats,
     Rmisc,
     ggpubr,
+    msigdbr (>= 7.4.1),
     NMF
 Suggests:
     methods,
@@ -53,7 +54,6 @@ Suggests:
     grid,
     ssvd,
     sccore,
-    msigdbr (>= 7.4.1),
     simplifyEnrichment,
     WGCNA,
     cowplot,
