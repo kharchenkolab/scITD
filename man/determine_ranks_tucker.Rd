@@ -65,8 +65,3 @@ container$plots$rank_determination_plot
 \description{
 Rank determination by svd on the tensor unfolded along each mode.
 }
-\examples{
-test_container <- determine_ranks_tucker(test_container, max_ranks_test=c(3,5),
-shuffle_level='tensor', num_iter=4, norm_method='trim', scale_factor=10000, 
-scale_var=TRUE, var_scale_power=.5)
-}

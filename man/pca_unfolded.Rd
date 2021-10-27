@@ -19,3 +19,6 @@ container with results of the decomposition in container$tucker_results
 \description{
 Computes singular-value decomposition on the unfolded tensor
 }
+\examples{
+test_container <- pca_unfolded(test_container, 2)
+}

@@ -19,3 +19,6 @@ container with results of the decomposition in container$tucker_results
 \description{
 Computes non-negative matrix factorization on the unfolded tensor
 }
+\examples{
+test_container <- nmf_unfolded(test_container, 2)
+}

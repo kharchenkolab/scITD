@@ -303,13 +303,6 @@ get_ctype_subc_prop_associations <- function(container,ctype,res,n_col=2,alt_nam
   donor_scores <- container$tucker_results[[1]]
   metadata <- scMinimal$metadata
 
-  # # map cell types to numbers temporarily
-  # all_ctypes <- unique(as.character(metadata$ctypes)) # index of this is the mapping
-  # cell_clusters <- sapply(as.character(metadata$ctypes),function(x){
-  #   return(which(all_ctypes %in% x))
-  # })
-  # names(cell_clusters) <- rownames(metadata)
-
   if (!is.null(alt_name)) {
     cell_clusters <- container[["subclusters"]][[alt_name]][[paste0('res:',as.character(res))]]
   } else {
@@ -432,16 +425,6 @@ compute_donor_props <- function(clusts,metadata) {
   donor_props <- donor_props + 1 #adding pseudocount to avoid infinities when make balances
   donor_props <- t(apply(donor_props, 1, function(i) i/sum(i))) # counts -> props
 
-  # # trying norm by total cell numbers again
-  # new_totals <- table(container$scMinimal_full$metadata$donors)
-  # donor_props <- t(sweep(t(donor_props),MARGIN=2,new_totals[rownames(donor_props)],FUN='/'))
-
-  # # to do a trim mean normalization
-  # all_nf <- edgeR::calcNormFactors(t(donor_props))
-  # totals <- rowSums(donor_props)
-  # new_totals <- totals * all_nf
-  # donor_props <- t(sweep(t(donor_props),MARGIN=2,new_totals,FUN='/'))
-
   return(donor_props)
 }
 
@@ -483,17 +466,6 @@ compute_associations <- function(donor_balances, donor_scores, stat_type) {
       tmp <- summary(breg)
       reg_stat <- tmp$coefficients$mean['dscore','Pr(>|z|)']
     } else { # if no proportions, then table has balances instead
-      # # run robust regression
-      # lmres <- MASS::rlm(prop_model, data=tmp, maxit = 200)
-      # lmres <- sfsmisc::f.robftest(lmres)
-      #
-      # # extract regression statistic
-      # if (stat_type == 'fstat') {
-      #   reg_stat <- lmres$statistic
-      # } else if (stat_type == 'adj_pval') {
-      #   reg_stat <- lmres$p.value
-      # }
-
       # use lm
       lmres <- stats::lm(prop_model, data=tmp)
 
@@ -738,7 +710,6 @@ get_subclust_enr_dotplot <- function(container,ctype,res,subtype,factor_use,ctyp
   # limit cells in subclusts to those that we actually have scores for
   donor_scores <- container$tucker_results[[1]]
   cell_intersect <- intersect(names(subclusts),rownames(container$scMinimal_full$metadata))
-  # donor_vec <- container$scMinimal_full$metadata[names(subclusts),'donors']
   donor_vec <- container$scMinimal_full$metadata[cell_intersect,'donors']
   subclusts <- subclusts[cell_intersect]
   subclusts <- subclusts[donor_vec %in% rownames(donor_scores)]
@@ -757,24 +728,15 @@ get_subclust_enr_dotplot <- function(container,ctype,res,subtype,factor_use,ctyp
   donor_props2 <- cbind(donor_props,donor_scores[rownames(donor_props),factor_use])
   colnames(donor_props2)[ncol(donor_props2)] <- 'dsc'
 
-  # # append disease status
-  # meta <- unique(container$scMinimal_full$metadata[,c('donors','Status')])
-  # rownames(meta) <- meta$donors
-  # donor_props2 <- cbind(donor_props2,as.character(meta[rownames(donor_props2),'Status']))
-  # colnames(donor_props2)[ncol(donor_props2)] <- 'Status'
-
   donor_props2 <- as.data.frame(donor_props2)
   donor_props2$dsc <- as.numeric(donor_props2$dsc)
   donor_props2$prop <- as.numeric(donor_props2$prop)
-  # donor_props2$Status <- as.factor(donor_props2$Status)
 
   lmres <- lm(prop~dsc,data=donor_props2)
   line_range <- seq(min(donor_props2$dsc),max(donor_props2$dsc),.001)
   line_dat <- c(line_range*lmres$coefficients[[2]] + lmres$coefficients[[1]])
   line_df <- cbind.data.frame(line_range,line_dat)
-  # colnames(line_df) <- c('myx','myy')
   line_df <- cbind.data.frame(line_df,rep('1',nrow(line_df)))
-  # colnames(line_df) <- c('myx','myy','Status')
   colnames(line_df) <- c('myx','myy')
 
   p <- ggplot(donor_props2,aes(x=dsc,y=prop)) +
@@ -788,22 +750,6 @@ get_subclust_enr_dotplot <- function(container,ctype,res,subtype,factor_use,ctyp
     theme(plot.title = element_text(hjust = 0.5),
           axis.text=element_text(size=12),
           axis.title=element_text(size=14))
-
-  # p <- ggplot(donor_props2,aes(x=dsc,y=prop,color=Status)) +
-  #   geom_point(alpha = 0.5,pch=19,size=2) +
-  #   geom_line(data=line_df,aes(x=myx,y=myy)) +
-  #   xlab(paste0('Factor ',as.character(factor_use),' Donor Score')) +
-  #   ylab(paste0('Proportion of All ',ctype)) +
-  #   ylim(0,1) +
-  #   labs(color = "Status") +
-  #   ggtitle(paste0(ctype,'_',as.character(subtype),' Proportions')) +
-  #   theme_bw() +
-  #   theme(plot.title = element_text(hjust = 0.5),
-  #         axis.text=element_text(size=12),
-  #         axis.title=element_text(size=14)) +
-  #   scale_color_manual(values = c("Healthy" = '#F8766D',
-  #                                 "Managed" = '#00BFC4',
-  #                                 "1" = "black"))
 
   return(p)
 }
@@ -849,8 +795,6 @@ get_subclust_de_hmaps <- function(container,all_ctypes,all_res) {
 
       # get subtype DE results heamap
       myde <- con$getDifferentialGenes(groups=as.factor(subclusts),append.auc=TRUE,z.threshold=0,upregulated.only=TRUE)
-      # subc_de_hmap <- plotDEheatmap_conos(con, groups=as.factor(subclusts), de=myde, container,
-      #                                     row.label.font.size=8, min.auc=.55)
       subc_de_hmap <- plotDEheatmap_conos(con, groups=as.factor(subclusts), de=myde, container,
                                           row.label.font.size=8)
 
@@ -1005,26 +949,7 @@ get_indv_subtype_associations <- function(container, donor_props, factor_select)
     donor_balances <- donor_props[,j,drop=FALSE]
     colnames(donor_balances) <- 'ilr1'
     rownames(donor_balances) <- rownames(subtype)
-
-    # # trying different way to get balances
-    # tmp <- donor_props[,j,drop=FALSE]
-    # subtype <- donor_props[,-j]
-    # subtype <- cbind(subtype,tmp)
-    # donor_balances <- coda.base::coordinates(subtype)
-    # rownames(donor_balances) <- rownames(subtype)
-    # donor_balances <- donor_balances[,ncol(donor_balances),drop=FALSE]
-    # colnames(donor_balances) <- 'ilr1'
-
-    # # trying different package for ILR
-    # tmp <- donor_props[,j,drop=FALSE]
-    # donor_props <- donor_props[,-j]
-    # donor_props <- cbind(donor_props,tmp)
-    # donor_balances <- compositions::ilr(donor_props)
-    # rownames(donor_balances) <- rownames(donor_props)
-    # donor_balances <- donor_balances[,ncol(donor_balances),drop=FALSE]
-    # colnames(donor_balances) <- 'ilr1'
-
-
+    
     # compute regression statistics
     reg_stats <- compute_associations(donor_balances,container$tucker_results[[1]],"adj_pval")
     reg_stats_all[[paste0("K",j,"_")]] <- reg_stats

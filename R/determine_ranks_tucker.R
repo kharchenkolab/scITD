@@ -38,11 +38,6 @@ utils::globalVariables(c("num_ranks", "rec_error", "num_iter", "run_type", "erro
 #' @return the project container with rank determination plot in
 #' container$plots$rank_determination_plot
 #' @export
-#' 
-#' @examples
-#' test_container <- determine_ranks_tucker(test_container, max_ranks_test=c(3,5),
-#' shuffle_level='tensor', num_iter=4, norm_method='trim', scale_factor=10000, 
-#' scale_var=TRUE, var_scale_power=.5)
 determine_ranks_tucker <- function(container, max_ranks_test,
                                    shuffle_level='cells', shuffle_within=NULL,
                                    num_iter=100, batch_var=NULL,

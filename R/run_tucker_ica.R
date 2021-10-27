@@ -261,6 +261,9 @@ get_ctype_exp_var <- function(container, factor_use, ctype) {
 #' @return a list with the first element as the donor scores and the second element
 #' as the corresponding loadings matrix
 #' @export
+#' 
+#' @examples
+#' test_container <- get_one_factor(test_container, factor_select=1)
 get_one_factor <- function(container, factor_select) {
   ldngs <- container$tucker_results[[2]]
 
@@ -285,6 +288,9 @@ get_one_factor <- function(container, factor_select) {
 #'
 #' @return container with results of the decomposition in container$tucker_results
 #' @export
+#' 
+#' @examples
+#' test_container <- pca_unfolded(test_container, 2)
 pca_unfolded <- function(container, ranks) {
   # get tensor data
   tensor_data <- container$tensor_data
@@ -339,6 +345,9 @@ pca_unfolded <- function(container, ranks) {
 #'
 #' @return container with results of the decomposition in container$tucker_results
 #' @export
+#' 
+#' @examples
+#' test_container <- nmf_unfolded(test_container, 2)
 nmf_unfolded <- function(container, ranks) {
   # get tensor data
   tensor_data <- container$tensor_data
@@ -364,7 +373,7 @@ nmf_unfolded <- function(container, ranks) {
   d_unfold <- sweep(d_unfold,MARGIN=2,col_m,FUN='-')
 
   # remove columns that are all 0
-  ndx_keep <- which(d_unfold!=0)
+  ndx_keep <- which(colSums(d_unfold)!=0)
   d_unfold <- d_unfold[,ndx_keep]
 
   nmf_res <- NMF::nmf(d_unfold,ranks)

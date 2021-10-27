@@ -19,3 +19,6 @@ as the corresponding loadings matrix
 \description{
 Get the donor scores and loadings matrix for a single-factor
 }
+\examples{
+test_container <- get_one_factor(test_container, factor_select=1)
+}
