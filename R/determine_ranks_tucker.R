@@ -38,6 +38,11 @@ utils::globalVariables(c("num_ranks", "rec_error", "num_iter", "run_type", "erro
 #' @return the project container with rank determination plot in
 #' container$plots$rank_determination_plot
 #' @export
+#' 
+#' @examples
+#' test_container <- determine_ranks_tucker(test_container, max_ranks_test=c(3,5),
+#' shuffle_level='tensor', num_iter=4, norm_method='trim', scale_factor=10000,
+#' scale_var=TRUE, var_scale_power=.5)
 determine_ranks_tucker <- function(container, max_ranks_test,
                                    shuffle_level='cells', shuffle_within=NULL,
                                    num_iter=100, batch_var=NULL,
@@ -242,6 +247,7 @@ plot_rec_errors_line_svd <- function(real,shuffled,mode_to_show) {
 }
 
 #' Plot reconstruction errors as bar plot for svd method
+#' @importFrom Rmisc %>% summarySE
 #'
 #' @param real list The real reconstruction errors
 #' @param shuffled list The reconstruction errors under null model
@@ -270,7 +276,7 @@ plot_rec_errors_bar_svd <- function(real,shuffled,mode_to_show) {
   plot_res$num_ranks <- as.numeric(as.character(plot_res$num_ranks))
 
   # calculate summary stats
-  suppressWarnings(tgc <- Rmisc::summarySE(plot_res, measurevar="error_diff",
+  suppressWarnings(tgc <- summarySE(plot_res, measurevar="error_diff",
                                            groupvars=c("num_ranks","run_type")))
 
   if (mode_to_show==1) {

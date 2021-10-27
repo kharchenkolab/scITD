@@ -16,7 +16,8 @@ Description: Single-cell Interpretable Tensor Decomposition (scITD) employs the
     loadings matrix is expressed in each donor. Additional methods are implemented
     to aid in selecting an appropriate number of factors and to evaluate stability
     of the decomposition. Additional tools are provided for downstream analysis,
-    including integration of gene set enrichment analysis and ligand-receptor analysis.
+    including integration of gene set enrichment analysis and ligand-receptor analysis. 
+    Tucker, L.R. (1966) <doi:10.1007/BF02289464>. Unkel, S., Hannachi, A., Trendafilov, N. T., & Jolliffe, I. T. (2011) <doi:10.1007/s13253-011-0055-9>. Zhou, G., & Cichocki, A. (2012) <doi:10.2478/v10175-012-0051-4>.
 License: GPL-3
 Encoding: UTF-8
 LazyData: true

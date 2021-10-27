@@ -11,6 +11,9 @@ get_sums(sY, rowSel)
 
 \item{rowSel}{factor The donor that each cell is from}
 }
+\value{
+matrix of summed counts per gene per sample
+}
 \description{
 calculates factor-stratified sums for each column
 }

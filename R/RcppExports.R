@@ -6,13 +6,15 @@
 #' @param sY sparse matrix Gene by cell matrix of counts
 #' @param rowSel numeric The selected rows (genes)
 #' @param ncores numeric The number of cores
+#' 
+#' @return matrix with mean and variance of each gene across samples
+#' @export
+#' 
 #' @examples
 #' library(Matrix)
 #' donor_by_gene <- rbind(c(9,2,1,5), c(3,3,1,2))
 #' donor_by_gene <- Matrix(donor_by_gene, sparse = TRUE)
 #' result <- colMeanVars(donor_by_gene, rowSel = NULL, ncores=1)
-#' 
-#' @export
 colMeanVars <- function(sY, rowSel, ncores = 1L) {
     .Call('_scITD_colMeanVars', PACKAGE = 'scITD', sY, rowSel, ncores)
 }
@@ -21,6 +23,8 @@ colMeanVars <- function(sY, rowSel, ncores = 1L) {
 #'
 #' @param sY sparse matrix Gene by cell matrix of counts
 #' @param rowSel factor The donor that each cell is from
+#' 
+#' @return matrix of summed counts per gene per sample
 #' @export
 get_sums <- function(sY, rowSel) {
     .Call('_scITD_get_sums', PACKAGE = 'scITD', sY, rowSel)

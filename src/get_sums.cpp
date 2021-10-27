@@ -14,6 +14,8 @@ using namespace Rcpp;
 //'
 //' @param sY sparse matrix Gene by cell matrix of counts
 //' @param rowSel factor The donor that each cell is from
+//' 
+//' @return matrix of summed counts per gene per sample
 //' @export
 // [[Rcpp::export]]
 NumericMatrix get_sums(SEXP sY,  IntegerVector rowSel) {
