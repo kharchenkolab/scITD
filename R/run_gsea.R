@@ -384,19 +384,6 @@ plot_gsea_hmap <- function(container,factor_select,thresh) {
   for (k in 1:length(df_list)) {
     res_total <- df_list[[k]]
 
-    # # parse gene set names at first underscore
-    # rownames(res_total) <- sapply(rownames(res_total),function(x) {
-    #   regmatches(x, regexpr("_", x), invert = TRUE)[[1]][[2]]
-    # })
-    #
-    # # cutoff gene set names
-    # tmp_names <- sapply(rownames(res_total),function(x) {
-    #   if (nchar(x) > 42) {
-    #     return(paste0(substr(x,1,40),"..."))
-    #   } else {
-    #     return(x)
-    #   }
-    # })
     tmp_names <- rownames(res_total)
 
     if (k==1) {
@@ -601,13 +588,36 @@ plot_gsea_sub <- function(container,clust_select,thresh=0.05) {
 }
 
 
-# Visualize the similarity matrix and the clustering. From simplifyEnrichment package.
-#'@import grid
-#'@importFrom grDevices col2rgb dev.off pdf rgb
+#' Visualize the similarity matrix and the clustering. Modified from simplifyEnrichment package.
+#' @import grid
+#' @importFrom grDevices col2rgb dev.off pdf rgb
+#'
+#' @param mat A similarity matrix.
+#' @param cl Cluster labels inferred from the similarity matrix, e.g. from `cluster_terms` or `binary_cut`.
+#' @param dend Used internally.
+#' @param col A vector of colors that map from 0 to the 95^th percentile of the similarity values.
+#' @param draw_word_cloud Whether to draw the word clouds.
+#' @param term The full name or the description of the corresponding GO IDs. 
+#' @param min_term Minimal number of functional terms in a cluster. All the clusters
+#' with size less than ``min_term`` are all merged into one separated cluster in the heatmap.
+#' @param order_by_size Whether to reorder clusters by their sizes. The cluster
+#' that is merged from small clusters (size < ``min_term``) is always put to the bottom of the heatmap.
+#' @param exclude_words Words that are excluded in the word cloud.
+#' @param max_words Maximal number of words visualized in the word cloud.
+#' @param word_cloud_grob_param A list of graphic parameters passed to `word_cloud_grob`.
+#' @param fontsize_range The range of the font size. The value should be a numeric vector with length two.
+#' The minimal font size is mapped to word frequency value of 1 and the maximal font size is mapped
+#' to the maximal word frequency. The font size interlopation is linear.
+#' @param column_title Column title for the heatmap.
+#' @param ht_list A list of additional heatmaps added to the left of the similarity heatmap.
+#' @param use_raster Whether to write the heatmap as a raster image.
+#' @param ... other parameters
+#' 
+#' @return list containing a `ComplexHeatmap::HeatmapList-class` object and GO term ordering
 ht_clusters = function(mat, cl, dend = NULL, col = c("white", "red"),
                        draw_word_cloud = simplifyEnrichment:::is_GO_id(rownames(mat)[1]) || !is.null(term),
                        term = NULL, min_term = 5,
-                       order_by_size = FALSE, cluster_slices = FALSE,
+                       order_by_size = FALSE,
                        exclude_words = character(0), max_words = 10,
                        word_cloud_grob_param = list(), fontsize_range = c(4, 16),
                        column_title = NULL, ht_list = NULL, use_raster = TRUE, ...) {
@@ -755,14 +765,23 @@ ht_clusters = function(mat, cl, dend = NULL, col = c("white", "red"),
   return(list(ht,od2))
 }
 
-# From simplifyEnrichment package
+#' Helper function from simplifyEnrichment package
+#' @param ... other parameters
+#'
+#' @return No value is returned.
 stop_wrap = function (...) {
   x = paste0(...)
   x = paste(strwrap(x), collapse = "\n")
   stop(x, call. = FALSE)
 }
 
-# Scale font size. From simplifyEnrichment package
+#' Scale font size. From simplifyEnrichment package
+#'
+#' @param x A numeric vector.
+#' @param rg The range.
+#' @param fs Range of the font size.
+#'
+#' @return A numeric vector.
 scale_fontsize = function(x, rg = c(1, 30), fs = c(4, 16)) {
   k = (fs[2] - fs[1])/(rg[2] - rg[1])
   b = fs[2] - k*rg[2]

@@ -1195,7 +1195,7 @@ plot_subclust_associations <- function(res,n_col=2) {
 
 
 
-#' Plot a heatmap of differential genes
+#' Plot a heatmap of differential genes. Code is modified from Conos package.
 #' @importFrom dplyr %>%
 #'
 #' @param con conos (or p2) object

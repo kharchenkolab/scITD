@@ -376,30 +376,13 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
     var_annot <- NULL
   }
 
-  # color_lim <- stats::quantile(as.matrix(abs(tmp_casted_num)), c(.9999999))
   color_lim <- stats::quantile(as.matrix(abs(tmp_casted_num)), c(.99))
-  # color_lim <- stats::quantile(as.matrix(abs(tmp_casted_num)), c(.95))
   col_fun = colorRamp2(c(-color_lim, 0, color_lim), c("blue", "white", "red"))
 
 
   hm_legends[[1]] <- Legend(col_fun = col_fun, title = "loading",
                             grid_height = unit(1, "mm"), grid_width = unit(3, "mm"),
                             title_position = "leftcenter-rot")
-
-  # # 'median' clustering method works well
-  # hm_list <- Heatmap(tmp_casted_num, show_row_dend = FALSE, show_column_dend = FALSE,
-  #                    name = "loading", show_row_names = display_genes,
-  #                    column_names_gp = gpar(fontsize = 12), cluster_columns = FALSE,
-  #                    clustering_method_rows = clust_method,
-  #                    row_names_side = "left", col=col_fun,
-  #                    column_title = paste0('Factor ', factor_select),
-  #                    column_title_gp = gpar(fontsize = 20, fontface = "bold"),
-  #                    row_title = rt, row_title_gp = gpar(fontsize = 14), border = TRUE,
-  #                    row_labels = convert_gn(container,rownames(tmp_casted_num)),
-  #                    right_annotation = gene_callouts, top_annotation=var_annot,
-  #                    show_heatmap_legend = FALSE,
-  #                    width = unit(10, "cm"),
-  #                    height = unit(14, "cm")) #used to use w=10, h=20, or 6.75, 20 for combo fig. 10,14 most recently
 
   if (!is.null(h_w)) {
     hm_list <- Heatmap(tmp_casted_num, show_row_dend = FALSE, show_column_dend = FALSE,
@@ -815,7 +798,6 @@ render_multi_plots <- function(container,data_type,max_cols=3) {
     } else if (num_bottom==3) {
       bottom_row <- list(NULL,grob_lst[[num_plots-2]],grob_lst[[num_plots-1]],grob_lst[[num_plots]],NULL)
       bottom_row <- cowplot::plot_grid(plotlist=bottom_row, ncol=4, rel_widths=c((1/4)/2,(1/4),(1/4),(1/4),(1/4)/2))
-      # fig <- cowplot::plot_grid(top_rows, bottom_row, ncol=1, rel_heights=c(num_rows,1),align = "v")
       fig <- cowplot::plot_grid(top_rows, bottom_row, ncol=1,align = "v")
     } else {
       fig <- top_rows
