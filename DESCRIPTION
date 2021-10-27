@@ -43,7 +43,7 @@ Imports:
     stats,
     Rmisc,
     ggpubr,
-    msigdbr (>= 7.4.1),
+    msigdbr,
     NMF
 Suggests:
     methods,
