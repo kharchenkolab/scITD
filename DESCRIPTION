@@ -44,6 +44,7 @@ Imports:
     Rmisc,
     ggpubr,
     msigdbr,
+    sccore,
     NMF
 Suggests:
     methods,
@@ -53,7 +54,6 @@ Suggests:
     coda.base,
     grid,
     ssvd,
-    sccore,
     simplifyEnrichment,
     WGCNA,
     cowplot,
