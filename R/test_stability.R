@@ -30,7 +30,7 @@ utils::globalVariables(c("ldngs", "dscores"))
 run_stability_analysis <- function(container, ranks, tucker_type='regular',
                                    rotation_type='hybrid',  sparsity=sqrt(2),
                                    subset_type='subset', sub_prop=0.75,
-                                   n_iterations=100, n.cores=container$experiment_params$ncores) {
+                                   n_iterations=100, ncores=container$experiment_params$ncores) {
 
   ## run tucker with the above parameters in case they changed them
   container <- run_tucker_ica(container, ranks = ranks,
@@ -79,7 +79,7 @@ run_stability_analysis <- function(container, ranks, tucker_type='regular',
 
     return(list(d_max,l_max))
 
-  }, mc.preschedule=TRUE, n.cores=container$experiment_params$ncores, progress=TRUE)
+  }, mc.preschedule=TRUE, n.cores=ncores, progress=TRUE)
 
   stability_results <- do.call(rbind.data.frame, res_list)
 

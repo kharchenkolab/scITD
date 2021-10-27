@@ -15,7 +15,7 @@
 #'
 #' @return data.frame of the fgsea results (including non-significant results)
 #' @export
-run_fgsea <- function(container, factor_select, ctype, db_use="GO", signed=TRUE, reset_other_factor_plots, ncores=container$experiment_params$ncores) {
+run_fgsea <- function(container, factor_select, ctype, db_use="GO", signed=TRUE, ncores=container$experiment_params$ncores) {
   donor_scores <- container$tucker_results[[1]]
 
   # select mean exp data for one cell type

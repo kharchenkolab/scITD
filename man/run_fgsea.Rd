@@ -10,7 +10,6 @@ run_fgsea(
   ctype,
   db_use = "GO",
   signed = TRUE,
-  reset_other_factor_plots,
   ncores = container$experiment_params$ncores
 )
 }

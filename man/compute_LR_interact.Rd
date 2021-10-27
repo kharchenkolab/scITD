@@ -10,7 +10,6 @@ compute_LR_interact(
   sig_thresh = 0.05,
   percentile_exp_rec = 0.75,
   add_ld_fact_sig = TRUE,
-  reset_other_factor_plots,
   ncores = container$experiment_params$ncores
 )
 }

@@ -159,7 +159,7 @@ get_gene_modules <- function(container,sft_thresh) {
 #' @return The results heatmap(s)
 #' @export
 compute_LR_interact <- function(container, lr_pairs, sig_thresh=0.05,
-                                percentile_exp_rec=0.75, add_ld_fact_sig=TRUE, reset_other_factor_plots, 
+                                percentile_exp_rec=0.75, add_ld_fact_sig=TRUE, 
                                 ncores=container$experiment_params$ncores) {
   all_eg <- container[["module_eigengenes"]]
   all_lig <- unique(lr_pairs[,1])

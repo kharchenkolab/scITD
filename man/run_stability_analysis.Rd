@@ -15,7 +15,7 @@ run_stability_analysis(
   subset_type = "subset",
   sub_prop = 0.75,
   n_iterations = 100,
-  n.cores = container$experiment_params$ncores
+  ncores = container$experiment_params$ncores
 )
 }
 \arguments{
