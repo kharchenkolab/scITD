@@ -41,7 +41,8 @@ Imports:
     edgeR,
     sva,
     stats,
-    Rmisc
+    Rmisc,
+    ggpubr
 Suggests:
     methods,
     knitr,
@@ -62,7 +63,6 @@ Suggests:
     rlang,
     AnnotationDbi,
     GO.db,
-    ggpubr,
     conos,
     pagoda2,
     betareg
