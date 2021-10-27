@@ -20,3 +20,6 @@ the enrichment plots
 \description{
 Compute enrichment of categorical variables at either end of a factor
 }
+\examples{
+fig <- plot_dscore_enr(test_container, factor_use=1, meta_var='lanes')
+}

@@ -14,6 +14,10 @@
 #'
 #' @return scMinimal object
 #' @export
+#' 
+#' @examples
+#' scMinimal <- instantiate_scMinimal(count_data=test_container$scMinimal_full$count_data,
+#' meta_data=test_container$scMinimal_full$metadata)
 instantiate_scMinimal <- function(count_data, meta_data, metadata_cols=NULL, metadata_col_nm=NULL) {
   scMinimal <- new.env()
   scMinimal$count_data <- count_data
@@ -88,6 +92,12 @@ seurat_to_scMinimal <- function(seurat_obj, metadata_cols=NULL, metadata_col_nm=
 #'
 #' @return a subsetted scMinimal object
 #' @export
+#' 
+#' @examples
+#' cell_names <- colnames(test_container$scMinimal_full$count_data)
+#' cells_sub <- sample(cell_names,40)
+#' scMinimal <- subset_scMinimal(test_container$scMinimal_full,
+#' cells_use=cells_sub)
 subset_scMinimal <- function(scMinimal, ctypes_use=NULL,cells_use=NULL,
                              donors_use=NULL, genes_use=NULL, in_place=TRUE) {
   count_data <- scMinimal$count_data

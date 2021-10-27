@@ -539,7 +539,6 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
 #' @param ctypes character The cell type corresponding to each loading
 #'
 #' @return a loadings matrix with dimensions of genes by cell types
-#' @export
 reshape_loadings <- function(ldngs_row,genes,ctypes) {
   # create df with genes ctype and value
   tmp <- cbind(ctypes,genes,ldngs_row)
@@ -568,7 +567,6 @@ reshape_loadings <- function(ldngs_row,genes,ctypes) {
 #' @param tmp_casted_num matrix The gene by cell type loadings matrix
 #'
 #' @return list of the logical vectors for each pathway
-#' @export
 get_gene_set_vectors <- function(container,gene_sets,tmp_casted_num) {
   m_df = msigdbr::msigdbr(species = "Homo sapiens")
   my_pathways = split(m_df$gene_symbol, f = m_df$gs_name)
@@ -591,7 +589,6 @@ get_gene_set_vectors <- function(container,gene_sets,tmp_casted_num) {
 #' as they appear in the loadings matrix
 #'
 #' @return a list of pvalues for each gene in each cell type
-#' @export
 get_significance_vectors <- function(container, factor_select, ctypes) {
   # parse the gene significance results to get only gene_ctype combos for factor of interest
   padj <- container$gene_score_associations
@@ -711,6 +708,9 @@ get_callouts_annot <- function(container, tmp_casted_num, factor_select, sig_thr
 #'
 #' @return the project container with the list of plots placed in container$plots$all_lds_plots
 #' @export
+#' 
+#' @examples
+#' test_container <- get_all_lds_factor_plots(test_container)
 get_all_lds_factor_plots <- function(container, use_sig_only=FALSE, nonsig_to_zero=FALSE, annot='none',
                                      pathways_list=NULL, sim_de_donor_group=NULL,
                                      sig_thresh=0.05, display_genes=FALSE,
@@ -757,6 +757,10 @@ get_all_lds_factor_plots <- function(container, use_sig_only=FALSE, nonsig_to_ze
 #'
 #' @return the multi-plot figure
 #' @export
+#' 
+#' @examples
+#' test_container <- get_all_lds_factor_plots(test_container)
+#' fig <- render_multi_plots(test_container, data_type='loadings')
 render_multi_plots <- function(container,data_type,max_cols=3) {
   # if (!(max_cols == 2 || max_cols == 3)) {
   #   stop('max_cols can only be set to 2 or 3')
@@ -842,6 +846,10 @@ render_multi_plots <- function(container,data_type,max_cols=3) {
 #' @return the project container with the plot in the slot
 #' container$plots$donor_sig_genes$Factor#
 #' @export
+#' 
+#' @examples
+#' test_container <- plot_donor_sig_genes(test_container, factor_select=1,
+#' top_n_per_ctype=2)
 plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype,
                                  ctypes_use=NULL, show_donor_labels=FALSE,
                                  additional_meta=NULL, add_genes=NULL) {
@@ -912,9 +920,12 @@ plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype,
 
   colnames(donor_unfold) <- gn_ctype_cnames
   rownames(donor_unfold) <- donor_nm
-
-  # ## testing out scaling the data to unit variance
-  # donor_unfold <- scale(donor_unfold)
+  
+  # check if there were no genes passing significance threshold
+  if (length(genes_plot)==0) {
+    warning("There are no significant genes for this factor.")
+    return(container)
+  }
 
   # subset data to just genes to plot
   donor_unfold_sub <- donor_unfold[,genes_plot]
@@ -1018,7 +1029,17 @@ plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype,
 #' @param use_text logical If TRUE, then displays correlation coefficients in cells
 #' (default=TRUE)
 #'
+#' @return No return value, as the resulting plots are drawn
 #' @export
+#' 
+#' @examples
+#' test_container <- run_tucker_ica(test_container, ranks=c(2,4),
+#' tucker_type='regular', rotation_type='hybrid')
+#' tucker_res1 <- test_container$tucker_results
+#' test_container <- run_tucker_ica(test_container, ranks=c(2,4),
+#' tucker_type='regular', rotation_type='ica_dsc')
+#' tucker_res2 <- test_container$tucker_results
+#' compare_decompositions(tucker_res1,tucker_res2,c('hybrid_method','ica_method'))
 compare_decompositions <- function(tucker_res1,tucker_res2,decomp_names,meta_anno1=NULL,
                                    meta_anno2=NULL,use_text=TRUE) {
   ## first get donor scores comparison
@@ -1320,6 +1341,9 @@ plot_scores_by_meta <- function(container,meta_var) {
 #'
 #' @return the enrichment plots
 #' @export
+#' 
+#' @examples
+#' fig <- plot_dscore_enr(test_container, factor_use=1, meta_var='lanes')
 plot_dscore_enr <- function(container,factor_use,meta_var) {
   meta <- unique(container$scMinimal_full$metadata[,c('donors',meta_var)])
   rownames(meta) <- meta$donors

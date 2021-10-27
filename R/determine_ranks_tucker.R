@@ -11,8 +11,7 @@ utils::globalVariables(c("num_ranks", "rec_error", "num_iter", "run_type", "erro
 #' @param max_ranks_test numeric Vector of length 2 specifying the maximum number of
 #' donor and gene ranks to test
 #' @param shuffle_level character Either "cells" to shuffle cell-donor linkages or
-#' "tensor" to shuffle values within the tensor. Currently "tensor" only works with
-#' the svd method (default="cells")
+#' "tensor" to shuffle values within the tensor (default="cells")
 #' @param shuffle_within character A metadata variable to shuffle cell-donor linkages
 #' within (default=NULL)
 #' @param num_iter numeric Number of null iterations (default=100)
@@ -35,11 +34,15 @@ utils::globalVariables(c("num_ranks", "rec_error", "num_iter", "run_type", "erro
 #' dependence is taken into account) to the exponent specified here.
 #' If NULL, uses var_scale_power from container$experiment_params. (default=.5)
 #' @param seed numeric Seed passed to set.seed() (default=container$experiment_params$rand_seed)
-#' @param ncores numeric The number of cores to use (default=container$experiment_params$ncores)
 #'
 #' @return the project container with rank determination plot in
 #' container$plots$rank_determination_plot
 #' @export
+#' 
+#' @examples
+#' test_container <- determine_ranks_tucker(test_container, max_ranks_test=c(3,5),
+#' shuffle_level='tensor', num_iter=4, norm_method='trim', scale_factor=10000, 
+#' scale_var=TRUE, var_scale_power=.5)
 determine_ranks_tucker <- function(container, max_ranks_test,
                                    shuffle_level='cells', shuffle_within=NULL,
                                    num_iter=100, batch_var=NULL,
@@ -47,8 +50,7 @@ determine_ranks_tucker <- function(container, max_ranks_test,
                                    scale_factor=10000,
                                    scale_var=TRUE,
                                    var_scale_power=.5,
-                                   seed=container$experiment_params$rand_seed,
-                                   ncores=container$experiment_params$ncores) {
+                                   seed=container$experiment_params$rand_seed) {
 
   # check if run tensor formation yet...
   if (is.null(container$tensor_data)) {
@@ -58,9 +60,6 @@ determine_ranks_tucker <- function(container, max_ranks_test,
   # set random seed
   RNGkind("L'Ecuyer-CMRG")
   set.seed(seed)
-
-  # extract needed inputs from experiment parameters
-  ## ncores <- container$experiment_params$ncores
 
   # generate reconstruction errors under the null condition
   null_res <- lapply(1:num_iter, function(x) {

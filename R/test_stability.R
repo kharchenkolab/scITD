@@ -27,6 +27,11 @@ utils::globalVariables(c("ldngs", "dscores"))
 #' container$plots$stability_plot_dsc and the loadings stability in
 #' container$plots$stability_plot_lds
 #' @export
+#' 
+#' @examples
+#' test_container <- run_stability_analysis(test_container, ranks=c(2,4),
+#' tucker_type='regular', rotation_type='hybrid', subset_type='subset', 
+#' sub_prop=0.75, n_iterations=5, ncores=1)
 run_stability_analysis <- function(container, ranks, tucker_type='regular',
                                    rotation_type='hybrid',  sparsity=sqrt(2),
                                    subset_type='subset', sub_prop=0.75,

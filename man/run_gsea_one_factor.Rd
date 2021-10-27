@@ -12,7 +12,8 @@ run_gsea_one_factor(
   db_use = "GO",
   signed = TRUE,
   reset_other_factor_plots = FALSE,
-  draw_plot = TRUE
+  draw_plot = TRUE,
+  ncores = container$experiment_params$ncores
 )
 }
 \arguments{
@@ -37,6 +38,8 @@ Currently only works with fgsea method (default=TRUE)}
 \item{reset_other_factor_plots}{logical Set to TRUE to set all other gsea plots to NULL (default=FALSE)}
 
 \item{draw_plot}{logical Set to TRUE to show the plot. Plot is stored regardless. (default=TRUE)}
+
+\item{ncores}{numeric The number of cores to use (default=container$experiment_params$ncores)}
 }
 \value{
 a heatmap plot of the gsea results in the slot
@@ -44,4 +47,8 @@ container$plots$gsea$FactorX
 }
 \description{
 Run gsea separately for all cell types of one specified factor
+}
+\examples{
+test_container <- run_gsea_one_factor(test_container, factor_select=1,
+method="fgsea", thresh=0.05, db_use="Hallmark", signed=TRUE)
 }

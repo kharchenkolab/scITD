@@ -21,6 +21,10 @@ utils::globalVariables(c("donor_rank", "min_sig"))
 #'
 #' @return the project container with adjusted pvalues in container$gene_score_associations
 #' @export
+#' 
+#' @examples
+#' test_container <- run_jackstraw(test_container, ranks=c(2,4), n_fibers=2, n_iter=10,
+#' tucker_type='regular', rotation_type='hybrid', ncores=1)
 run_jackstraw <- function(container, ranks, n_fibers=100, n_iter=500,
                           tucker_type='regular', rotation_type='hybrid', 
                           seed=container$experiment_params$rand_seed, ncores=container$experiment_params$ncores) {
@@ -219,9 +223,9 @@ get_fstats_pvals <- function(fstats_real, fstats_shuffled) {
 #' @param rotation_type character Set to 'hybrid' to perform hybrid rotation on resulting donor factor
 #' matrix and loadings. Otherwise set to 'ica_lds' to perform ica rotation on loadings or
 #' ica_dsc to perform ica on donor scores. (default='hybrid')
-#' @param n_fibers numeric The number of fibers the randomly shuffle in each iteration
+#' @param n_fibers numeric The number of fibers the randomly shuffle in each jackstraw iteration
 #' (default=100)
-#' @param n_iter numeric The number of shuffling iterations to complete (default=500)
+#' @param n_iter numeric The number of jackstraw shuffling iterations to complete (default=500)
 #' @param n.cores Number of cores to use in get_lm_pvals() (default = container$experiment_params$ncores)
 #'
 #' @param thresh numeric Pvalue threshold for significant genes in calculating the
@@ -231,6 +235,10 @@ get_fstats_pvals <- function(fstats_real, fstats_shuffled) {
 #' each decomposition with varying number of donor factors located in
 #' container$plots$min_sig_genes
 #' @export
+#' 
+#' @examples
+#' test_container <- get_min_sig_genes(test_container, donor_rank_range=c(2:4),
+#' gene_ranks=4, tucker_type='regular', rotation_type='hybrid', n.cores=1)
 get_min_sig_genes <- function(container, donor_rank_range, gene_ranks,
                               use_lm=TRUE, tucker_type='regular',
                               rotation_type='hybrid', n_fibers=100, n_iter=500,
@@ -246,7 +254,8 @@ get_min_sig_genes <- function(container, donor_rank_range, gene_ranks,
     } else {
       container <- run_jackstraw(container, ranks=c(i,gene_ranks),
                                  n_fibers=n_fibers, n_iter=n_iter,
-                                 tucker_type=tucker_type, rotation_type=rotation_type)
+                                 tucker_type=tucker_type, rotation_type=rotation_type,
+                                 ncores=n.cores)
     }
 
     padj <- container$gene_score_associations

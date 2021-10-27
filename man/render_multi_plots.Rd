@@ -22,3 +22,7 @@ the multi-plot figure
 \description{
 Creates a figure of all loadings plots arranged
 }
+\examples{
+test_container <- get_all_lds_factor_plots(test_container)
+fig <- render_multi_plots(test_container, data_type='loadings')
+}

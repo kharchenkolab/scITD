@@ -14,7 +14,6 @@
 #' @param ncores numeric The number of cores to use (default=container$experiment_params$ncores)
 #'
 #' @return data.frame of the fgsea results (including non-significant results)
-#' @export
 run_fgsea <- function(container, factor_select, ctype, db_use="GO", signed=TRUE, ncores=container$experiment_params$ncores) {
   donor_scores <- container$tucker_results[[1]]
 
@@ -112,7 +111,6 @@ run_fgsea <- function(container, factor_select, ctype, db_use="GO", signed=TRUE,
 #' one database can be used. (default="GO")
 #'
 #' @return pvalues for all tested gene sets
-#' @export
 run_hypergeometric_gsea <- function(container, factor_select, ctype, up_down,
                                      thresh=0.05, db_use="GO") {
 
@@ -224,12 +222,18 @@ run_hypergeometric_gsea <- function(container, factor_select, ctype, up_down,
 #' Currently only works with fgsea method (default=TRUE)
 #' @param reset_other_factor_plots logical Set to TRUE to set all other gsea plots to NULL (default=FALSE)
 #' @param draw_plot logical Set to TRUE to show the plot. Plot is stored regardless. (default=TRUE)
+#' @param ncores numeric The number of cores to use (default=container$experiment_params$ncores)
 #'
 #' @return a heatmap plot of the gsea results in the slot
 #' container$plots$gsea$FactorX
 #' @export
+#' 
+#' @examples
+#' test_container <- run_gsea_one_factor(test_container, factor_select=1,
+#' method="fgsea", thresh=0.05, db_use="Hallmark", signed=TRUE)
 run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh=0.05,
-                                db_use="GO", signed=TRUE, reset_other_factor_plots=FALSE, draw_plot=TRUE) {
+                                db_use="GO", signed=TRUE, reset_other_factor_plots=FALSE,
+                                draw_plot=TRUE, ncores=container$experiment_params$ncores) {
 
   if (reset_other_factor_plots) {
     container$plots$gsea <- NULL
@@ -242,7 +246,7 @@ run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh
   for (ct in ctypes_use) {
     if (method == 'fgsea') {
       fgsea_res <- run_fgsea(container, factor_select=factor_select,
-                             ctype=ct, db_use=db_use, signed=signed)
+                             ctype=ct, db_use=db_use, signed=signed, ncores=ncores)
 
       # remove results where NES is na
       fgsea_res <- fgsea_res[!is.na(fgsea_res$NES),]
@@ -277,7 +281,9 @@ run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh
   myplot <- plot_gsea_hmap(container,factor_select,thresh)
   container$plots$gsea[[as.character(factor_select)]] <- myplot
 
-  if (draw_plot) {
+  if (is.null(myplot)) {
+    warning('No significant gene sets')
+  } else if (draw_plot) {
     draw(myplot,heatmap_legend_side = "left",newpage=TRUE)
   }
 
@@ -331,7 +337,6 @@ get_intersecting_pathways <- function(container, factor_select, these_ctypes_onl
 #' @param thresh numeric Pvalue threshold to use for including gene sets in the heatmap
 #'
 #' @return the heatmap plot
-#' @export
 plot_gsea_hmap <- function(container,factor_select,thresh) {
   factor_name <- paste0('Factor',as.character(factor_select))
   gsea_res <- container$gsea_results[[as.character(factor_select)]]

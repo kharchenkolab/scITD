@@ -9,6 +9,9 @@
 #'
 #' @return the project container with the metadata associations in container$meta_associations
 #' @export
+#' 
+#' @examples
+#' test_container <- get_meta_associations(test_container, vars_test='lanes', stat_use='pval')
 get_meta_associations <- function(container, vars_test, stat_use='rsq') {
   # check that tucker has already been run
   if (is.null(container$tucker_results)) {

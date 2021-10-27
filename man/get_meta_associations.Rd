@@ -21,3 +21,6 @@ the project container with the metadata associations in container$meta_associati
 \description{
 Get metadata associations with all factors
 }
+\examples{
+test_container <- get_meta_associations(test_container, vars_test='lanes', stat_use='pval')
+}

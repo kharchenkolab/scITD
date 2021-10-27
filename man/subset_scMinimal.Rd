@@ -35,3 +35,9 @@ a subsetted scMinimal object
 \description{
 Subset an scMinimal object by specified genes, donors, cells, or cell types
 }
+\examples{
+cell_names <- colnames(test_container$scMinimal_full$count_data)
+cells_sub <- sample(cell_names,40)
+scMinimal <- subset_scMinimal(test_container$scMinimal_full,
+cells_use=cells_sub)
+}

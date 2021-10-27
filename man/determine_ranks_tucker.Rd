@@ -15,8 +15,7 @@ determine_ranks_tucker(
   scale_factor = 10000,
   scale_var = TRUE,
   var_scale_power = 0.5,
-  seed = container$experiment_params$rand_seed,
-  ncores = container$experiment_params$ncores
+  seed = container$experiment_params$rand_seed
 )
 }
 \arguments{
@@ -27,8 +26,7 @@ for each cell type as well as results and plots from all analyses}
 donor and gene ranks to test}
 
 \item{shuffle_level}{character Either "cells" to shuffle cell-donor linkages or
-"tensor" to shuffle values within the tensor. Currently "tensor" only works with
-the svd method (default="cells")}
+"tensor" to shuffle values within the tensor (default="cells")}
 
 \item{shuffle_within}{character A metadata variable to shuffle cell-donor linkages
 within (default=NULL)}
@@ -59,8 +57,6 @@ dependence is taken into account) to the exponent specified here.
 If NULL, uses var_scale_power from container$experiment_params. (default=.5)}
 
 \item{seed}{numeric Seed passed to set.seed() (default=container$experiment_params$rand_seed)}
-
-\item{ncores}{numeric The number of cores to use (default=container$experiment_params$ncores)}
 }
 \value{
 the project container with rank determination plot in
@@ -68,4 +64,9 @@ container$plots$rank_determination_plot
 }
 \description{
 Rank determination by svd on the tensor unfolded along each mode.
+}
+\examples{
+test_container <- determine_ranks_tucker(test_container, max_ranks_test=c(3,5),
+shuffle_level='tensor', num_iter=4, norm_method='trim', scale_factor=10000, 
+scale_var=TRUE, var_scale_power=.5)
 }

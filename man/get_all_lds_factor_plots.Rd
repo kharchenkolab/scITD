@@ -73,3 +73,6 @@ the project container with the list of plots placed in container$plots$all_lds_p
 \description{
 Generate loadings heatmaps for all factors
 }
+\examples{
+test_container <- get_all_lds_factor_plots(test_container)
+}

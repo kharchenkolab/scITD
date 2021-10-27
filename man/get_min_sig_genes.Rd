@@ -35,10 +35,10 @@ with sparsity constraints (default='regular')}
 matrix and loadings. Otherwise set to 'ica_lds' to perform ica rotation on loadings or
 ica_dsc to perform ica on donor scores. (default='hybrid')}
 
-\item{n_fibers}{numeric The number of fibers the randomly shuffle in each iteration
+\item{n_fibers}{numeric The number of fibers the randomly shuffle in each jackstraw iteration
 (default=100)}
 
-\item{n_iter}{numeric The number of shuffling iterations to complete (default=500)}
+\item{n_iter}{numeric The number of jackstraw shuffling iterations to complete (default=500)}
 
 \item{n.cores}{Number of cores to use in get_lm_pvals() (default = container$experiment_params$ncores)}
 
@@ -53,4 +53,8 @@ container$plots$min_sig_genes
 \description{
 Evaluate the minimum number for significant genes in any factor for a given number of
 factors extracted by tucker.
+}
+\examples{
+test_container <- get_min_sig_genes(test_container, donor_rank_range=c(2:4),
+gene_ranks=4, tucker_type='regular', rotation_type='hybrid', n.cores=1)
 }

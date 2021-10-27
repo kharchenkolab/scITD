@@ -32,3 +32,7 @@ scMinimal object
 \description{
 Create an scMinimal object
 }
+\examples{
+scMinimal <- instantiate_scMinimal(count_data=test_container$scMinimal_full$count_data,
+meta_data=test_container$scMinimal_full$metadata)
+}

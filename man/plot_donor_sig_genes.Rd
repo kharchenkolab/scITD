@@ -41,3 +41,7 @@ container$plots$donor_sig_genes$Factor#
 Generate heatmap showing top genes in each cell type significantly associated
 with a given factor
 }
+\examples{
+test_container <- plot_donor_sig_genes(test_container, factor_select=1,
+top_n_per_ctype=2)
+}

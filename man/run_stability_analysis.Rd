@@ -53,3 +53,8 @@ Test stability of a decomposition by subsampling or bootstrapping donors. Note t
 running this function will replace the decomposition in the project container
 with one resulting from the tucker parameters entered here.
 }
+\examples{
+test_container <- run_stability_analysis(test_container, ranks=c(2,4),
+tucker_type='regular', rotation_type='hybrid', subset_type='subset', 
+sub_prop=0.75, n_iterations=5, ncores=1)
+}
