@@ -247,7 +247,7 @@ plot_rec_errors_line_svd <- function(real,shuffled,mode_to_show) {
 }
 
 #' Plot reconstruction errors as bar plot for svd method
-#' @importFrom Rmisc %>% summarySE
+#' @importFrom Rmisc summarySE
 #'
 #' @param real list The real reconstruction errors
 #' @param shuffled list The reconstruction errors under null model
