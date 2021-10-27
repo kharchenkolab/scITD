@@ -40,7 +40,8 @@ Imports:
     dplyr,
     edgeR,
     sva,
-    stats
+    stats,
+    Rmisc
 Suggests:
     methods,
     knitr,
@@ -64,7 +65,6 @@ Suggests:
     ggpubr,
     conos,
     pagoda2,
-    Rmisc,
     betareg
 RoxygenNote: 7.1.2
 LinkingTo: Rcpp, RcppArmadillo, RcppProgress
