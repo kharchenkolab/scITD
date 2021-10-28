@@ -2,8 +2,8 @@
 % Please edit documentation in R/form_tensor.R
 \name{norm_var_helper}
 \alias{norm_var_helper}
-\title{Calculates the normalized variance for each gene. This is based on a function
-from Pagoda2}
+\title{Calculates the normalized variance for each gene. This is adapted from pagoda2.
+https://github.com/kharchenkolab/pagoda2/blob/main/R/Pagoda2.R}
 \usage{
 norm_var_helper(scMinimal)
 }
@@ -16,6 +16,6 @@ as metadata}
 a vector of the normalized variance for each gene
 }
 \description{
-Calculates the normalized variance for each gene. This is based on a function
-from Pagoda2
+Calculates the normalized variance for each gene. This is adapted from pagoda2.
+https://github.com/kharchenkolab/pagoda2/blob/main/R/Pagoda2.R
 }

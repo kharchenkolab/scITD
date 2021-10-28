@@ -588,7 +588,9 @@ plot_gsea_sub <- function(container,clust_select,thresh=0.05) {
 }
 
 
-#' Visualize the similarity matrix and the clustering. Modified from simplifyEnrichment package.
+#' Visualize the similarity matrix and the clustering. Adapted from simplifyEnrichment package.
+#' https://github.com/jokergoo/simplifyEnrichment/blob/master/R/ht_clusters.R
+#' 
 #' @import grid
 #' @importFrom grDevices col2rgb dev.off pdf rgb
 #'
@@ -765,7 +767,9 @@ ht_clusters = function(mat, cl, dend = NULL, col = c("white", "red"),
   return(list(ht,od2))
 }
 
-#' Helper function from simplifyEnrichment package
+#' Helper function from simplifyEnrichment package.
+#' https://github.com/jokergoo/simplifyEnrichment/blob/master/R/utils.R
+#' 
 #' @param ... other parameters
 #'
 #' @return No value is returned.
@@ -775,7 +779,8 @@ stop_wrap = function (...) {
   stop(x, call. = FALSE)
 }
 
-#' Scale font size. From simplifyEnrichment package
+#' Scale font size. From simplifyEnrichment package.
+#' https://github.com/jokergoo/simplifyEnrichment/blob/master/R/ht_clusters.R
 #'
 #' @param x A numeric vector.
 #' @param rg The range.

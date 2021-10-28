@@ -314,8 +314,8 @@ get_normalized_variance <- function(container) {
 }
 
 
-#' Calculates the normalized variance for each gene. This is based on a function
-#' from Pagoda2
+#' Calculates the normalized variance for each gene. This is adapted from pagoda2.
+#' https://github.com/kharchenkolab/pagoda2/blob/main/R/Pagoda2.R
 #'
 #' @param scMinimal environment A sub-container for the project typically
 #' consisting of gene expression data in its raw and processed forms as well

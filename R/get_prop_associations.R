@@ -323,7 +323,6 @@ get_ctype_subc_prop_associations <- function(container,ctype,res,n_col=2,alt_nam
 
   # compute associations
   sig_res <- compute_associations(donor_balances,donor_scores,'adj_pval')
-  sig_res <- p.adjust(sig_res,method='fdr')
 
   # plot results
   all_ctypes <- sapply(1:ncol(donor_props), function(x) {
@@ -508,7 +507,8 @@ get_subclust_enr_fig <- function(container,all_ctypes,all_res) {
   # make fig panel of umaps and heatmaps
   de_hmaps <- get_subclust_de_hmaps(container,all_ctypes,all_res)
 
-  # get already generated UMAPs
+  # generate UMAPs
+  container <- get_subclust_umap(container,all_ctypes=all_ctypes,all_res=all_res)
   all_umaps <- list()
   for (j in 1:length(all_ctypes)) {
     ctype <- all_ctypes[j]
@@ -537,7 +537,6 @@ get_subclust_enr_fig <- function(container,all_ctypes,all_res) {
 #' @param all_factors numerc A vector of the factors to compute associations for
 #'
 #' @return the association heatmap object in container$plots$subc_enr_hmap
-#' @export
 get_subclust_enr_hmap <- function(container,all_ctypes,all_res,all_factors) {
 
   res_df <- data.frame(matrix(ncol=length(all_factors),nrow=0))
@@ -644,50 +643,8 @@ get_subclust_enr_hmap <- function(container,all_ctypes,all_res,all_factors) {
   return(container)
 }
 
-#' Get barplot showing significance of associations for cell subtypes
-#'
-#' @param container environment Project container that stores sub-containers
-#' for each cell type as well as results and plots from all analyses
-#' @param ctype character The cell type to plot
-#' @param factor_use numeric The factor to plot
-#'
-#' @return the plot in container$plots$subc_bplots$<ctype>
-#' @export
-get_subclust_enr_bplot <- function(container,ctype,factor_use) {
-  res <- container$subc_associations
 
-  factor_name <- paste0('Factor',factor_use)
-
-  col_ctypes <- sapply(colnames(res),function(x){
-    return(strsplit(x,split='_')[[1]][[1]])
-  })
-
-  res_select <- res[factor_name,col_ctypes==ctype]
-
-
-  # plot enrichment results - use pval cutoff line, make up red and down blue
-  tmp <- data.frame(cbind(names(res_select),res_select))
-  colnames(tmp) <- c('subtype_names','subtype_associations')
-  subc_assoc_plot <- ggplot(tmp,aes(x=subtype_names,y=as.numeric(subtype_associations),
-                                    fill = as.numeric(subtype_associations)>0)) +
-    geom_bar(stat='identity') +
-    scale_fill_manual(values = c("lightblue", "firebrick")) +
-    ylab('-log10(Adj. P-Value)') +
-    xlab('') +
-    geom_hline(yintercept=0, linetype="solid", color = "black") +
-    geom_hline(yintercept=-log10(.01), linetype="dashed", color = "red") +
-    geom_hline(yintercept=log10(.01), linetype="dashed", color = "red") +
-    ggtitle(paste0("Subcluster-Factor ",factor_use," Associations")) +
-    theme_bw() +
-    theme(legend.position = "none", axis.title.y = element_text(size = rel(.8)),
-          plot.title = element_text(hjust = 0.5))
-
-  container$plots$subc_bplots[[ctype]] <- subc_assoc_plot
-  return(container)
-}
-
-
-#' Get barplot showing significance of associations for cell subtypes
+#' Get scatter plot showing significance of associations for cell subtypes
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -698,9 +655,9 @@ get_subclust_enr_bplot <- function(container,ctype,factor_use) {
 #' @param factor_use numeric The factor to plot
 #' @param ctype_cur character The name of the major cell type used in the main analysis
 #'
-#' @return the plot in container$plots$subc_bplots$<ctype>
+#' @return the plot
 #' @export
-get_subclust_enr_dotplot <- function(container,ctype,res,subtype,factor_use,ctype_cur) {
+get_subclust_enr_dotplot <- function(container,ctype,res,subtype,factor_use,ctype_cur=ctype) {
   resolution_name <- paste0('res:',as.character(res))
   subclusts <- container$subclusters[[ctype]][[resolution_name]]
 
@@ -763,7 +720,6 @@ get_subclust_enr_dotplot <- function(container,ctype,res,subtype,factor_use,ctyp
 #' @param all_res numeric A vector of resolutions matching the all_ctypes parameter
 #'
 #' @return a list of the DE heatmaps as grob objects
-#' @export
 get_subclust_de_hmaps <- function(container,all_ctypes,all_res) {
   all_plots <- list()
   con <- container$embedding
@@ -934,32 +890,23 @@ get_subclust_umap <- function(container,all_ctypes,all_res,n_col=3) {
 #' @param factor_select numeric The factor to get associations for
 #'
 #' @return the association statistics for each factor
-#' @export
 get_indv_subtype_associations <- function(container, donor_props, factor_select) {
   reg_stats_all <- list()
   for (j in 1:ncol(donor_props)) {
-    # choose a column (subtype)
-    subtype <- donor_props[,j,drop=FALSE]
-
-    # add a second column with value of 1 - first column
-    subtype <- cbind(subtype,1-subtype)
-
-    # get balances
-    # donor_balances <- coda.base::coordinates(subtype)
-    donor_balances <- donor_props[,j,drop=FALSE]
-    colnames(donor_balances) <- 'ilr1'
-    rownames(donor_balances) <- rownames(subtype)
+    prop_test <- donor_props[,j,drop=FALSE]
+    colnames(prop_test) <- 'ilr1'
+    rownames(prop_test) <- rownames(donor_props)
     
     # compute regression statistics
-    reg_stats <- compute_associations(donor_balances,container$tucker_results[[1]],"adj_pval")
+    reg_stats <- compute_associations(prop_test,container$tucker_results[[1]],"adj_pval")
+    names(reg_stats) <- as.character(c(1:ncol(container$tucker_results[[1]])))
     reg_stats_all[[paste0("K",j,"_")]] <- reg_stats
   }
 
   reg_stats_all <- unlist(reg_stats_all)
-  # reg_stats_all <- stats::p.adjust(reg_stats_all, method = 'fdr')
 
   parsed_name <- sapply(names(reg_stats_all),function(x){
-    return(as.numeric(strsplit(x,split="_")[[1]][2]))
+    return(as.numeric(strsplit(x,split="_.")[[1]][2]))
   })
   reg_stats_all <- reg_stats_all[parsed_name==factor_select]
 
@@ -978,7 +925,6 @@ get_indv_subtype_associations <- function(container, donor_props, factor_select)
 #' @param n_col numeric The number of columns to organize the plots into (default=2)
 #'
 #' @return plots of donor proportions for each cell type vs donor factor scores for each factor
-#' @export
 plot_donor_props <- function(donor_props, donor_scores, significance,
                              ctype_mapping=NULL, stat_type='adj_pval', n_col=2) {
   if (stat_type == 'adj_pval') {
@@ -1118,9 +1064,9 @@ plot_subclust_associations <- function(res,n_col=2) {
 
 
 
-
-
-#' Plot a heatmap of differential genes. Code is modified from Conos package.
+#' Plot a heatmap of differential genes. Code is adapted from Conos package.
+#' https://github.com/kharchenkolab/conos/blob/master/R/plot.R
+#' 
 #' @importFrom dplyr %>%
 #'
 #' @param con conos (or p2) object
@@ -1154,7 +1100,6 @@ plot_subclust_associations <- function(res,n_col=2) {
 #' @param averaging.window optional window averaging between neighboring cells within each group (turned off by default) - useful when very large number of cells shown (requires zoo package)
 #' @param ... extra parameters are passed to pheatmap
 #' @return ComplexHeatmap::Heatmap object (see return.details param for other output)
-#' @export
 plotDEheatmap_conos <- function(con,groups,container,de=NULL,min.auc=NULL,min.specificity=NULL,min.precision=NULL,n.genes.per.cluster=10,additional.genes=NULL,exclude.genes=NULL, labeled.gene.subset=NULL, expression.quantile=0.99,pal=grDevices::colorRampPalette(c('dodgerblue1','grey95','indianred1'))(1024),ordering='-AUC',column.metadata=NULL,show.gene.clusters=TRUE, remove.duplicates=TRUE, column.metadata.colors=NULL, show.cluster.legend=TRUE, show_heatmap_legend=FALSE, border=TRUE, return.details=FALSE, row.label.font.size=10, order.clusters=FALSE, split=FALSE, split.gap=0, cell.order=NULL, averaging.window=0, ...) {
 
   if (!requireNamespace("ComplexHeatmap", quietly = TRUE) || utils::packageVersion("ComplexHeatmap") < "2.4") {

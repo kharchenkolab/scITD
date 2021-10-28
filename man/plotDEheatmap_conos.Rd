@@ -2,7 +2,8 @@
 % Please edit documentation in R/get_prop_associations.R
 \name{plotDEheatmap_conos}
 \alias{plotDEheatmap_conos}
-\title{Plot a heatmap of differential genes. Code is modified from Conos package.}
+\title{Plot a heatmap of differential genes. Code is adapted from Conos package.
+https://github.com/kharchenkolab/conos/blob/master/R/plot.R}
 \usage{
 plotDEheatmap_conos(
   con,
@@ -100,5 +101,6 @@ for each cell type as well as results and plots from all analyses}
 ComplexHeatmap::Heatmap object (see return.details param for other output)
 }
 \description{
-Plot a heatmap of differential genes. Code is modified from Conos package.
+Plot a heatmap of differential genes. Code is adapted from Conos package.
+https://github.com/kharchenkolab/conos/blob/master/R/plot.R
 }

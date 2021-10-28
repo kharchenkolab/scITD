@@ -745,9 +745,6 @@ get_all_lds_factor_plots <- function(container, use_sig_only=FALSE, nonsig_to_ze
 #' test_container <- get_all_lds_factor_plots(test_container)
 #' fig <- render_multi_plots(test_container, data_type='loadings')
 render_multi_plots <- function(container,data_type,max_cols=3) {
-  # if (!(max_cols == 2 || max_cols == 3)) {
-  #   stop('max_cols can only be set to 2 or 3')
-  # }
 
   if (data_type == "loadings") {
     hm_list <- container$plots$all_lds_plots

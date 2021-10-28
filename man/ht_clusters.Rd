@@ -2,7 +2,8 @@
 % Please edit documentation in R/run_gsea.R
 \name{ht_clusters}
 \alias{ht_clusters}
-\title{Visualize the similarity matrix and the clustering. Modified from simplifyEnrichment package.}
+\title{Visualize the similarity matrix and the clustering. Adapted from simplifyEnrichment package.
+https://github.com/jokergoo/simplifyEnrichment/blob/master/R/ht_clusters.R}
 \usage{
 ht_clusters(
   mat,
@@ -64,5 +65,6 @@ to the maximal word frequency. The font size interlopation is linear.}
 list containing a `ComplexHeatmap::HeatmapList-class` object and GO term ordering
 }
 \description{
-Visualize the similarity matrix and the clustering. Modified from simplifyEnrichment package.
+Visualize the similarity matrix and the clustering. Adapted from simplifyEnrichment package.
+https://github.com/jokergoo/simplifyEnrichment/blob/master/R/ht_clusters.R
 }

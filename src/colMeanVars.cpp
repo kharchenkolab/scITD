@@ -10,13 +10,15 @@
 using namespace std;
 using namespace Rcpp;
 
-//' calculates column mean and variance, optionally taking a subset of rows to operate on
+//' Calculates column mean and variance. Adapted from pagoda2.
+//' https://github.com/kharchenkolab/pagoda2/blob/main/src/misc2.cpp
 //'
 //' @param sY sparse matrix Gene by cell matrix of counts
 //' @param rowSel numeric The selected rows (genes)
 //' @param ncores numeric The number of cores
 //' 
-//' @return matrix with mean and variance of each gene across samples
+//' @return data.frame with columns of mean, variance, and number of observeatios 
+//' for each gene across samples
 //' @export
 //' 
 //' @examples

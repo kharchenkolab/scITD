@@ -2,9 +2,16 @@
 % Please edit documentation in R/get_prop_associations.R
 \name{get_subclust_enr_dotplot}
 \alias{get_subclust_enr_dotplot}
-\title{Get barplot showing significance of associations for cell subtypes}
+\title{Get scatter plot showing significance of associations for cell subtypes}
 \usage{
-get_subclust_enr_dotplot(container, ctype, res, subtype, factor_use, ctype_cur)
+get_subclust_enr_dotplot(
+  container,
+  ctype,
+  res,
+  subtype,
+  factor_use,
+  ctype_cur = ctype
+)
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
@@ -22,8 +29,8 @@ cell type to plot}
 \item{ctype_cur}{character The name of the major cell type used in the main analysis}
 }
 \value{
-the plot in container$plots$subc_bplots$<ctype>
+the plot
 }
 \description{
-Get barplot showing significance of associations for cell subtypes
+Get scatter plot showing significance of associations for cell subtypes
 }

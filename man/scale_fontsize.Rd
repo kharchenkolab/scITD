@@ -2,7 +2,8 @@
 % Please edit documentation in R/run_gsea.R
 \name{scale_fontsize}
 \alias{scale_fontsize}
-\title{Scale font size. From simplifyEnrichment package}
+\title{Scale font size. From simplifyEnrichment package.
+https://github.com/jokergoo/simplifyEnrichment/blob/master/R/ht_clusters.R}
 \usage{
 scale_fontsize(x, rg = c(1, 30), fs = c(4, 16))
 }
@@ -17,5 +18,6 @@ scale_fontsize(x, rg = c(1, 30), fs = c(4, 16))
 A numeric vector.
 }
 \description{
-Scale font size. From simplifyEnrichment package
+Scale font size. From simplifyEnrichment package.
+https://github.com/jokergoo/simplifyEnrichment/blob/master/R/ht_clusters.R
 }
