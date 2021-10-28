@@ -3,7 +3,9 @@
 \name{get_subclust_enr_fig}
 \alias{get_subclust_enr_fig}
 \title{Get a figure showing cell subtype proportion associations with each factor. Combines
-this plot with subtype UMAPs and differential expression heatmaps.}
+this plot with subtype UMAPs and differential expression heatmaps. Note that this
+function runs better if the number of cores in the conos object in
+container$embedding has n.cores set to a relatively small value < 10.}
 \usage{
 get_subclust_enr_fig(container, all_ctypes, all_res)
 }
@@ -16,11 +18,11 @@ for each cell type as well as results and plots from all analyses}
 \item{all_res}{numeric A vector of resolutions matching the all_ctypes parameter}
 }
 \value{
-the figure placed in the slot container$plots$subc_fig. Note that this
-function runs better if the number of cores in the conos object in
-container$embedding has n.cores set to a relatively small value < 10.
+A cowplot figure placed in the slot container$plots$subc_fig.
 }
 \description{
 Get a figure showing cell subtype proportion associations with each factor. Combines
-this plot with subtype UMAPs and differential expression heatmaps.
+this plot with subtype UMAPs and differential expression heatmaps. Note that this
+function runs better if the number of cores in the conos object in
+container$embedding has n.cores set to a relatively small value < 10.
 }

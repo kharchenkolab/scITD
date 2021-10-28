@@ -2,8 +2,8 @@
 % Please edit documentation in R/run_jackstraw.R
 \name{run_jackstraw}
 \alias{run_jackstraw}
-\title{Run tensor-based jackstraw to get gene_cell type combinations that are significantly
-associated with donor scores for factors extracted by Tucker decomposition}
+\title{Run jackstraw to get genes that are significantly associated with donor scores
+for factors extracted by Tucker decomposition}
 \usage{
 run_jackstraw(
   container,
@@ -40,11 +40,11 @@ ica_dsc to perform ica on donor scores. (default='hybrid')}
 \item{ncores}{numeric The number of cores to use (default=container$experiment_params$ncores)}
 }
 \value{
-the project container with adjusted pvalues in container$gene_score_associations
+The project container with a vector of adjusted pvalues in container$gene_score_associations.
 }
 \description{
-Run tensor-based jackstraw to get gene_cell type combinations that are significantly
-associated with donor scores for factors extracted by Tucker decomposition
+Run jackstraw to get genes that are significantly associated with donor scores
+for factors extracted by Tucker decomposition
 }
 \examples{
 test_container <- run_jackstraw(test_container, ranks=c(2,4), n_fibers=2, n_iter=10,

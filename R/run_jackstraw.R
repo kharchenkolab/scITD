@@ -1,8 +1,8 @@
 
 utils::globalVariables(c("donor_rank", "min_sig"))
 
-#' Run tensor-based jackstraw to get gene_cell type combinations that are significantly
-#' associated with donor scores for factors extracted by Tucker decomposition
+#' Run jackstraw to get genes that are significantly associated with donor scores
+#' for factors extracted by Tucker decomposition
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -19,7 +19,7 @@ utils::globalVariables(c("donor_rank", "min_sig"))
 #' @param seed numeric Seed passed to set.seed() (default=container$experiment_params$rand_seed)
 #' @param ncores numeric The number of cores to use (default=container$experiment_params$ncores)
 #'
-#' @return the project container with adjusted pvalues in container$gene_score_associations
+#' @return The project container with a vector of adjusted pvalues in container$gene_score_associations.
 #' @export
 #' 
 #' @examples
@@ -67,13 +67,13 @@ run_jackstraw <- function(container, ranks, n_fibers=100, n_iter=500,
 }
 
 
-#' Get list of tensor fibers to shuffle
+#' Get a list of tensor fibers to shuffle
 #'
 #' @param tensor_data list The tensor data including donor, gene, and cell type labels
 #' as well as the tensor array itself
 #' @param n_fibers numeric The number of fibers to get
 #'
-#' @return a list of gene and cell type indices for the randomly selected fibers
+#' @return A list of gene and cell type indices for the randomly selected fibers
 sample_fibers <- function(tensor_data, n_fibers) {
   n_genes <- length(tensor_data[[2]])
   n_ctypes <- length(tensor_data[[3]])
@@ -90,13 +90,13 @@ sample_fibers <- function(tensor_data, n_fibers) {
   return(fiber_coords)
 }
 
-#' Shuffle elements within selected fibers
+#' Shuffle elements within the selected fibers
 #'
 #' @param tensor_data list The tensor data including donor, gene, and cell type labels
 #' as well as the tensor array itself
 #' @param s_fibers list Gene and cell type indices for the randomly selected fibers
 #'
-#' @return the tensor_data with the values for the selected fibers shuffled
+#' @return The tensor_data object with the values for the selected fibers shuffled.
 shuffle_fibers <- function(tensor_data, s_fibers) {
   for (f in s_fibers) {
     gene_ndx <- f[[1]]
@@ -116,7 +116,8 @@ shuffle_fibers <- function(tensor_data, s_fibers) {
 #' matrix as the first element and the loadings tensor unfolded as the second element.
 #' @param s_fibers list Gene and cell type indices for the randomly selected fibers
 #'
-#' @return the F-Statistics for associations between all shuffled fibers and donor scores
+#' @return A numeric vector of F-statistics for associations between all shuffled fibers 
+#' and donor scores.
 calculate_fiber_fstats <- function(tensor_data, tucker_results, s_fibers) {
   all_fstats <- c()
   for (f in s_fibers) {
@@ -142,7 +143,8 @@ calculate_fiber_fstats <- function(tensor_data, tucker_results, s_fibers) {
 #' for each cell type as well as results and plots from all analyses
 #' @param ncores numeric The number of cores to use
 #'
-#' @return a vector F-Statistics for each gene-celltype-factor combination
+#' @return A vector F-statistics for each gene_celltype-factor association of the
+#' unshuffled data.
 get_real_fstats <- function(container, ncores) {
   tensor_data <- container$tensor_data
   tucker_results <- container$tucker_results
@@ -182,12 +184,13 @@ get_real_fstats <- function(container, ncores) {
   return(fstats_real)
 }
 
-#' Calculate adjusted pvalues for gene celltype fiber-donor score associations
+#' Calculate adjusted p-values for gene_celltype fiber-donor score associations
 #'
 #' @param fstats_real numeric A vector of F-Statistics for gene-cell type-factor combinations
 #' @param fstats_shuffled numeric A vector of null F-Statistics
 #'
-#' @return adjusted pvalues for associations of the unshuffled fibers with factor donor scores
+#' @return A vector of adjusted p-values for associations of the unshuffled fibers with
+#' factor donor scores.
 get_fstats_pvals <- function(fstats_real, fstats_shuffled) {
   raw_pvals <- c()
   for (i in 1:length(fstats_real)) {
@@ -211,7 +214,7 @@ get_fstats_pvals <- function(fstats_real, fstats_shuffled) {
 
 
 #' Evaluate the minimum number for significant genes in any factor for a given number of
-#' factors extracted by tucker.
+#' factors extracted by the decomposition
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses. Should have
@@ -231,9 +234,9 @@ get_fstats_pvals <- function(fstats_real, fstats_shuffled) {
 #' @param thresh numeric Pvalue threshold for significant genes in calculating the
 #' number of significant genes identified per factor. (default=0.05)
 #'
-#' @return the project container with a plot of the minimum significant genes for
+#' @return The project container with a plot of the minimum significant genes for
 #' each decomposition with varying number of donor factors located in
-#' container$plots$min_sig_genes
+#' container$plots$min_sig_genes.
 #' @export
 #' 
 #' @examples
@@ -286,14 +289,14 @@ get_min_sig_genes <- function(container, donor_rank_range, gene_ranks,
 }
 
 
-#' Compute gene-factor associations
+#' Compute gene-factor associations using univariate linear models
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
 #' @param n.cores Number of cores to use (default = container$experiment_params$ncores)
 #'
-#' @return the project container with the adjust p-values for the gene-factor
-#' associations in container$gene_score_associations
+#' @return The project container with a vector of adjusted p-values for the gene-factor
+#' associations in container$gene_score_associations.
 #' @export
 #'
 #' @examples

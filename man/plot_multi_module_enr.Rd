@@ -2,7 +2,7 @@
 % Please edit documentation in R/get_LR_interact.R
 \name{plot_multi_module_enr}
 \alias{plot_multi_module_enr}
-\title{Generate gene set x ct_module heatmap showing significantly enriched sets}
+\title{Generate gene set x ct_module heatmap showing co-expression module gene set enrichment results}
 \usage{
 plot_multi_module_enr(
   container,
@@ -38,8 +38,8 @@ sig_thresh (default=.1)}
 \item{h_w}{numeric Vector specifying height and width (defualt=NULL)}
 }
 \value{
-the heatmap plot of enrichment results
+A ComplexHeatmap object of enrichment results.
 }
 \description{
-Generate gene set x ct_module heatmap showing significantly enriched sets
+Generate gene set x ct_module heatmap showing co-expression module gene set enrichment results
 }

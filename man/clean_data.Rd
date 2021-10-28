@@ -3,7 +3,8 @@
 \name{clean_data}
 \alias{clean_data}
 \title{Clean data to remove genes only expressed in a few cells and donors
-with very few cells}
+with very few cells. Generally, this should be done through calling the
+form_tensor() wrapper function.}
 \usage{
 clean_data(container, donor_min_cells = 5)
 }
@@ -15,9 +16,11 @@ for each cell type as well as results and plots from all analyses}
 donor (default=5)}
 }
 \value{
-the project container with cleaned counts matrices
+The project container with cleaned counts matrices in each 
+container$scMinimal_ctype$<ctype>$count_data.
 }
 \description{
 Clean data to remove genes only expressed in a few cells and donors
-with very few cells
+with very few cells. Generally, this should be done through calling the
+form_tensor() wrapper function.
 }

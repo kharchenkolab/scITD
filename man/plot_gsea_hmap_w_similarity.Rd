@@ -26,7 +26,8 @@ for each cell type as well as results and plots from all analyses}
 (default=character(0))}
 }
 \value{
-the heatmap is drawn
+No value is returned. A heatmap showing enriched gene sets clustered by
+semantic similarity is drawn.
 }
 \description{
 Plot already computed enriched gene sets to show semantic similarity between sets

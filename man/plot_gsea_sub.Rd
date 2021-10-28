@@ -17,7 +17,8 @@ semantic similarity plot, cluster numbering starts from the top as 1.}
 \item{thresh}{numeric Color threshold to use for showing significance (default=0.05)}
 }
 \value{
-the heatmap plot showing gene set significance with row order preserved
+A heatmap plot from ComplexHeatmap showing one semantic similarity cluster
+of enriched gene sets with adjusted p-values for each cell type.
 }
 \description{
 Look at enriched gene sets from a cluster of semantically similar gene sets.

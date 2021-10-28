@@ -23,8 +23,8 @@ utils::globalVariables(c("ldngs", "dscores"))
 #' @param n_iterations numeric The number of iterations to perform (default=100)
 #' @param ncores numeric The number of cores to use (default=container$experiment_params$ncores)
 #'
-#' @return The project container with the donor scores stability in
-#' container$plots$stability_plot_dsc and the loadings stability in
+#' @return The project container with the donor scores stability plot in
+#' container$plots$stability_plot_dsc and the loadings stability plot in
 #' container$plots$stability_plot_lds
 #' @export
 #' 
@@ -71,7 +71,6 @@ run_stability_analysis <- function(container, ranks, tucker_type='regular',
                                 tucker_type = tucker_type,
                                 rotation_type = rotation_type,
                                 sparsity=sparsity)
-    # pca_unfolded(pbmc_container,2)
 
     donor_mat <- container$tucker_results[[1]]
     ldngs <- container$tucker_results[[2]]

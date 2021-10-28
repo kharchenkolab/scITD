@@ -1,5 +1,6 @@
 
-#' Create an scMinimal object
+#' Create an scMinimal object. Generally, this should be done through calling the
+#' make_new_container() wrapper function.
 #'
 #' @param count_data sparseMatrix Matrix of raw counts with genes as rows
 #' and cells as columns
@@ -12,7 +13,7 @@
 #' if wish to change their names. If NULL, then the preexisting column names are
 #' used. (default=NULL)
 #'
-#' @return scMinimal object
+#' @return An scMinimal object holding counts and metadata for a project.
 #' @export
 #' 
 #' @examples
@@ -39,7 +40,8 @@ instantiate_scMinimal <- function(count_data, meta_data, metadata_cols=NULL, met
   return(scMinimal)
 }
 
-#' Convert Seurat object to scMinimal object
+#' Convert Seurat object to scMinimal object. Generally, this should be done through calling the
+#' make_new_container() wrapper function.
 #'
 #' @param seurat_obj Seurat object that has been cleaned and includes the normalized,
 #' log-transformed counts. The meta.data should include a column with the header
@@ -53,7 +55,7 @@ instantiate_scMinimal <- function(count_data, meta_data, metadata_cols=NULL, met
 #' if wish to change their names. If NULL, then the preexisting column names are
 #' used. (default=NULL)
 #'
-#' @return scMinimal object
+#' @return An scMinimal object holding counts and metadata for a project.
 #' @export
 seurat_to_scMinimal <- function(seurat_obj, metadata_cols=NULL, metadata_col_nm=NULL) {
 
@@ -90,7 +92,7 @@ seurat_to_scMinimal <- function(seurat_obj, metadata_cols=NULL, metadata_col_nm=
 #' @param in_place logical If set to TRUE then replaces the input object with the
 #' new subsetted object (default=TRUE)
 #'
-#' @return a subsetted scMinimal object
+#' @return A subsetted scMinimal object.
 #' @export
 #' 
 #' @examples

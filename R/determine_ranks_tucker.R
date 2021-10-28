@@ -1,7 +1,7 @@
 
 utils::globalVariables(c("num_ranks", "rec_error", "num_iter", "run_type", "error_diff", "total_ranks", "myrsq", "n_factors", "factor_type", "total_n_factors","Status"))
 
-#' Rank determination by svd on the tensor unfolded along each mode.
+#' Run rank determination by svd on the tensor unfolded along each mode
 #'
 #' @import ggplot2
 #' @importFrom parallel mclapply
@@ -35,8 +35,8 @@ utils::globalVariables(c("num_ranks", "rec_error", "num_iter", "run_type", "erro
 #' If NULL, uses var_scale_power from container$experiment_params. (default=.5)
 #' @param seed numeric Seed passed to set.seed() (default=container$experiment_params$rand_seed)
 #'
-#' @return the project container with rank determination plot in
-#' container$plots$rank_determination_plot
+#' @return The project container with a cowplot figure of rank determination plots in
+#' container$plots$rank_determination_plot.
 #' @export
 #' 
 #' @examples
@@ -161,7 +161,7 @@ determine_ranks_tucker <- function(container, max_ranks_test,
 #' ranks to test for donor, gene, and cell type modes in that order
 #' @param shuffle_tensor logical Set to TRUE to shuffle values within the tensor
 #'
-#' @return reconstruction errors
+#' @return A list of reconstruction errors for each mode of the tensor.
 get_reconstruct_errors_svd <- function(tnsr, max_ranks_test, shuffle_tensor) {
   tnsr <- rTensor::as.tensor(tnsr)
 
@@ -204,7 +204,7 @@ get_reconstruct_errors_svd <- function(tnsr, max_ranks_test, shuffle_tensor) {
 #' @param shuffled list The reconstruction errors under null model
 #' @param mode_to_show numeric The mode to plot the results for
 #'
-#' @return plot
+#' @return A ggplot object showing relative reconstruction errors.
 plot_rec_errors_line_svd <- function(real,shuffled,mode_to_show) {
   plot_res <- data.frame(matrix(ncol=2,nrow=0))
   for (i in 1:length(shuffled)) {
@@ -253,7 +253,8 @@ plot_rec_errors_line_svd <- function(real,shuffled,mode_to_show) {
 #' @param shuffled list The reconstruction errors under null model
 #' @param mode_to_show numeric The mode to plot the results for
 #'
-#' @return plot
+#' @return A ggplot object showing the difference in reconstruction errors for
+#' successive factors.
 plot_rec_errors_bar_svd <- function(real,shuffled,mode_to_show) {
   plot_res <- data.frame(matrix(ncol=2,nrow=0))
   for (i in 1:length(shuffled)) {
@@ -323,7 +324,8 @@ plot_rec_errors_bar_svd <- function(real,shuffled,mode_to_show) {
 #' on resulting donor factor matrix. Set to 'ica_lds' to optimize loadings by the
 #' ICA rotation. (default='hybrid')
 #'
-#' @return plots placed in container$plots$num_batch_factors slot
+#' @return A ggpubr figure of ggplot objects showing batch-factor associations and
+#' placed in container$plots$num_batch_factors slot
 #' @export
 #' 
 #' @examples

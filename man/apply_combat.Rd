@@ -2,7 +2,8 @@
 % Please edit documentation in R/form_tensor.R
 \name{apply_combat}
 \alias{apply_combat}
-\title{Apply ComBat batch correction}
+\title{Apply ComBat batch correction to pseudobulk matrices. Generally, this should be done through calling the
+form_tensor() wrapper function.}
 \usage{
 apply_combat(container, batch_var)
 }
@@ -13,8 +14,9 @@ for each cell type as well as results and plots from all analyses}
 \item{batch_var}{character A batch variable from metadata to remove}
 }
 \value{
-the project container with pseudobulked matrices corrected for batch
+The project container with the batc corrected pseudobulked matrices.
 }
 \description{
-Apply ComBat batch correction
+Apply ComBat batch correction to pseudobulk matrices. Generally, this should be done through calling the
+form_tensor() wrapper function.
 }

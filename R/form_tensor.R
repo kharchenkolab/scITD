@@ -1,5 +1,5 @@
 
-#' Form the tensor and scale the data
+#' Form the pseudobulk tensor as preparation for running the tensor decomposition.
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -34,8 +34,8 @@
 #' Overrides the default gene selection if not NULL. (default=NULL)
 #' @param verbose logical Set to TRUE to print out progress (default=TRUE)
 #'
-#' @return the project container with tensor data added in the
-#' container$tensor_data slot
+#' @return The project container with a list of tensor data added in the
+#' container$tensor_data slot.
 #' @export
 #'
 #' @examples
@@ -126,12 +126,14 @@ form_tensor <- function(container, donor_min_cells=5, norm_method='trim',
   return(container)
 }
 
-#' Parse main counts matrix into per-celltype-matrices
+#' Parse main counts matrix into per-celltype-matrices. Generally, this should be done through calling the
+#' form_tensor() wrapper function.
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
 #'
-#' @return the project container with scMinimal objects per cell type
+#' @return The project container with separate scMinimal objects per cell type in
+#' the container$scMinimal_ctype slot
 #' @export
 parse_data_by_ctypes <- function(container) {
   # check that ctypes_use param has been set
@@ -148,14 +150,16 @@ parse_data_by_ctypes <- function(container) {
 }
 
 #' Clean data to remove genes only expressed in a few cells and donors
-#' with very few cells
+#' with very few cells. Generally, this should be done through calling the
+#' form_tensor() wrapper function.
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
 #' @param donor_min_cells numeric Minimum threshold for number of cells per
 #' donor (default=5)
 #'
-#' @return the project container with cleaned counts matrices
+#' @return The project container with cleaned counts matrices in each 
+#' container$scMinimal_ctype$<ctype>$count_data.
 #' @export
 clean_data <- function(container, donor_min_cells=5) {
   for (ct in container$experiment_params$ctypes_use) {
@@ -195,7 +199,8 @@ clean_data <- function(container, donor_min_cells=5) {
 }
 
 
-#' Collapse data from cell-level to donor-level via summing counts
+#' Collapse data from cell-level to donor-level via summing counts. Generally, this should be done through calling the
+#' form_tensor() wrapper function.
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -203,8 +208,8 @@ clean_data <- function(container, donor_min_cells=5) {
 #' @param shuffle_within character A metadata variable to shuffle cell-donor linkages
 #' within (default=NULL)
 #'
-#' @return the project container with pseudobulked count matrices in
-#' scMinimal_ctype$ctype$pseudobulk slots for each cell type
+#' @return The project container with pseudobulked count matrices in
+#' container$scMinimal_ctype$<ctype>$pseudobulk slots for each cell type.
 #' @export
 get_pseudobulk <- function(container,shuffle=FALSE,shuffle_within=NULL) {
   for (ct in container$experiment_params$ctypes_use) {
@@ -236,7 +241,8 @@ get_pseudobulk <- function(container,shuffle=FALSE,shuffle_within=NULL) {
   return(container)
 }
 
-#' Normalize the pseudobulked counts matrices
+#' Normalize the pseudobulked counts matrices. Generally, this should be done through calling the
+#' form_tensor() wrapper function.
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -247,7 +253,8 @@ get_pseudobulk <- function(container,shuffle=FALSE,shuffle_within=NULL) {
 #' @param scale_factor numeric The number that gets multiplied by fractional counts
 #' during normalization of the pseudobulked data (default=10000)
 #'
-#' @return the project container with normalized matrices
+#' @return The project container with normalized pseudobulk matrices in 
+#' container$scMinimal_ctype$<ctype>$pseudobulk slots.
 #' @export
 normalize_pseudobulk <- function(container,method='trim',scale_factor=10000) {
   for (ct in container$experiment_params$ctypes_use) {
@@ -282,7 +289,7 @@ normalize_pseudobulk <- function(container,method='trim',scale_factor=10000) {
 #' @param scale_factor numeric The number that gets multiplied by fractional counts
 #' during normalization of the pseudobulked data (default=10000)
 #'
-#' @return the normalized, log-transformed data
+#' @return The normalized, log-transformed matrix.
 #' @export
 normalize_counts <- function(count_data, scale_factor=10000) {
   # divide by lib size and multiply by scale factor
@@ -301,7 +308,9 @@ normalize_counts <- function(count_data, scale_factor=10000) {
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
 #'
-#' @return the project container with normalized variances values in scMinimal objects
+#' @return The project container with vectors of normalized variances values in scMinimal objects
+#' for each cell type. Generally, this should be done through calling the
+#' form_tensor() wrapper function.
 #' @export
 get_normalized_variance <- function(container) {
   # get normalized variance for each cell type
@@ -316,12 +325,16 @@ get_normalized_variance <- function(container) {
 
 #' Calculates the normalized variance for each gene. This is adapted from pagoda2.
 #' https://github.com/kharchenkolab/pagoda2/blob/main/R/Pagoda2.R
+#' Generally, this should be done through calling the
+#' form_tensor() wrapper function.
 #'
 #' @param scMinimal environment A sub-container for the project typically
 #' consisting of gene expression data in its raw and processed forms as well
 #' as metadata
 #'
-#' @return a vector of the normalized variance for each gene
+#' @return A list with the first element containing a vector of the normalized
+#' variance for each gene and the second element containing log-transformed adjusted
+#' p-values for the overdispersion of each gene.
 #' @export
 norm_var_helper <- function(scMinimal) {
 
@@ -364,7 +377,8 @@ norm_var_helper <- function(scMinimal) {
 
 
 #' Partition main gene by cell matrix into per cell type matrices with significantly
-#' variable genes only
+#' variable genes only. Generally, this should be done through calling the
+#' form_tensor() wrapper function.
 #' @import Matrix
 #'
 #' @param container environment Project container that stores sub-containers
@@ -380,12 +394,8 @@ norm_var_helper <- function(scMinimal) {
 #' @param seed numeric Seed passed to set.seed() (default=container$experiment_params$rand_seed)
 #' @param ncores numeric The number of cores to use (default=container$experiment_params$ncores)
 #'
-#' @return the project container with scMinimal environments added for each
-#' cell type. The scMinimal environments contain expression count matrices
-#' with columns as the cells belonging to the respective cell type and rows
-#' as the genes which were identified as significantly variable across donors
-#' in any cell type. Metadata is also present in these sub-containers for the
-#' corresponding included cells and is in the "metadata" slot.
+#' @return The project container with pseudobulk matrices limted to the selected 
+#' most variable genes.
 #' @export
 get_ctype_vargenes <- function(container, method, thresh, ncores=container$experiment_params$ncores, seed=container$experiment_params$rand_seed) {
 
@@ -462,14 +472,15 @@ get_ctype_vargenes <- function(container, method, thresh, ncores=container$exper
   return(container)
 }
 
-#' Compute significantly variable genes via anova
+#' Compute significantly variable genes via anova. Generally, this should be done through calling the
+#' form_tensor() wrapper function.
 #' @importFrom stats aov cor lm p.adjust sd
 #'
 #' @param scMinimal environment A sub-container for the project typically
 #' consisting of gene expression data in its raw and processed forms
 #' @param ncores numeric Number of cores to use
 #'
-#' @return the raw pvalues for each gene
+#' @return A list of raw p-values for each gene.
 #' @export
 vargenes_anova <- function(scMinimal, ncores) {
 
@@ -493,13 +504,14 @@ vargenes_anova <- function(scMinimal, ncores) {
   return(pvals)
 }
 
-#' Reduce each cell type's expression matrix to just the significantly variable genes
+#' Reduce each cell type's expression matrix to just the significantly variable genes. 
+#' Generally, this should be done through calling the form_tensor() wrapper function.
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
 #'
-#' @return the project container with pseudobulked matrices reduced to only
-#' the most variable genes
+#' @return The project container with pseudobulked matrices reduced to only
+#' the most variable genes.
 #' @export
 reduce_to_vargenes <- function(container) {
   vargenes <- container$all_vargenes
@@ -510,13 +522,14 @@ reduce_to_vargenes <- function(container) {
   return(container)
 }
 
-#' Apply ComBat batch correction
+#' Apply ComBat batch correction to pseudobulk matrices. Generally, this should be done through calling the
+#' form_tensor() wrapper function.
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
 #' @param batch_var character A batch variable from metadata to remove
 #'
-#' @return the project container with pseudobulked matrices corrected for batch
+#' @return The project container with the batc corrected pseudobulked matrices.
 #' @export
 apply_combat <- function(container,batch_var) {
   for (ct in container$experiment_params$ctypes_use) {
@@ -539,7 +552,8 @@ apply_combat <- function(container,batch_var) {
 }
 
 
-#' Scale variance across donors for each gene within each cell type
+#' Scale variance across donors for each gene within each cell type. Generally, this should be done through calling the
+#' form_tensor() wrapper function.
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -551,8 +565,8 @@ apply_combat <- function(container,batch_var) {
 #' dependence is taken into account) to the exponent specified here.
 #' If NULL, uses var_scale_power from container$experiment_params.
 #'
-#' @return the project container with the variance altered for each gene within
-#' the pseudobulked matrices for each cell type
+#' @return The project container with the variance altered for each gene within
+#' the pseudobulked matrices for each cell type.
 #' @export
 scale_variance <- function(container, var_scale_power) {
 
@@ -579,12 +593,13 @@ scale_variance <- function(container, var_scale_power) {
   return(container)
 }
 
-#' Create the tensor object by stacking each bulk cell type matrix
+#' Create the tensor object by stacking each pseudobulk cell type matrix. 
+#' Generally, this should be done through calling the form_tensor() wrapper function.
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
 #'
-#' @return the project container with the tensor data in container$tensor_data
+#' @return The project container with the list of tensor data in container$tensor_data.
 #' @export
 stack_tensor <- function(container) {
 

@@ -62,7 +62,7 @@ to the maximal word frequency. The font size interlopation is linear.}
 \item{...}{other parameters}
 }
 \value{
-list containing a `ComplexHeatmap::HeatmapList-class` object and GO term ordering
+A list containing a `ComplexHeatmap::HeatmapList-class` object and GO term ordering.
 }
 \description{
 Visualize the similarity matrix and the clustering. Adapted from simplifyEnrichment package.

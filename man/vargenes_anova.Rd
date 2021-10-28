@@ -2,7 +2,8 @@
 % Please edit documentation in R/form_tensor.R
 \name{vargenes_anova}
 \alias{vargenes_anova}
-\title{Compute significantly variable genes via anova}
+\title{Compute significantly variable genes via anova. Generally, this should be done through calling the
+form_tensor() wrapper function.}
 \usage{
 vargenes_anova(scMinimal, ncores)
 }
@@ -13,8 +14,9 @@ consisting of gene expression data in its raw and processed forms}
 \item{ncores}{numeric Number of cores to use}
 }
 \value{
-the raw pvalues for each gene
+A list of raw p-values for each gene.
 }
 \description{
-Compute significantly variable genes via anova
+Compute significantly variable genes via anova. Generally, this should be done through calling the
+form_tensor() wrapper function.
 }

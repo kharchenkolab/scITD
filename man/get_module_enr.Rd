@@ -2,8 +2,8 @@
 % Please edit documentation in R/get_LR_interact.R
 \name{get_module_enr}
 \alias{get_module_enr}
-\title{Compute gene sets that are enriched within specified gene co-regulatory modules.
-Uses a hypergeometric test for over-representation. Used in plot_multi_module_enr.}
+\title{Identify gene sets that are enriched within specified gene co-regulatory modules.
+Uses a hypergeometric test for over-representation. Used in plot_multi_module_enr().}
 \usage{
 get_module_enr(container, ctype, mod_select, db_use = "GO", adjust_pval = TRUE)
 }
@@ -22,9 +22,9 @@ options include "GO", "Reactome", "KEGG", "BioCarta", "Hallmark", "TF", and
 \item{adjust_pval}{logical Set to TRUE to apply FDR correction (default=TRUE)}
 }
 \value{
-p-values for the tested gene sets
+A vector of p-values for the tested gene sets.
 }
 \description{
-Compute gene sets that are enriched within specified gene co-regulatory modules.
-Uses a hypergeometric test for over-representation. Used in plot_multi_module_enr.
+Identify gene sets that are enriched within specified gene co-regulatory modules.
+Uses a hypergeometric test for over-representation. Used in plot_multi_module_enr().
 }

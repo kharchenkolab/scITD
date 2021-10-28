@@ -1,6 +1,6 @@
 
 
-#' Run fgsea for one cell type of one factor. Note, this uses
+#' Run fgsea for one cell type of one factor
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -13,7 +13,9 @@
 #' Currently only works with fgsea method. (default=TRUE)
 #' @param ncores numeric The number of cores to use (default=container$experiment_params$ncores)
 #'
-#' @return data.frame of the fgsea results (including non-significant results)
+#' @return A data.frame of the fgsea results for enrichment of gene sets in a given
+#' cell type for a given factor. The results contain adjusted p-values, normalized
+#' enrichment scores, leading edge genes, and other information output by fgsea.
 run_fgsea <- function(container, factor_select, ctype, db_use="GO", signed=TRUE, ncores=container$experiment_params$ncores) {
   donor_scores <- container$tucker_results[[1]]
 
@@ -110,7 +112,8 @@ run_fgsea <- function(container, factor_select, ctype, db_use="GO", signed=TRUE,
 #' options include "GO", "Reactome", "KEGG", and "BioCarta". More than
 #' one database can be used. (default="GO")
 #'
-#' @return pvalues for all tested gene sets
+#' @return A vector of adjusted p-values for enrichment of gene sets in the 
+#' significant genes of a given cell type in a given factor.
 run_hypergeometric_gsea <- function(container, factor_select, ctype, up_down,
                                      thresh=0.05, db_use="GO") {
 
@@ -206,7 +209,7 @@ run_hypergeometric_gsea <- function(container, factor_select, ctype, up_down,
   return(padj)
 }
 
-#' Run gsea separately for all cell types of one specified factor
+#' Run gsea separately for all cell types of one specified factor and plot results
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -224,8 +227,11 @@ run_hypergeometric_gsea <- function(container, factor_select, ctype, up_down,
 #' @param draw_plot logical Set to TRUE to show the plot. Plot is stored regardless. (default=TRUE)
 #' @param ncores numeric The number of cores to use (default=container$experiment_params$ncores)
 #'
-#' @return a heatmap plot of the gsea results in the slot
-#' container$plots$gsea$FactorX
+#' @return A stacked heatmap plot of the gsea results in the slot
+#' container$plots$gsea$<Factor#>. The heatmaps show adjusted p-values for the
+#' enrichment of each gene set in each cell type for the selected factor. The top
+#' heatmap shows enriched gene sets among the positive loading genes and the bottom
+#' heatmap shows enriched gene sets among the negative loading genes for the factor.
 #' @export
 #' 
 #' @examples
@@ -291,7 +297,7 @@ run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh
 }
 
 
-#' Extract gene sets that are enriched selectively in one or more cell types for a given factor
+#' Extract the intersection of gene sets which are enriched in two or more cell types for a factor
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -302,7 +308,8 @@ run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh
 #' to "down" to get the gene sets for the negative loadings genes.
 #' @param thresh numeric Pvalue significance threshold for selecting enriched sets (default=0.05)
 #'
-#' @return a vector of pathways selectively enriched in the listed cell types
+#' @return A vector of the intersection of pathways that are significantly enriched in two
+#' or more cell types for a factor.
 #' @export
 get_intersecting_pathways <- function(container, factor_select, these_ctypes_only, up_down, thresh=0.05) {
   ct_1_paths <- container$gsea_results[[factor_select]][[up_down]][[these_ctypes_only[1]]]
@@ -336,7 +343,7 @@ get_intersecting_pathways <- function(container, factor_select, these_ctypes_onl
 #' @param factor_select numeric The factor to plot
 #' @param thresh numeric Pvalue threshold to use for including gene sets in the heatmap
 #'
-#' @return the heatmap plot
+#' @return A stacked heatmap object from ComplexHeatmap.
 plot_gsea_hmap <- function(container,factor_select,thresh) {
   factor_name <- paste0('Factor',as.character(factor_select))
   gsea_res <- container$gsea_results[[as.character(factor_select)]]
@@ -427,7 +434,8 @@ plot_gsea_hmap <- function(container,factor_select,thresh) {
 #' @param exclude_words character Vector of words to exclude from word cloud
 #' (default=character(0))
 #'
-#' @return the heatmap is drawn
+#' @return No value is returned. A heatmap showing enriched gene sets clustered by
+#' semantic similarity is drawn.
 #' @export
 plot_gsea_hmap_w_similarity <- function(container,factor_select,direc,thresh,
                                         exclude_words=character(0)) {
@@ -545,7 +553,8 @@ plot_gsea_hmap_w_similarity <- function(container,factor_select,direc,thresh,
 #' semantic similarity plot, cluster numbering starts from the top as 1.
 #' @param thresh numeric Color threshold to use for showing significance (default=0.05)
 #'
-#' @return the heatmap plot showing gene set significance with row order preserved
+#' @return A heatmap plot from ComplexHeatmap showing one semantic similarity cluster
+#' of enriched gene sets with adjusted p-values for each cell type.
 #' @export
 plot_gsea_sub <- function(container,clust_select,thresh=0.05) {
   res_plot <- container$gsea_last_info[[1]]
@@ -615,7 +624,7 @@ plot_gsea_sub <- function(container,clust_select,thresh=0.05) {
 #' @param use_raster Whether to write the heatmap as a raster image.
 #' @param ... other parameters
 #' 
-#' @return list containing a `ComplexHeatmap::HeatmapList-class` object and GO term ordering
+#' @return A list containing a `ComplexHeatmap::HeatmapList-class` object and GO term ordering.
 ht_clusters = function(mat, cl, dend = NULL, col = c("white", "red"),
                        draw_word_cloud = simplifyEnrichment:::is_GO_id(rownames(mat)[1]) || !is.null(term),
                        term = NULL, min_term = 5,
@@ -811,7 +820,8 @@ scale_fontsize = function(x, rg = c(1, 30), fs = c(4, 16)) {
 #' @param h_w numeric Vector specifying height and width (defualt=NULL)
 #' @param myfontsize numeric Gene set label fontsize (default=8)
 #'
-#' @return a list of heatmaps with a legend object as the last element
+#' @return A list with a ComplexHeatmap object of select enriched gene sets as the first element
+#' and with a legend object as the second element.
 #' @export
 plot_select_sets <- function(container, factors_all, sets_plot, color_sets=NULL, cl_rows=FALSE,
                              h_w=NULL, myfontsize=8) {

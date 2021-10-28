@@ -2,7 +2,7 @@
 % Please edit documentation in R/run_jackstraw.R
 \name{get_lm_pvals}
 \alias{get_lm_pvals}
-\title{Compute gene-factor associations}
+\title{Compute gene-factor associations using univariate linear models}
 \usage{
 get_lm_pvals(container, n.cores = container$experiment_params$ncores)
 }
@@ -13,11 +13,11 @@ for each cell type as well as results and plots from all analyses}
 \item{n.cores}{Number of cores to use (default = container$experiment_params$ncores)}
 }
 \value{
-the project container with the adjust p-values for the gene-factor
-associations in container$gene_score_associations
+The project container with a vector of adjusted p-values for the gene-factor
+associations in container$gene_score_associations.
 }
 \description{
-Compute gene-factor associations
+Compute gene-factor associations using univariate linear models
 }
 \examples{
 test_container <- get_lm_pvals(test_container, n.cores=1)

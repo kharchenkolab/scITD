@@ -14,7 +14,7 @@ plot_rec_errors_line_svd(real, shuffled, mode_to_show)
 \item{mode_to_show}{numeric The mode to plot the results for}
 }
 \value{
-plot
+A ggplot object showing relative reconstruction errors.
 }
 \description{
 Plot reconstruction errors as line plot for svd method

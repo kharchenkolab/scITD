@@ -18,7 +18,7 @@ for each cell type as well as results and plots from all analyses}
 each gene set (default=5)}
 }
 \value{
-a named character vector of gene sets, with leading edge genes as the names
+A named character vector of gene sets, with leading edge genes as the names.
 }
 \description{
 Get the leading edge genes from GSEA results

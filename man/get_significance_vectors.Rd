@@ -17,7 +17,8 @@ for each cell type as well as results and plots from all analyses}
 as they appear in the loadings matrix}
 }
 \value{
-a list of pvalues for each gene in each cell type
+A list of the adjusted p-values for expression of each gene in each cell type in
+association with a factor of interest.
 }
 \description{
 Get vectors indicating which genes are significant in which cell types

@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_tucker.R
 \name{render_multi_plots}
 \alias{render_multi_plots}
-\title{Creates a figure of all loadings plots arranged}
+\title{Create a figure of all loadings plots arranged}
 \usage{
 render_multi_plots(container, data_type, max_cols = 3)
 }
@@ -17,10 +17,10 @@ determines which list of heatmaps to organize into the figure.}
 or 3 since these are large plots. (default=3)}
 }
 \value{
-the multi-plot figure
+The multi-plot figure.
 }
 \description{
-Creates a figure of all loadings plots arranged
+Create a figure of all loadings plots arranged
 }
 \examples{
 test_container <- get_all_lds_factor_plots(test_container)

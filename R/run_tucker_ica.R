@@ -1,5 +1,5 @@
 
-#' Run Tucker decomposition and apply ICA transformation
+#' Run the Tucker decomposition and rotate the factors
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -17,7 +17,9 @@
 #' ICA rotation. (default='hybrid')
 #' @param sparsity numeric To use with sparse tucker. Higher indicates more sparse (default=sqrt(2))
 #'
-#' @return container with results of the decomposition in container$tucker_results
+#' @return The project container with results of the decomposition in container$tucker_results.
+#' The results object is a list with the donor scores matrix in the first element and the unfolded
+#' loadings matrix in the second element.
 #' @export
 #'
 #' @examples
@@ -60,7 +62,8 @@ run_tucker_ica <- function(container, ranks, tucker_type='regular', rotation_typ
 }
 
 
-#' Tucker helper function that actually does the decomposition
+#' Helper function for running the decomposition. Use the run_tucker_ica()
+#' wrapper function instead.
 #'
 #' @param tensor_data list The tensor data including donor, gene, and cell type labels
 #' as well as the tensor array itself
@@ -74,8 +77,8 @@ run_tucker_ica <- function(container, ranks, tucker_type='regular', rotation_typ
 #' ICA rotation.
 #' @param sparsity numeric Higher indicates more sparse
 #'
-#' @return list of results for tucker decomposition with donor scores matrix in first
-#' element and loadings matrix in second element
+#' @return The list of results for tucker decomposition with donor scores matrix in first
+#' element and loadings matrix in second element.
 #' @export
 tucker_ica_helper <- function(tensor_data, ranks, tucker_type, rotation_type, sparsity) {
 
@@ -197,13 +200,13 @@ tucker_ica_helper <- function(tensor_data, ranks, tucker_type, rotation_type, sp
 }
 
 
-#' Get explained variance for each cell type for one factor
+#' Get the explained variance of the reconstructed data using one factor
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
 #' @param factor_use numeric The factor to investigate
 #'
-#' @return explained variance for each cell type in a list
+#' @return The explained variance numeric value for one factor.
 get_factor_exp_var <- function(container, factor_use) {
   tnsr <- rTensor::as.tensor(container$tensor_data[[4]])
   donor_mat <- container$tucker_results[[1]]
@@ -220,14 +223,14 @@ get_factor_exp_var <- function(container, factor_use) {
   return(exp_var)
 }
 
-#' Get explained variance for each cell type for one factor
+#' Get explained variance of the reconstructed data using one cell type from one factor
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
 #' @param factor_use numeric The factor to get variance explained for
 #' @param ctype character The cell type to get variance explained for
 #'
-#' @return explained variance for each cell type in a list
+#' @return The explained variance numeric value for one cell type of one factor.
 get_ctype_exp_var <- function(container, factor_use, ctype) {
   tnsr <- rTensor::as.tensor(container$tensor_data[[4]])
   donor_mat <- container$tucker_results[[1]]
@@ -258,12 +261,12 @@ get_ctype_exp_var <- function(container, factor_use, ctype) {
 #' for each cell type as well as results and plots from all analyses
 #' @param factor_select numeric The number corresponding to the factor to extract
 #'
-#' @return a list with the first element as the donor scores and the second element
-#' as the corresponding loadings matrix
+#' @return A list with the first element as the donor scores and the second element
+#' as the corresponding loadings matrix for one factor.
 #' @export
 #' 
 #' @examples
-#' test_container <- get_one_factor(test_container, factor_select=1)
+#' f1_res <- get_one_factor(test_container, factor_select=1)
 get_one_factor <- function(container, factor_select) {
   ldngs <- container$tucker_results[[2]]
 
@@ -279,14 +282,16 @@ get_one_factor <- function(container, factor_select) {
 }
 
 
-#' Computes singular-value decomposition on the unfolded tensor
+#' Computes singular-value decomposition on the tensor unfolded along the donor dimension
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
 #' @param ranks numeric The number of factors to extract. Unlike with the Tucker
 #' decomposition, this should be a single number.
 #'
-#' @return container with results of the decomposition in container$tucker_results
+#' @return The project container with results of the decomposition in container$tucker_results.
+#' The results object is a list with the donor scores matrix in the first element and the unfolded
+#' loadings matrix in the second element.
 #' @export
 #' 
 #' @examples
@@ -336,14 +341,16 @@ pca_unfolded <- function(container, ranks) {
   return(container)
 }
 
-#' Computes non-negative matrix factorization on the unfolded tensor
+#' Computes non-negative matrix factorization on the tensor unfolded along the donor dimension
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
 #' @param ranks numeric The number of factors to extract. Unlike with the Tucker
 #' decomposition, this should be a single number.
 #'
-#' @return container with results of the decomposition in container$tucker_results
+#' @return The project container with results of the decomposition in container$tucker_results.
+#' The results object is a list with the donor scores matrix in the first element and the unfolded
+#' loadings matrix in the second element.
 #' @export
 #' 
 #' @examples

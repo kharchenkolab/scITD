@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_tucker.R
 \name{plot_scores_by_meta}
 \alias{plot_scores_by_meta}
-\title{Plot dotplots for each factor to compare donor scores between meta groups}
+\title{Plot dotplots for each factor to compare donor scores between metadata groups}
 \usage{
 plot_scores_by_meta(container, meta_var)
 }
@@ -13,9 +13,9 @@ for each cell type as well as results and plots from all analyses}
 \item{meta_var}{character The meta data variable to compare groups for}
 }
 \value{
-a figure of comparison plots (one for each factor) placed in
-container$plots$indv_meta_scores_associations
+The project container with a figure of comparison plots (one for each factor)
+placed in container$plots$indv_meta_scores_associations.
 }
 \description{
-Plot dotplots for each factor to compare donor scores between meta groups
+Plot dotplots for each factor to compare donor scores between metadata groups
 }

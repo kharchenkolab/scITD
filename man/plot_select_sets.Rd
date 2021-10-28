@@ -32,7 +32,8 @@ with names as the gene set names (default=NULL)}
 \item{myfontsize}{numeric Gene set label fontsize (default=8)}
 }
 \value{
-a list of heatmaps with a legend object as the last element
+A list with a ComplexHeatmap object of select enriched gene sets as the first element
+and with a legend object as the second element.
 }
 \description{
 Plot enrichment results for hand picked gene sets

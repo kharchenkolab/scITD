@@ -15,7 +15,7 @@ for each cell type as well as results and plots from all analyses}
 \item{thresh}{numeric Pvalue threshold to use for including gene sets in the heatmap}
 }
 \value{
-the heatmap plot
+A stacked heatmap object from ComplexHeatmap.
 }
 \description{
 Plot enriched gene sets from all cell types in a heatmap

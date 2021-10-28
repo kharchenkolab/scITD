@@ -15,7 +15,7 @@ for each cell type as well as results and plots from all analyses}
 \item{all_res}{numeric A vector of resolutions matching the all_ctypes parameter}
 }
 \value{
-a list of the DE heatmaps as grob objects
+A list of cell subcluster DE marker gene heatmaps as grob objects.
 }
 \description{
 Get list of cell subtype differential expression heatmaps

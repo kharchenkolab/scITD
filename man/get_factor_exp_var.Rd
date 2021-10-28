@@ -2,7 +2,7 @@
 % Please edit documentation in R/run_tucker_ica.R
 \name{get_factor_exp_var}
 \alias{get_factor_exp_var}
-\title{Get explained variance for each cell type for one factor}
+\title{Get the explained variance of the reconstructed data using one factor}
 \usage{
 get_factor_exp_var(container, factor_use)
 }
@@ -13,8 +13,8 @@ for each cell type as well as results and plots from all analyses}
 \item{factor_use}{numeric The factor to investigate}
 }
 \value{
-explained variance for each cell type in a list
+The explained variance numeric value for one factor.
 }
 \description{
-Get explained variance for each cell type for one factor
+Get the explained variance of the reconstructed data using one factor
 }

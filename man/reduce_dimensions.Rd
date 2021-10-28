@@ -2,7 +2,8 @@
 % Please edit documentation in R/get_prop_associations.R
 \name{reduce_dimensions}
 \alias{reduce_dimensions}
-\title{Gets umap coordinates if not already provided in container$scMinimal_full$umap}
+\title{Gets a conos object of the data, aligning datasets across a specified variable such as
+batch or donors. This can be run independently or through get_subtype_prop_associations().}
 \usage{
 reduce_dimensions(
   container,
@@ -20,8 +21,9 @@ the joint embedding with Conos.}
 \item{ncores}{numeric The number of cores to use (default=container$experiment_params$ncores)}
 }
 \value{
-a dataframe with umap coordinates of each cell in the dataset
+The project container with a conos object in container$embedding.
 }
 \description{
-Gets umap coordinates if not already provided in container$scMinimal_full$umap
+Gets a conos object of the data, aligning datasets across a specified variable such as
+batch or donors. This can be run independently or through get_subtype_prop_associations().
 }

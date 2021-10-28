@@ -2,8 +2,7 @@
 % Please edit documentation in R/get_prop_associations.R
 \name{plot_subclust_associations}
 \alias{plot_subclust_associations}
-\title{Get plot for associations between subcluster proportions for each major cell
-type and each factor}
+\title{Plot association significances for varying clustering resolutions}
 \usage{
 plot_subclust_associations(res, n_col = 2)
 }
@@ -13,10 +12,9 @@ plot_subclust_associations(res, n_col = 2)
 \item{n_col}{numeric The number of columns to organize the plots into (default=2)}
 }
 \value{
-plots of regression statistics for each subtypes at varying clustering
-resolutions and for each factor
+A cowplot of ggplot objects showing statistics for regressions of proportions of
+each cell subtype (at varying clustering resolutions) against each factor.
 }
 \description{
-Get plot for associations between subcluster proportions for each major cell
-type and each factor
+Plot association significances for varying clustering resolutions
 }

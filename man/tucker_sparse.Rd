@@ -2,7 +2,9 @@
 % Please edit documentation in R/run_custom_tucker.R
 \name{tucker_sparse}
 \alias{tucker_sparse}
-\title{Tucker Decomposition adapted from rTensor but with sparsity constraints}
+\title{Tucker Decomposition adapted from rTensor but with sparsity constraints added. This
+function is still being tested, so use with caution.
+https://github.com/jamesyili/rTensor/blob/master/R/rTensor_Decomp.R}
 \usage{
 tucker_sparse(tnsr, ranks = NULL, max_iter = 25, tol = 1e-05, sparsity = 5)
 }
@@ -18,8 +20,10 @@ tucker_sparse(tnsr, ranks = NULL, max_iter = 25, tol = 1e-05, sparsity = 5)
 \item{sparsity}{numeric Higher is more sparse (default=5)}
 }
 \value{
-a list containing the results
+A list containing all the Tucker decomposition results components.
 }
 \description{
-Tucker Decomposition adapted from rTensor but with sparsity constraints
+Tucker Decomposition adapted from rTensor but with sparsity constraints added. This
+function is still being tested, so use with caution.
+https://github.com/jamesyili/rTensor/blob/master/R/rTensor_Decomp.R
 }

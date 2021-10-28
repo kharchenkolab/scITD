@@ -2,7 +2,7 @@
 % Please edit documentation in R/get_LR_interact.R
 \name{plot_mod_and_lig}
 \alias{plot_mod_and_lig}
-\title{Plot trio of associations between ligand expression, module levels, and
+\title{Plot trio of associations between ligand expression, module eigengenes, and
 factor scores}
 \usage{
 plot_mod_and_lig(container, factor_select, mod_ct, mod, lig_ct, lig)
@@ -22,9 +22,9 @@ for each cell type as well as results and plots from all analyses}
 \item{lig}{character The name of the ligand to use}
 }
 \value{
-plots of the three associations
+A cowplot figure of ggplot objects for the three associations scatter plots.
 }
 \description{
-Plot trio of associations between ligand expression, module levels, and
+Plot trio of associations between ligand expression, module eigengenes, and
 factor scores
 }

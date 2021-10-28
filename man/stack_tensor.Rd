@@ -2,7 +2,8 @@
 % Please edit documentation in R/form_tensor.R
 \name{stack_tensor}
 \alias{stack_tensor}
-\title{Create the tensor object by stacking each bulk cell type matrix}
+\title{Create the tensor object by stacking each pseudobulk cell type matrix. 
+Generally, this should be done through calling the form_tensor() wrapper function.}
 \usage{
 stack_tensor(container)
 }
@@ -11,8 +12,9 @@ stack_tensor(container)
 for each cell type as well as results and plots from all analyses}
 }
 \value{
-the project container with the tensor data in container$tensor_data
+The project container with the list of tensor data in container$tensor_data.
 }
 \description{
-Create the tensor object by stacking each bulk cell type matrix
+Create the tensor object by stacking each pseudobulk cell type matrix. 
+Generally, this should be done through calling the form_tensor() wrapper function.
 }

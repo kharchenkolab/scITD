@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_tucker.R
 \name{compare_decompositions}
 \alias{compare_decompositions}
-\title{Pairwise comparison of factors from two separate decompositions}
+\title{Plot a pairwise comparison of factors from two separate decompositions}
 \usage{
 compare_decompositions(
   tucker_res1,
@@ -33,10 +33,10 @@ container$meta_associations (default=NULL)}
 (default=TRUE)}
 }
 \value{
-No return value, as the resulting plots are drawn
+No return value, as the resulting plots are drawn.
 }
 \description{
-Pairwise comparison of factors from two separate decompositions
+Plot a pairwise comparison of factors from two separate decompositions
 }
 \examples{
 test_container <- run_tucker_ica(test_container, ranks=c(2,4),

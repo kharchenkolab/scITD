@@ -2,7 +2,7 @@
 % Please edit documentation in R/get_prop_associations.R
 \name{plot_donor_props}
 \alias{plot_donor_props}
-\title{Plot donor proportions for each factor}
+\title{Plot donor celltype/subtype proportions against each factor}
 \usage{
 plot_donor_props(
   donor_props,
@@ -28,8 +28,9 @@ R-squared values, or "adj_pval" to get adjusted pvalues (default='adj_pval')}
 \item{n_col}{numeric The number of columns to organize the plots into (default=2)}
 }
 \value{
-plots of donor proportions for each cell type vs donor factor scores for each factor
+A cowplot figure of ggplot objects for proportions of each cell type against
+donor factor scores for each factor.
 }
 \description{
-Plot donor proportions for each factor
+Plot donor celltype/subtype proportions against each factor
 }

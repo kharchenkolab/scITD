@@ -2,7 +2,7 @@
 % Please edit documentation in R/run_tucker_ica.R
 \name{get_ctype_exp_var}
 \alias{get_ctype_exp_var}
-\title{Get explained variance for each cell type for one factor}
+\title{Get explained variance of the reconstructed data using one cell type from one factor}
 \usage{
 get_ctype_exp_var(container, factor_use, ctype)
 }
@@ -15,8 +15,8 @@ for each cell type as well as results and plots from all analyses}
 \item{ctype}{character The cell type to get variance explained for}
 }
 \value{
-explained variance for each cell type in a list
+The explained variance numeric value for one cell type of one factor.
 }
 \description{
-Get explained variance for each cell type for one factor
+Get explained variance of the reconstructed data using one cell type from one factor
 }

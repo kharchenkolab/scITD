@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_tucker.R
 \name{plot_dscore_enr}
 \alias{plot_dscore_enr}
-\title{Compute enrichment of categorical variables at either end of a factor}
+\title{Compute enrichment of donor metadata categorical variables at high/low factor scores}
 \usage{
 plot_dscore_enr(container, factor_use, meta_var)
 }
@@ -15,10 +15,10 @@ for each cell type as well as results and plots from all analyses}
 \item{meta_var}{character The name of the metadata variable to test}
 }
 \value{
-the enrichment plots
+A cowplot figure of enrichment plots.
 }
 \description{
-Compute enrichment of categorical variables at either end of a factor
+Compute enrichment of donor metadata categorical variables at high/low factor scores
 }
 \examples{
 fig <- plot_dscore_enr(test_container, factor_use=1, meta_var='lanes')

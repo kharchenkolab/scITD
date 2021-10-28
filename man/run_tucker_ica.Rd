@@ -2,7 +2,7 @@
 % Please edit documentation in R/run_tucker_ica.R
 \name{run_tucker_ica}
 \alias{run_tucker_ica}
-\title{Run Tucker decomposition and apply ICA transformation}
+\title{Run the Tucker decomposition and rotate the factors}
 \usage{
 run_tucker_ica(
   container,
@@ -34,10 +34,12 @@ ICA rotation. (default='hybrid')}
 \item{sparsity}{numeric To use with sparse tucker. Higher indicates more sparse (default=sqrt(2))}
 }
 \value{
-container with results of the decomposition in container$tucker_results
+The project container with results of the decomposition in container$tucker_results.
+The results object is a list with the donor scores matrix in the first element and the unfolded
+loadings matrix in the second element.
 }
 \description{
-Run Tucker decomposition and apply ICA transformation
+Run the Tucker decomposition and rotate the factors
 }
 \examples{
 test_container <- run_tucker_ica(test_container,ranks=c(2,4))

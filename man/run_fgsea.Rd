@@ -2,7 +2,7 @@
 % Please edit documentation in R/run_gsea.R
 \name{run_fgsea}
 \alias{run_fgsea}
-\title{Run fgsea for one cell type of one factor. Note, this uses}
+\title{Run fgsea for one cell type of one factor}
 \usage{
 run_fgsea(
   container,
@@ -31,8 +31,10 @@ Currently only works with fgsea method. (default=TRUE)}
 \item{ncores}{numeric The number of cores to use (default=container$experiment_params$ncores)}
 }
 \value{
-data.frame of the fgsea results (including non-significant results)
+A data.frame of the fgsea results for enrichment of gene sets in a given
+cell type for a given factor. The results contain adjusted p-values, normalized
+enrichment scores, leading edge genes, and other information output by fgsea.
 }
 \description{
-Run fgsea for one cell type of one factor. Note, this uses
+Run fgsea for one cell type of one factor
 }

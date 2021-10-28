@@ -2,7 +2,8 @@
 % Please edit documentation in R/form_tensor.R
 \name{parse_data_by_ctypes}
 \alias{parse_data_by_ctypes}
-\title{Parse main counts matrix into per-celltype-matrices}
+\title{Parse main counts matrix into per-celltype-matrices. Generally, this should be done through calling the
+form_tensor() wrapper function.}
 \usage{
 parse_data_by_ctypes(container)
 }
@@ -11,8 +12,10 @@ parse_data_by_ctypes(container)
 for each cell type as well as results and plots from all analyses}
 }
 \value{
-the project container with scMinimal objects per cell type
+The project container with separate scMinimal objects per cell type in
+the container$scMinimal_ctype slot
 }
 \description{
-Parse main counts matrix into per-celltype-matrices
+Parse main counts matrix into per-celltype-matrices. Generally, this should be done through calling the
+form_tensor() wrapper function.
 }

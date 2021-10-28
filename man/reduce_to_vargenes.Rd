@@ -2,7 +2,8 @@
 % Please edit documentation in R/form_tensor.R
 \name{reduce_to_vargenes}
 \alias{reduce_to_vargenes}
-\title{Reduce each cell type's expression matrix to just the significantly variable genes}
+\title{Reduce each cell type's expression matrix to just the significantly variable genes. 
+Generally, this should be done through calling the form_tensor() wrapper function.}
 \usage{
 reduce_to_vargenes(container)
 }
@@ -11,9 +12,10 @@ reduce_to_vargenes(container)
 for each cell type as well as results and plots from all analyses}
 }
 \value{
-the project container with pseudobulked matrices reduced to only
-the most variable genes
+The project container with pseudobulked matrices reduced to only
+the most variable genes.
 }
 \description{
-Reduce each cell type's expression matrix to just the significantly variable genes
+Reduce each cell type's expression matrix to just the significantly variable genes. 
+Generally, this should be done through calling the form_tensor() wrapper function.
 }

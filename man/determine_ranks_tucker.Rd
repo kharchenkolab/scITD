@@ -2,7 +2,7 @@
 % Please edit documentation in R/determine_ranks_tucker.R
 \name{determine_ranks_tucker}
 \alias{determine_ranks_tucker}
-\title{Rank determination by svd on the tensor unfolded along each mode.}
+\title{Run rank determination by svd on the tensor unfolded along each mode}
 \usage{
 determine_ranks_tucker(
   container,
@@ -59,11 +59,11 @@ If NULL, uses var_scale_power from container$experiment_params. (default=.5)}
 \item{seed}{numeric Seed passed to set.seed() (default=container$experiment_params$rand_seed)}
 }
 \value{
-the project container with rank determination plot in
-container$plots$rank_determination_plot
+The project container with a cowplot figure of rank determination plots in
+container$plots$rank_determination_plot.
 }
 \description{
-Rank determination by svd on the tensor unfolded along each mode.
+Run rank determination by svd on the tensor unfolded along each mode
 }
 \examples{
 test_container <- determine_ranks_tucker(test_container, max_ranks_test=c(3,5),

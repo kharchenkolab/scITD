@@ -34,7 +34,8 @@ of associations between each ligand hit and each factor (default=TRUE)}
 \item{ncores}{numeric The number of cores to use (default=container$experiment_params$ncores)}
 }
 \value{
-The results heatmap(s)
+The LR analysis results heatmap as ComplexHeatmap object. Adjusted p-values
+for all results are placed in container$lr_res.
 }
 \description{
 Compute and plot the LR interactions for one factor

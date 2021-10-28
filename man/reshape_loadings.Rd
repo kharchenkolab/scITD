@@ -14,7 +14,7 @@ reshape_loadings(ldngs_row, genes, ctypes)
 \item{ctypes}{character The cell type corresponding to each loading}
 }
 \value{
-a loadings matrix with dimensions of genes by cell types
+A loadings matrix with dimensions of genes by cell types.
 }
 \description{
 Reshape loadings for a factor from linearized to matrix form

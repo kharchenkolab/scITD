@@ -14,7 +14,9 @@ for each cell type as well as results and plots from all analyses}
 each cell type. Length should be the same as container$experiment_params$ctypes_use}
 }
 \value{
-The project container with gene modules added
+The project container with WGCNA gene co-expression modules added. The
+module eigengenes for each cell type are in container$module_eigengenes, and the
+module genes for each cell type are in container$module_genes.
 }
 \description{
 Compute WGCNA gene modules for each cell type

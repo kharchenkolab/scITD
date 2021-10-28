@@ -37,7 +37,8 @@ on resulting donor factor matrix. Set to 'ica_lds' to optimize loadings by the
 ICA rotation. (default='hybrid')}
 }
 \value{
-plots placed in container$plots$num_batch_factors slot
+A ggpubr figure of ggplot objects showing batch-factor associations and
+placed in container$plots$num_batch_factors slot
 }
 \description{
 Plot factor-batch associations for increasing number of donor factors

@@ -2,7 +2,8 @@
 % Please edit documentation in R/manage_scMinimal.R
 \name{seurat_to_scMinimal}
 \alias{seurat_to_scMinimal}
-\title{Convert Seurat object to scMinimal object}
+\title{Convert Seurat object to scMinimal object. Generally, this should be done through calling the
+make_new_container() wrapper function.}
 \usage{
 seurat_to_scMinimal(seurat_obj, metadata_cols = NULL, metadata_col_nm = NULL)
 }
@@ -22,8 +23,9 @@ if wish to change their names. If NULL, then the preexisting column names are
 used. (default=NULL)}
 }
 \value{
-scMinimal object
+An scMinimal object holding counts and metadata for a project.
 }
 \description{
-Convert Seurat object to scMinimal object
+Convert Seurat object to scMinimal object. Generally, this should be done through calling the
+make_new_container() wrapper function.
 }

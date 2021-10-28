@@ -42,7 +42,7 @@ each factor (default=TRUE)}
 \item{h_w}{numeric Vector specifying height and width (defualt=NULL)}
 }
 \value{
-the project container with the plot in container$plots$donor_matrix
+The project container with a heatmap plot of donor scores in container$plots$donor_matrix.
 }
 \description{
 Plot matrix of donor scores extracted from Tucker decomposition

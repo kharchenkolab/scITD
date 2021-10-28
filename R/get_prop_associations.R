@@ -3,7 +3,8 @@ utils::globalVariables(c("dscore", "donor_proportion", "ctypes", "AUC", "Specifi
                          "Precision", "subtype_names","subtype_associations","dsc",
                          "prop", "cell_types", "myx", "myy"))
 
-#' Compute associations between donor factor scores and donor proportions of cell subtypes
+#' Compute and plot associations between factor scores and cell subtype composition
+#' for various clustering resolution parameters
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -21,8 +22,8 @@ utils::globalVariables(c("dscore", "donor_proportion", "ctypes", "AUC", "Specifi
 #'(default=NULL)
 #' @param n_col numeric The number of columns to organize the plots into (default=2)
 #'
-#' @return the project container with a plot of association results in
-#' container$plots$subtype_prop_factor_associations
+#' @return The project container with a cowplot figure of cell subtype proportion-factor
+#' association results plots in container$plots$subtype_prop_factor_associations.
 #' @export
 get_subtype_prop_associations <- function(container, max_res, stat_type,
                                           integration_var=NULL, min_cells_group=50,
@@ -137,7 +138,7 @@ get_subtype_prop_associations <- function(container, max_res, stat_type,
   return(container)
 }
 
-#' Do leiden subclustering to get cell subtypes
+#' Perform leiden subclustering to get cell subtypes
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -148,7 +149,7 @@ get_subtype_prop_associations <- function(container, max_res, stat_type,
 #' 'merge' to merge clusters below min_cells_group threshold to the nearest cluster
 #' above the size threshold (default='merge')
 #'
-#' @return a vector of cell subclusters
+#' @return A vector of cell subclusters.
 #' @export
 get_subclusters <- function(container,ctype,resolution,min_cells_group=50,small_clust_action='merge') {
   con <- container$embedding
@@ -183,8 +184,8 @@ get_subclusters <- function(container,ctype,resolution,min_cells_group=50,small_
 #' @param clusts character The initially assigned subclusters by leiden clustering
 #' @param min_cells_group numeric The minimum allowable cluster size
 #'
-#' @return the subclusters with small clusters below the size threshold merged into
-#' the nearest larger cluster
+#' @return The subcluster labels with small clusters below the size threshold merged into
+#' the nearest larger cluster.
 merge_small_clusts <- function(con,clusts,min_cells_group) {
   # get names of large cluster
   clust_sizes <- table(clusts)
@@ -233,7 +234,7 @@ merge_small_clusts <- function(con,clusts,min_cells_group) {
   return(clusts)
 }
 
-#' Compute associations between donor factor scores and donor proportions of major cell types
+#' Compute and plot associations between donor factor scores and donor proportions of major cell types
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -241,7 +242,8 @@ merge_small_clusts <- function(con,clusts,min_cells_group) {
 #' R-squared values, or "adj_pval" to get adjusted pvalues.
 #' @param n_col numeric The number of columns to organize the plots into (default=2)
 #'
-#' @return the project container with the results plot in container$plots$ctype_prop_factor_associations
+#' @return The project container with a cowplot figure of results plots in 
+#' container$plots$ctype_prop_factor_associations.
 #' @export
 get_ctype_prop_associations <- function(container,stat_type,n_col=2) {
 
@@ -286,7 +288,7 @@ get_ctype_prop_associations <- function(container,stat_type,n_col=2) {
   return(container)
 }
 
-#' Compute associations between donor factor scores and donor proportions of cell subtypes
+#' Compute and plot associations between donor factor scores and donor proportions of cell subtypes
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -295,7 +297,8 @@ get_ctype_prop_associations <- function(container,stat_type,n_col=2) {
 #' @param n_col numeric The number of columns to organize the plots into (default=2)
 #' @param alt_name character Alternate name for the cell type used in clustering (default=NULL)
 #'
-#' @return the project container with the results plot in container$plots$ctype_prop_factor_associations
+#' @return The project container with a cowplot figure of results plots in 
+#' container$plots$ctype_prop_factor_associations.
 #' @export
 get_ctype_subc_prop_associations <- function(container,ctype,res,n_col=2,alt_name=NULL) {
 
@@ -337,7 +340,8 @@ get_ctype_subc_prop_associations <- function(container,ctype,res,n_col=2,alt_nam
   return(container)
 }
 
-#' Gets umap coordinates if not already provided in container$scMinimal_full$umap
+#' Gets a conos object of the data, aligning datasets across a specified variable such as
+#' batch or donors. This can be run independently or through get_subtype_prop_associations().
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -345,7 +349,7 @@ get_ctype_subc_prop_associations <- function(container,ctype,res,n_col=2,alt_nam
 #' the joint embedding with Conos.
 #' @param ncores numeric The number of cores to use (default=container$experiment_params$ncores)
 #'
-#' @return a dataframe with umap coordinates of each cell in the dataset
+#' @return The project container with a conos object in container$embedding.
 #' @export
 reduce_dimensions <- function(container, integration_var, ncores =container$experiment_params$ncores) {
 
@@ -399,7 +403,7 @@ reduce_dimensions <- function(container, integration_var, ncores =container$expe
 #' @param clusts integer Cluster assignments for each cell with names as cell barcodes
 #' @param metadata data.frame The $metadata field for the given scMinimal
 #'
-#' @return a data.frame of cluster proportions for each donor
+#' @return A data.frame of cluster proportions for each donor.
 #' @export
 compute_donor_props <- function(clusts,metadata) {
   names(clusts) <- metadata[names(clusts),"donors"]
@@ -428,14 +432,14 @@ compute_donor_props <- function(clusts,metadata) {
 }
 
 
-#' Compute associations between donor proportions
+#' Compute associations between donor proportions and factor scores
 #'
 #' @param donor_balances matrx The balances computed from donor cell type proportions
 #' @param donor_scores data.frame The donor scores matrix from tucker results
 #' @param stat_type character Either "fstat" to get F-Statistics, "adj_rsq" to get adjusted
 #' R-squared values, or "adj_pval" to get adjusted pvalues.
 #'
-#' @return a numeric vector of F-Statistics (one for each factor)
+#' @return A numeric vector of association statistics (one for each factor)
 #' @export
 compute_associations <- function(donor_balances, donor_scores, stat_type) {
 
@@ -486,16 +490,16 @@ compute_associations <- function(donor_balances, donor_scores, stat_type) {
 
 
 #' Get a figure showing cell subtype proportion associations with each factor. Combines
-#' this plot with subtype UMAPs and differential expression heatmaps.
+#' this plot with subtype UMAPs and differential expression heatmaps. Note that this
+#' function runs better if the number of cores in the conos object in
+#' container$embedding has n.cores set to a relatively small value < 10.
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
 #' @param all_ctypes character A vector of the cell types to include
 #' @param all_res numeric A vector of resolutions matching the all_ctypes parameter
 #'
-#' @return the figure placed in the slot container$plots$subc_fig. Note that this
-#' function runs better if the number of cores in the conos object in
-#' container$embedding has n.cores set to a relatively small value < 10.
+#' @return A cowplot figure placed in the slot container$plots$subc_fig.
 #' @export
 get_subclust_enr_fig <- function(container,all_ctypes,all_res) {
 
@@ -528,7 +532,7 @@ get_subclust_enr_fig <- function(container,all_ctypes,all_res) {
 
 }
 
-#' Get heatmap of subtype proportion associations for each cell type and factor combo
+#' Get heatmap of subtype proportion associations for each celltype/subtype and each factor
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -536,7 +540,8 @@ get_subclust_enr_fig <- function(container,all_ctypes,all_res) {
 #' @param all_res numeric A vector of resolutions matching the all_ctypes parameter
 #' @param all_factors numerc A vector of the factors to compute associations for
 #'
-#' @return the association heatmap object in container$plots$subc_enr_hmap
+#' @return A ComplexHeatmap object in container$plots$subc_enr_hmap showing the
+#' univariate associations between cell subcluster proportions and each factor.
 get_subclust_enr_hmap <- function(container,all_ctypes,all_res,all_factors) {
 
   res_df <- data.frame(matrix(ncol=length(all_factors),nrow=0))
@@ -644,7 +649,7 @@ get_subclust_enr_hmap <- function(container,all_ctypes,all_res,all_factors) {
 }
 
 
-#' Get scatter plot showing significance of associations for cell subtypes
+#' Get scatter plot for association of a cell subtype proportion with scores for a factor
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -655,7 +660,8 @@ get_subclust_enr_hmap <- function(container,all_ctypes,all_res,all_factors) {
 #' @param factor_use numeric The factor to plot
 #' @param ctype_cur character The name of the major cell type used in the main analysis
 #'
-#' @return the plot
+#' @return A ggplot object of each donor's cell subcluster proportions against donor
+#' scores for a selected factor.
 #' @export
 get_subclust_enr_dotplot <- function(container,ctype,res,subtype,factor_use,ctype_cur=ctype) {
   resolution_name <- paste0('res:',as.character(res))
@@ -719,7 +725,7 @@ get_subclust_enr_dotplot <- function(container,ctype,res,subtype,factor_use,ctyp
 #' @param all_ctypes character A vector of the cell types to include
 #' @param all_res numeric A vector of resolutions matching the all_ctypes parameter
 #'
-#' @return a list of the DE heatmaps as grob objects
+#' @return A list of cell subcluster DE marker gene heatmaps as grob objects.
 get_subclust_de_hmaps <- function(container,all_ctypes,all_res) {
   all_plots <- list()
   con <- container$embedding
@@ -782,8 +788,8 @@ get_subclust_de_hmaps <- function(container,all_ctypes,all_res) {
 #' @param all_res numeric A vector of resolutions matching the all_ctypes parameter
 #' @param n_col numeric The number of columns to organize the figure into (default=3)
 #'
-#' @return the project container with the figure in container$plots$subc_umap_fig and
-#' the individual umap plots in container$plots$subc_umaps
+#' @return The project container with a cowplot figure of all UMAP plots in
+#' container$plots$subc_umap_fig and the individual umap plots in container$plots$subc_umaps
 #' @export
 get_subclust_umap <- function(container,all_ctypes,all_res,n_col=3) {
 
@@ -882,14 +888,16 @@ get_subclust_umap <- function(container,all_ctypes,all_res,n_col=3) {
 }
 
 
-#' Compute single subtype associations with a factor
+#' Compute subtype proportion-factor association p-values for all subclusters of
+#' a given major cell type
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
 #' @param donor_props matrix Donor proportions of subtypes
 #' @param factor_select numeric The factor to get associations for
 #'
-#' @return the association statistics for each factor
+#' @return A vector of association statistics each cell subtype against a
+#' selected factor.
 get_indv_subtype_associations <- function(container, donor_props, factor_select) {
   reg_stats_all <- list()
   for (j in 1:ncol(donor_props)) {
@@ -914,7 +922,7 @@ get_indv_subtype_associations <- function(container, donor_props, factor_select)
 }
 
 
-#' Plot donor proportions for each factor
+#' Plot donor celltype/subtype proportions against each factor
 #'
 #' @param donor_props data.frame Donor proportions as output from compute_donor_props()
 #' @param donor_scores data.frame Donor scores from tucker results
@@ -924,7 +932,8 @@ get_indv_subtype_associations <- function(container, donor_props, factor_select)
 #' R-squared values, or "adj_pval" to get adjusted pvalues (default='adj_pval')
 #' @param n_col numeric The number of columns to organize the plots into (default=2)
 #'
-#' @return plots of donor proportions for each cell type vs donor factor scores for each factor
+#' @return A cowplot figure of ggplot objects for proportions of each cell type against
+#' donor factor scores for each factor.
 plot_donor_props <- function(donor_props, donor_scores, significance,
                              ctype_mapping=NULL, stat_type='adj_pval', n_col=2) {
   if (stat_type == 'adj_pval') {
@@ -991,14 +1000,13 @@ plot_donor_props <- function(donor_props, donor_scores, significance,
   return(fig)
 }
 
-#' Get plot for associations between subcluster proportions for each major cell
-#' type and each factor
+#' Plot association significances for varying clustering resolutions
 #'
 #' @param res data.frame Regression statistics for each subcluster analysis
 #' @param n_col numeric The number of columns to organize the plots into (default=2)
 #'
-#' @return plots of regression statistics for each subtypes at varying clustering
-#' resolutions and for each factor
+#' @return A cowplot of ggplot objects showing statistics for regressions of proportions of
+#' each cell subtype (at varying clustering resolutions) against each factor.
 #' @export
 plot_subclust_associations <- function(res,n_col=2) {
 

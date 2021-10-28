@@ -11,7 +11,9 @@ get_normalized_variance(container)
 for each cell type as well as results and plots from all analyses}
 }
 \value{
-the project container with normalized variances values in scMinimal objects
+The project container with vectors of normalized variances values in scMinimal objects
+for each cell type. Generally, this should be done through calling the
+form_tensor() wrapper function.
 }
 \description{
 Get normalized variance for each gene, taking into account mean-variance trend

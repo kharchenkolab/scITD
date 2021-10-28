@@ -44,8 +44,8 @@ ICA rotation. (default='hybrid')}
 \item{ncores}{numeric The number of cores to use (default=container$experiment_params$ncores)}
 }
 \value{
-The project container with the donor scores stability in
-container$plots$stability_plot_dsc and the loadings stability in
+The project container with the donor scores stability plot in
+container$plots$stability_plot_dsc and the loadings stability plot in
 container$plots$stability_plot_lds
 }
 \description{

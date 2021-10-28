@@ -26,7 +26,7 @@ for each cell type as well as results and plots from all analyses}
 all donors need to have at least 5 cells expressing the receptor.}
 }
 \value{
-A logical indicating whether receptor is present or not
+A logical indicating whether receptor is present or not.
 }
 \description{
 Helper function to check whether receptor is present in target cell type

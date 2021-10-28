@@ -30,7 +30,7 @@ as metadata}
 new subsetted object (default=TRUE)}
 }
 \value{
-a subsetted scMinimal object
+A subsetted scMinimal object.
 }
 \description{
 Subset an scMinimal object by specified genes, donors, cells, or cell types

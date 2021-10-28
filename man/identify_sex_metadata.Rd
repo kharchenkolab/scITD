@@ -15,7 +15,7 @@ for each cell type as well as results and plots from all analyses}
 \item{x_gene}{character Gene name to use for identifying female donors (default='XIST')}
 }
 \value{
-the scMinimal object with sex metadata added to the metadata
+The project container with sex metadata added to the metadata.
 }
 \description{
 Extract metadata for sex information if not provided already

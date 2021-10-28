@@ -2,7 +2,7 @@
 % Please edit documentation in R/manage_container.R
 \name{update_params}
 \alias{update_params}
-\title{Update any of the experiment parameters}
+\title{Update any of the experiment-wide parameters}
 \usage{
 update_params(container, ctypes_use = NULL, ncores = NULL, rand_seed = NULL)
 }
@@ -18,9 +18,12 @@ for each cell type as well as results and plots from all analyses}
 \item{rand_seed}{numeric Random seed to use (default=NULL)}
 }
 \value{
-the project container with updated experiment parameters in
-container$experiment_params
+The project container with updated experiment parameters in
+container$experiment_params.
 }
 \description{
-Update any of the experiment parameters
+Update any of the experiment-wide parameters
+}
+\examples{
+test_container <- update_params(test_container, ncores=1)
 }

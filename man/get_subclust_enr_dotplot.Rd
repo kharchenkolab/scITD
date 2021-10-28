@@ -2,7 +2,7 @@
 % Please edit documentation in R/get_prop_associations.R
 \name{get_subclust_enr_dotplot}
 \alias{get_subclust_enr_dotplot}
-\title{Get scatter plot showing significance of associations for cell subtypes}
+\title{Get scatter plot for association of a cell subtype proportion with scores for a factor}
 \usage{
 get_subclust_enr_dotplot(
   container,
@@ -29,8 +29,9 @@ cell type to plot}
 \item{ctype_cur}{character The name of the major cell type used in the main analysis}
 }
 \value{
-the plot
+A ggplot object of each donor's cell subcluster proportions against donor
+scores for a selected factor.
 }
 \description{
-Get scatter plot showing significance of associations for cell subtypes
+Get scatter plot for association of a cell subtype proportion with scores for a factor
 }

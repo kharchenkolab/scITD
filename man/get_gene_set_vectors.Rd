@@ -15,7 +15,7 @@ for each cell type as well as results and plots from all analyses}
 \item{tmp_casted_num}{matrix The gene by cell type loadings matrix}
 }
 \value{
-list of the logical vectors for each pathway
+A list of the logical vectors for each pathway.
 }
 \description{
 Get logical vectors indicating which genes are in which pathways

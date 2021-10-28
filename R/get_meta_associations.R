@@ -1,5 +1,5 @@
 
-#' Get metadata associations with all factors
+#' Get metadata associations with factor donor scores
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -7,7 +7,8 @@
 #' @param stat_use character Set to either 'rsq' to get r-squared values or 'pval'
 #' to get adjusted pvalues (default='rsq)
 #'
-#' @return the project container with the metadata associations in container$meta_associations
+#' @return The project container with a matrix of metadata associations with each factor
+#' in container$meta_associations.
 #' @export
 #' 
 #' @examples

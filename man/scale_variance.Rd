@@ -2,7 +2,8 @@
 % Please edit documentation in R/form_tensor.R
 \name{scale_variance}
 \alias{scale_variance}
-\title{Scale variance across donors for each gene within each cell type}
+\title{Scale variance across donors for each gene within each cell type. Generally, this should be done through calling the
+form_tensor() wrapper function.}
 \usage{
 scale_variance(container, var_scale_power)
 }
@@ -19,9 +20,10 @@ dependence is taken into account) to the exponent specified here.
 If NULL, uses var_scale_power from container$experiment_params.}
 }
 \value{
-the project container with the variance altered for each gene within
-the pseudobulked matrices for each cell type
+The project container with the variance altered for each gene within
+the pseudobulked matrices for each cell type.
 }
 \description{
-Scale variance across donors for each gene within each cell type
+Scale variance across donors for each gene within each cell type. Generally, this should be done through calling the
+form_tensor() wrapper function.
 }
