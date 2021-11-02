@@ -937,7 +937,6 @@ plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype,
       meta[,i] <- factor(unlist(meta[,i]),levels=unique(unlist(meta[,i]))[order(unique(unlist(meta[,i])))])
     }
 
-    set.seed(30)
     if (length(levels(meta)) < 3) {
       mycol <- RColorBrewer::brewer.pal(n = 3, name = "Paired")
     } else {
@@ -966,7 +965,6 @@ plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype,
   })
   ct_show <- factor(ct_show,levels=ctypes)
 
-  set.seed(10)
   mycol <- RColorBrewer::brewer.pal(n = length(ctypes), name = "Accent")
   names(mycol) <- ctypes
 
