@@ -2,7 +2,7 @@
 % Please edit documentation in R/run_gsea.R
 \name{get_intersecting_pathways}
 \alias{get_intersecting_pathways}
-\title{Extract gene sets that are enriched selectively in one or more cell types for a given factor}
+\title{Extract the intersection of gene sets which are enriched in two or more cell types for a factor}
 \usage{
 get_intersecting_pathways(
   container,
@@ -27,8 +27,9 @@ to "down" to get the gene sets for the negative loadings genes.}
 \item{thresh}{numeric Pvalue significance threshold for selecting enriched sets (default=0.05)}
 }
 \value{
-a vector of pathways selectively enriched in the listed cell types
+A vector of the intersection of pathways that are significantly enriched in two
+or more cell types for a factor.
 }
 \description{
-Extract gene sets that are enriched selectively in one or more cell types for a given factor
+Extract the intersection of gene sets which are enriched in two or more cell types for a factor
 }

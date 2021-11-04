@@ -10,18 +10,22 @@
 using namespace std;
 using namespace Rcpp;
 
-//' calculates column mean and variance, optionally taking a subset of rows to operate on
+//' Calculates column mean and variance. Adapted from pagoda2.
+//' https://github.com/kharchenkolab/pagoda2/blob/main/src/misc2.cpp
 //'
 //' @param sY sparse matrix Gene by cell matrix of counts
 //' @param rowSel numeric The selected rows (genes)
 //' @param ncores numeric The number of cores
+//' 
+//' @return data.frame with columns of mean, variance, and number of observeatios 
+//' for each gene across samples
+//' @export
+//' 
 //' @examples
 //' library(Matrix)
 //' donor_by_gene <- rbind(c(9,2,1,5), c(3,3,1,2))
 //' donor_by_gene <- Matrix(donor_by_gene, sparse = TRUE)
 //' result <- colMeanVars(donor_by_gene, rowSel = NULL, ncores=1)
-//' 
-//' @export
 // [[Rcpp::export]]
 Rcpp::DataFrame colMeanVars(SEXP sY,  SEXP rowSel, int ncores=1) {
   // need to do this as SEXP, modify the slots on the fly

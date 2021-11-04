@@ -2,7 +2,8 @@
 % Please edit documentation in R/RcppExports.R
 \name{get_sums}
 \alias{get_sums}
-\title{calculates factor-stratified sums for each column}
+\title{Calculates factor-stratified sums for each column. Adapted from pagoda2.
+https://github.com/kharchenkolab/pagoda2/blob/main/src/misc2.cpp}
 \usage{
 get_sums(sY, rowSel)
 }
@@ -11,6 +12,10 @@ get_sums(sY, rowSel)
 
 \item{rowSel}{factor The donor that each cell is from}
 }
+\value{
+matrix of summed counts per gene per sample
+}
 \description{
-calculates factor-stratified sums for each column
+Calculates factor-stratified sums for each column. Adapted from pagoda2.
+https://github.com/kharchenkolab/pagoda2/blob/main/src/misc2.cpp
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/determine_ranks_tucker.R
 \name{determine_ranks_tucker}
 \alias{determine_ranks_tucker}
-\title{Rank determination by svd on the tensor unfolded along each mode.}
+\title{Run rank determination by svd on the tensor unfolded along each mode}
 \usage{
 determine_ranks_tucker(
   container,
@@ -14,7 +14,8 @@ determine_ranks_tucker(
   norm_method = "trim",
   scale_factor = 10000,
   scale_var = TRUE,
-  var_scale_power = 0.5
+  var_scale_power = 0.5,
+  seed = container$experiment_params$rand_seed
 )
 }
 \arguments{
@@ -25,8 +26,7 @@ for each cell type as well as results and plots from all analyses}
 donor and gene ranks to test}
 
 \item{shuffle_level}{character Either "cells" to shuffle cell-donor linkages or
-"tensor" to shuffle values within the tensor. Currently "tensor" only works with
-the svd method (default="cells")}
+"tensor" to shuffle values within the tensor (default="cells")}
 
 \item{shuffle_within}{character A metadata variable to shuffle cell-donor linkages
 within (default=NULL)}
@@ -55,11 +55,18 @@ Variance for each gene is then scaled by multiplying the unit scaled values
 by each gene's normalized variance (where the effect of the mean-variance
 dependence is taken into account) to the exponent specified here.
 If NULL, uses var_scale_power from container$experiment_params. (default=.5)}
+
+\item{seed}{numeric Seed passed to set.seed() (default=container$experiment_params$rand_seed)}
 }
 \value{
-the project container with rank determination plot in
-container$plots$rank_determination_plot
+The project container with a cowplot figure of rank determination plots in
+container$plots$rank_determination_plot.
 }
 \description{
-Rank determination by svd on the tensor unfolded along each mode.
+Run rank determination by svd on the tensor unfolded along each mode
+}
+\examples{
+test_container <- determine_ranks_tucker(test_container, max_ranks_test=c(3,5),
+shuffle_level='tensor', num_iter=4, norm_method='trim', scale_factor=10000,
+scale_var=TRUE, var_scale_power=.5)
 }

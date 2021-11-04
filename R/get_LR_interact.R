@@ -24,10 +24,11 @@ utils::globalVariables(c("myx", "myy"))
 #' @param batch_var character A batch variable from metadata to remove (default=NULL)
 #'
 #' @return The project container with added container$scale_pb_extra slot that contains
-#' the tensor with additional ligands and receptors
+#' the tensor with additional ligands and receptors. Also has container$no_scale_pb_extra
+#' slot with pseudobulked, normalized data that is not scaled.
 #' @export
 prep_LR_interact <- function(container, lr_pairs, norm_method='trim', scale_factor=10000,
-                             var_scale_power=.5, batch_var=NULL) {
+                             var_scale_power=0.5, batch_var=NULL) {
   # store original pseudobulk matrices because they will be altered
   orig_pb <- list()
   for (ct in container$experiment_params$ctypes_use) {
@@ -86,7 +87,6 @@ prep_LR_interact <- function(container, lr_pairs, norm_method='trim', scale_fact
   # Choose a set of soft-thresholding powers
   powers = c(c(1:10), seq(from = 12, to=20, by=2))
   for (ct in container$experiment_params$ctypes_use) {
-    print(ct)
 
     datExpr <- container$scale_pb_extra[[ct]]
 
@@ -103,7 +103,9 @@ prep_LR_interact <- function(container, lr_pairs, norm_method='trim', scale_fact
 #' @param sft_thresh numeric A vector indicating the soft threshold to use for
 #' each cell type. Length should be the same as container$experiment_params$ctypes_use
 #'
-#' @return The project container with gene modules added
+#' @return The project container with WGCNA gene co-expression modules added. The
+#' module eigengenes for each cell type are in container$module_eigengenes, and the
+#' module genes for each cell type are in container$module_genes.
 #' @export
 get_gene_modules <- function(container,sft_thresh) {
   ctypes_use <- container$experiment_params$ctypes_use
@@ -155,11 +157,14 @@ get_gene_modules <- function(container,sft_thresh) {
 #' ligand all must be expressing the receptor (default=0.75)
 #' @param add_ld_fact_sig logical Set to TRUE to append a heatmap showing significance
 #' of associations between each ligand hit and each factor (default=TRUE)
+#' @param ncores numeric The number of cores to use (default=container$experiment_params$ncores)
 #'
-#' @return The results heatmap(s)
+#' @return The LR analysis results heatmap as ComplexHeatmap object. Adjusted p-values
+#' for all results are placed in container$lr_res.
 #' @export
 compute_LR_interact <- function(container, lr_pairs, sig_thresh=0.05,
-                                percentile_exp_rec=0.75, add_ld_fact_sig=TRUE) {
+                                percentile_exp_rec=0.75, add_ld_fact_sig=TRUE, 
+                                ncores=container$experiment_params$ncores) {
   all_eg <- container[["module_eigengenes"]]
   all_lig <- unique(lr_pairs[,1])
   ctypes_use <- container$experiment_params$ctypes_use
@@ -245,7 +250,7 @@ compute_LR_interact <- function(container, lr_pairs, sig_thresh=0.05,
     } else {
       return(ct_mod_sig)
     }
-  }, mc.preschedule=TRUE,n.cores=container$experiment_params$ncores,progress=TRUE)
+  }, mc.preschedule=TRUE,n.cores=ncores,progress=TRUE)
 
   # copy results and name
   myres_saved <- myres
@@ -390,7 +395,7 @@ compute_LR_interact <- function(container, lr_pairs, sig_thresh=0.05,
 #' @param percentile_exp_rec numeric The percentile of ligand expression above which
 #' all donors need to have at least 5 cells expressing the receptor.
 #'
-#' @return A logical indicating whether receptor is present or not
+#' @return A logical indicating whether receptor is present or not.
 check_rec_pres <- function(container,lig_ct_exp,rec_elements,target_ct,percentile_exp_rec) {
   nth_quantile <- quantile(lig_ct_exp, probs = c(percentile_exp_rec))
   d_above <- names(lig_ct_exp)[lig_ct_exp > nth_quantile]
@@ -412,8 +417,8 @@ check_rec_pres <- function(container,lig_ct_exp,rec_elements,target_ct,percentil
 
 
 
-#' Compute gene sets that are enriched within specified gene co-regulatory modules.
-#' Uses a hypergeometric test for over-representation. Used in plot_multi_module_enr.
+#' Identify gene sets that are enriched within specified gene co-regulatory modules.
+#' Uses a hypergeometric test for over-representation. Used in plot_multi_module_enr().
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -424,8 +429,7 @@ check_rec_pres <- function(container,lig_ct_exp,rec_elements,target_ct,percentil
 #' "immuno". More than one database can be used. (default="GO")
 #' @param adjust_pval logical Set to TRUE to apply FDR correction (default=TRUE)
 #'
-#' @return p-values for the tested gene sets
-#' @export
+#' @return A vector of p-values for the tested gene sets.
 get_module_enr <- function(container,ctype,mod_select,db_use='GO',adjust_pval=TRUE) {
   mod_genes_all <- container$module_genes[[ctype]] #vector of cluster assignments for each gene
   all_genes <- names(mod_genes_all)
@@ -508,7 +512,7 @@ get_module_enr <- function(container,ctype,mod_select,db_use='GO',adjust_pval=TR
   return(pvals)
 }
 
-#' Generate gene set x ct_module heatmap showing significantly enriched sets
+#' Generate gene set x ct_module heatmap showing co-expression module gene set enrichment results
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -526,7 +530,7 @@ get_module_enr <- function(container,ctype,mod_select,db_use='GO',adjust_pval=TR
 #' sig_thresh (default=.1)
 #' @param h_w numeric Vector specifying height and width (defualt=NULL)
 #'
-#' @return the heatmap plot of enrichment results
+#' @return A ComplexHeatmap object of enrichment results.
 #' @export
 plot_multi_module_enr <- function(container, ctypes, modules, sig_thresh=0.05, db_use='TF', max_plt_pval=.1, h_w=NULL) {
   ct_mod <- sapply(1:length(ctypes), function(x) {paste0(ctypes[x],"_",modules[x])})
@@ -556,19 +560,9 @@ plot_multi_module_enr <- function(container, ctypes, modules, sig_thresh=0.05, d
     myres[names(mod_pv),names(mod_res)[i]] <- mod_pv
   }
 
-  # # make and populate matrix of all pvals
-  # myres <- data.frame(matrix(1,ncol=length(modules),nrow=length(mod_res[[1]])))
-  # colnames(myres) <- ct_mod
-  # rownames(myres) <- names(mod_res[[1]])
-  # for (i in 1:length(mod_res)) {
-  #   mod_pv <- mod_res[[i]]
-  #   myres[names(mod_pv),names(mod_res)[i]] <- mod_pv
-  # }
-
   # adjust pvals
   myres2 <- c(as.matrix(myres))
   myres2 <- p.adjust(myres2,method='fdr')
-  # myres2 <- matrix(myres2,ncol=length(modules),nrow=length(mod_res[[1]]))
   myres2 <- matrix(myres2,ncol=ncol(myres),nrow=nrow(myres))
   rownames(myres2) <- rownames(myres)
   colnames(myres2) <- colnames(myres)
@@ -580,10 +574,8 @@ plot_multi_module_enr <- function(container, ctypes, modules, sig_thresh=0.05, d
   ndx_keep <- which(rowSums(myres2<sig_thresh)>0)
   myres2 <- myres2[ndx_keep,,drop=FALSE]
 
-  # myres2 <- myres2[rowSums(myres2<sig_thresh)>0,,drop=FALSE]
-
   if (nrow(myres2)<1) {
-    print('no significant gene sets')
+    message('no significant gene sets')
     return(NULL)
   }
 
@@ -603,17 +595,6 @@ plot_multi_module_enr <- function(container, ctypes, modules, sig_thresh=0.05, d
 
   # plot
   col_fun <- colorRamp2(c(max_plt_pval, 0), c("white", "green"))
-  # myhmap <- Heatmap(myres2,name='adj pval',
-  #         show_row_dend=FALSE,
-  #         show_column_dend=FALSE,
-  #         col=col_fun,
-  #         row_names_gp = gpar(fontsize = 6),
-  #         border=TRUE,
-  #         row_names_side='right',
-  #         width = unit(6, "cm"),
-  #         column_title = 'Co-expression Modules',
-  #         column_title_gp = gpar(fontsize = 12),
-  #         column_title_side = "bottom")
 
   if (!is.null(h_w)) {
     myhmap <- Heatmap(myres2,name='adj pval',
@@ -642,13 +623,12 @@ plot_multi_module_enr <- function(container, ctypes, modules, sig_thresh=0.05, d
                       clustering_method_rows = "single")
   }
 
-
   return(myhmap)
 }
 
 
 
-#' Plot trio of associations between ligand expression, module levels, and
+#' Plot trio of associations between ligand expression, module eigengenes, and
 #' factor scores
 #'
 #' @param container environment Project container that stores sub-containers
@@ -659,7 +639,7 @@ plot_multi_module_enr <- function(container, ctypes, modules, sig_thresh=0.05, d
 #' @param lig_ct character The name of the cell type where the ligand is expressed
 #' @param lig character The name of the ligand to use
 #'
-#' @return plots of the three associations
+#' @return A cowplot figure of ggplot objects for the three associations scatter plots.
 #' @export
 plot_mod_and_lig <- function(container,factor_select,mod_ct,mod,lig_ct,lig) {
 

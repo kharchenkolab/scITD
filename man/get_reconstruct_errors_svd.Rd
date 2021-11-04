@@ -16,7 +16,7 @@ ranks to test for donor, gene, and cell type modes in that order}
 \item{shuffle_tensor}{logical Set to TRUE to shuffle values within the tensor}
 }
 \value{
-reconstruction errors
+A list of reconstruction errors for each mode of the tensor.
 }
 \description{
 Calculate reconstruction errors using svd approach

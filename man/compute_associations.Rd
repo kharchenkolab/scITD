@@ -2,7 +2,7 @@
 % Please edit documentation in R/get_prop_associations.R
 \name{compute_associations}
 \alias{compute_associations}
-\title{Compute associations between donor proportions}
+\title{Compute associations between donor proportions and factor scores}
 \usage{
 compute_associations(donor_balances, donor_scores, stat_type)
 }
@@ -15,8 +15,8 @@ compute_associations(donor_balances, donor_scores, stat_type)
 R-squared values, or "adj_pval" to get adjusted pvalues.}
 }
 \value{
-a numeric vector of F-Statistics (one for each factor)
+A numeric vector of association statistics (one for each factor)
 }
 \description{
-Compute associations between donor proportions
+Compute associations between donor proportions and factor scores
 }

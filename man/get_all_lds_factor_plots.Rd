@@ -68,8 +68,12 @@ for each cell type (default=TRUE)}
 \item{reset_other_factor_plots}{logical If TRUE then removes any existing loadings plots (default=TRUE)}
 }
 \value{
-the project container with the list of plots placed in container$plots$all_lds_plots
+The project container with the list of all loadings heatmap plots placed in 
+container$plots$all_lds_plots.
 }
 \description{
 Generate loadings heatmaps for all factors
+}
+\examples{
+test_container <- get_all_lds_factor_plots(test_container)
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_tucker.R
 \name{plot_loadings_annot}
 \alias{plot_loadings_annot}
-\title{Plot the gene x cell type loadings for a factor}
+\title{Plot the gene by celltype loadings for a factor}
 \usage{
 plot_loadings_annot(
   container,
@@ -99,12 +99,12 @@ Useful if run get_all_lds_factor_plots but then only want to show one or two plo
 \item{draw_plot}{logical Set to TRUE to show the plot. Plot is stored regardless. (default=TRUE)}
 }
 \value{
-container with the plot put in container$plots$all_lds_plots and the legend put in
-container$plots$all_legends. Use draw(<hmap obj>,annotation_legend_list = <hmap legend obj>)
-to re-render the plot with legend
+The project container with a heatmap of loadings for one factor put in container$plots$all_lds_plots.
+The legend for the heatmap is put in container$plots$all_legends. Use draw(<hmap obj>,annotation_legend_list = <hmap legend obj>)
+to re-render the plot with legend.
 }
 \description{
-Plot the gene x cell type loadings for a factor
+Plot the gene by celltype loadings for a factor
 }
 \examples{
 test_container <- plot_loadings_annot(test_container, 1, display_genes=FALSE,

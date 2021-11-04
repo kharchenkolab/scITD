@@ -1,5 +1,6 @@
 
-#' Create an scMinimal object
+#' Create an scMinimal object. Generally, this should be done through calling the
+#' make_new_container() wrapper function.
 #'
 #' @param count_data sparseMatrix Matrix of raw counts with genes as rows
 #' and cells as columns
@@ -12,8 +13,12 @@
 #' if wish to change their names. If NULL, then the preexisting column names are
 #' used. (default=NULL)
 #'
-#' @return scMinimal object
+#' @return An scMinimal object holding counts and metadata for a project.
 #' @export
+#' 
+#' @examples
+#' scMinimal <- instantiate_scMinimal(count_data=test_container$scMinimal_full$count_data,
+#' meta_data=test_container$scMinimal_full$metadata)
 instantiate_scMinimal <- function(count_data, meta_data, metadata_cols=NULL, metadata_col_nm=NULL) {
   scMinimal <- new.env()
   scMinimal$count_data <- count_data
@@ -35,7 +40,8 @@ instantiate_scMinimal <- function(count_data, meta_data, metadata_cols=NULL, met
   return(scMinimal)
 }
 
-#' Convert Seurat object to scMinimal object
+#' Convert Seurat object to scMinimal object. Generally, this should be done through calling the
+#' make_new_container() wrapper function.
 #'
 #' @param seurat_obj Seurat object that has been cleaned and includes the normalized,
 #' log-transformed counts. The meta.data should include a column with the header
@@ -49,7 +55,7 @@ instantiate_scMinimal <- function(count_data, meta_data, metadata_cols=NULL, met
 #' if wish to change their names. If NULL, then the preexisting column names are
 #' used. (default=NULL)
 #'
-#' @return scMinimal object
+#' @return An scMinimal object holding counts and metadata for a project.
 #' @export
 seurat_to_scMinimal <- function(seurat_obj, metadata_cols=NULL, metadata_col_nm=NULL) {
 
@@ -86,8 +92,14 @@ seurat_to_scMinimal <- function(seurat_obj, metadata_cols=NULL, metadata_col_nm=
 #' @param in_place logical If set to TRUE then replaces the input object with the
 #' new subsetted object (default=TRUE)
 #'
-#' @return a subsetted scMinimal object
+#' @return A subsetted scMinimal object.
 #' @export
+#' 
+#' @examples
+#' cell_names <- colnames(test_container$scMinimal_full$count_data)
+#' cells_sub <- sample(cell_names,40)
+#' scMinimal <- subset_scMinimal(test_container$scMinimal_full,
+#' cells_use=cells_sub)
 subset_scMinimal <- function(scMinimal, ctypes_use=NULL,cells_use=NULL,
                              donors_use=NULL, genes_use=NULL, in_place=TRUE) {
   count_data <- scMinimal$count_data

@@ -2,8 +2,7 @@
 % Please edit documentation in R/manage_container.R
 \name{get_donor_meta}
 \alias{get_donor_meta}
-\title{Gets core donor metadata with columns of donors as minimum. Will subset the matrix
-to only donors processed in the analysis unless otherwise specified.}
+\title{Get metadata matrix of dimensions donors by variables (not per cell)}
 \usage{
 get_donor_meta(container, additional_meta = NULL, only_analyzed = TRUE)
 }
@@ -17,9 +16,11 @@ for each cell type as well as results and plots from all analyses}
 in the formed tensor, otherwise set to FALSE (default=TRUE)}
 }
 \value{
-the container with the minimal metadata in container$donor_metadata
+The project container with metadata per donor (not per cell) in container$donor_metadata.
 }
 \description{
-Gets core donor metadata with columns of donors as minimum. Will subset the matrix
-to only donors processed in the analysis unless otherwise specified.
+Get metadata matrix of dimensions donors by variables (not per cell)
+}
+\examples{
+test_container <- get_donor_meta(test_container, additional_meta='lanes')
 }

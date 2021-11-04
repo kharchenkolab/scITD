@@ -2,7 +2,8 @@
 % Please edit documentation in R/form_tensor.R
 \name{get_pseudobulk}
 \alias{get_pseudobulk}
-\title{Collapse data from cell-level to donor-level via summing counts}
+\title{Collapse data from cell-level to donor-level via summing counts. Generally, this should be done through calling the
+form_tensor() wrapper function.}
 \usage{
 get_pseudobulk(container, shuffle = FALSE, shuffle_within = NULL)
 }
@@ -16,9 +17,10 @@ for each cell type as well as results and plots from all analyses}
 within (default=NULL)}
 }
 \value{
-the project container with pseudobulked count matrices in
-scMinimal_ctype$ctype$pseudobulk slots for each cell type
+The project container with pseudobulked count matrices in
+container$scMinimal_ctype$<ctype>$pseudobulk slots for each cell type.
 }
 \description{
-Collapse data from cell-level to donor-level via summing counts
+Collapse data from cell-level to donor-level via summing counts. Generally, this should be done through calling the
+form_tensor() wrapper function.
 }

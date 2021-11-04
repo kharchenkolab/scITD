@@ -2,7 +2,7 @@
 % Please edit documentation in R/run_gsea.R
 \name{run_gsea_one_factor}
 \alias{run_gsea_one_factor}
-\title{Run gsea separately for all cell types of one specified factor}
+\title{Run gsea separately for all cell types of one specified factor and plot results}
 \usage{
 run_gsea_one_factor(
   container,
@@ -12,7 +12,8 @@ run_gsea_one_factor(
   db_use = "GO",
   signed = TRUE,
   reset_other_factor_plots = FALSE,
-  draw_plot = TRUE
+  draw_plot = TRUE,
+  ncores = container$experiment_params$ncores
 )
 }
 \arguments{
@@ -37,11 +38,20 @@ Currently only works with fgsea method (default=TRUE)}
 \item{reset_other_factor_plots}{logical Set to TRUE to set all other gsea plots to NULL (default=FALSE)}
 
 \item{draw_plot}{logical Set to TRUE to show the plot. Plot is stored regardless. (default=TRUE)}
+
+\item{ncores}{numeric The number of cores to use (default=container$experiment_params$ncores)}
 }
 \value{
-a heatmap plot of the gsea results in the slot
-container$plots$gsea$FactorX
+A stacked heatmap plot of the gsea results in the slot
+container$plots$gsea$<Factor#>. The heatmaps show adjusted p-values for the
+enrichment of each gene set in each cell type for the selected factor. The top
+heatmap shows enriched gene sets among the positive loading genes and the bottom
+heatmap shows enriched gene sets among the negative loading genes for the factor.
 }
 \description{
-Run gsea separately for all cell types of one specified factor
+Run gsea separately for all cell types of one specified factor and plot results
+}
+\examples{
+test_container <- run_gsea_one_factor(test_container, factor_select=1,
+method="fgsea", thresh=0.05, db_use="Hallmark", signed=TRUE)
 }

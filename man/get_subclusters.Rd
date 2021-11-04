@@ -2,7 +2,7 @@
 % Please edit documentation in R/get_prop_associations.R
 \name{get_subclusters}
 \alias{get_subclusters}
-\title{Do leiden subclustering to get cell subtypes}
+\title{Perform leiden subclustering to get cell subtypes}
 \usage{
 get_subclusters(
   container,
@@ -27,8 +27,8 @@ for each cell type as well as results and plots from all analyses}
 above the size threshold (default='merge')}
 }
 \value{
-a vector of cell subclusters
+A vector of cell subclusters.
 }
 \description{
-Do leiden subclustering to get cell subtypes
+Perform leiden subclustering to get cell subtypes
 }

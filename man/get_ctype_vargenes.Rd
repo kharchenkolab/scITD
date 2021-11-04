@@ -3,9 +3,16 @@
 \name{get_ctype_vargenes}
 \alias{get_ctype_vargenes}
 \title{Partition main gene by cell matrix into per cell type matrices with significantly
-variable genes only}
+variable genes only. Generally, this should be done through calling the
+form_tensor() wrapper function.}
 \usage{
-get_ctype_vargenes(container, method, thresh)
+get_ctype_vargenes(
+  container,
+  method,
+  thresh,
+  ncores = container$experiment_params$ncores,
+  seed = container$experiment_params$rand_seed
+)
 }
 \arguments{
 \item{container}{environment Project container that stores sub-containers
@@ -20,16 +27,17 @@ p-values as calculated in pagoda2.}
 \item{thresh}{numeric A pvalue threshold to use for gene significance when
 method is set to "anova" or "empir". For the method "norm_var" thresh is the
 number of top overdispersed genes from each cell type to include.}
+
+\item{ncores}{numeric The number of cores to use (default=container$experiment_params$ncores)}
+
+\item{seed}{numeric Seed passed to set.seed() (default=container$experiment_params$rand_seed)}
 }
 \value{
-the project container with scMinimal environments added for each
-cell type. The scMinimal environments contain expression count matrices
-with columns as the cells belonging to the respective cell type and rows
-as the genes which were identified as significantly variable across donors
-in any cell type. Metadata is also present in these sub-containers for the
-corresponding included cells and is in the "metadata" slot.
+The project container with pseudobulk matrices limted to the selected 
+most variable genes.
 }
 \description{
 Partition main gene by cell matrix into per cell type matrices with significantly
-variable genes only
+variable genes only. Generally, this should be done through calling the
+form_tensor() wrapper function.
 }

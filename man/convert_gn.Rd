@@ -2,7 +2,7 @@
 % Please edit documentation in R/convert_gn.R
 \name{convert_gn}
 \alias{convert_gn}
-\title{Convert alternate gene identifiers to gene symbols}
+\title{Convert gene identifiers to gene symbols}
 \usage{
 convert_gn(container, genes)
 }
@@ -14,8 +14,8 @@ for each cell type as well as results and plots from all analyses}
 gene symbols}
 }
 \value{
-character vector of corresponding gene symbols
+A character vector of gene symbols.
 }
 \description{
-Convert alternate gene identifiers to gene symbols
+Convert gene identifiers to gene symbols
 }

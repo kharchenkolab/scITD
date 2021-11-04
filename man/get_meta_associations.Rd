@@ -2,7 +2,7 @@
 % Please edit documentation in R/get_meta_associations.R
 \name{get_meta_associations}
 \alias{get_meta_associations}
-\title{Get metadata associations with all factors}
+\title{Get metadata associations with factor donor scores}
 \usage{
 get_meta_associations(container, vars_test, stat_use = "rsq")
 }
@@ -16,8 +16,12 @@ for each cell type as well as results and plots from all analyses}
 to get adjusted pvalues (default='rsq)}
 }
 \value{
-the project container with the metadata associations in container$meta_associations
+The project container with a matrix of metadata associations with each factor
+in container$meta_associations.
 }
 \description{
-Get metadata associations with all factors
+Get metadata associations with factor donor scores
+}
+\examples{
+test_container <- get_meta_associations(test_container, vars_test='lanes', stat_use='pval')
 }

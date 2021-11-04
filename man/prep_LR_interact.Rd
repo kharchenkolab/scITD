@@ -42,7 +42,8 @@ If NULL, uses var_scale_power from container$experiment_params. (default=.5)}
 }
 \value{
 The project container with added container$scale_pb_extra slot that contains
-the tensor with additional ligands and receptors
+the tensor with additional ligands and receptors. Also has container$no_scale_pb_extra
+slot with pseudobulked, normalized data that is not scaled.
 }
 \description{
 Prepare data for LR analysis and get soft thresholds to use for gene modules

@@ -2,7 +2,7 @@
 % Please edit documentation in R/run_jackstraw.R
 \name{get_fstats_pvals}
 \alias{get_fstats_pvals}
-\title{Calculate adjusted pvalues for gene celltype fiber-donor score associations}
+\title{Calculate adjusted p-values for gene_celltype fiber-donor score associations}
 \usage{
 get_fstats_pvals(fstats_real, fstats_shuffled)
 }
@@ -12,8 +12,9 @@ get_fstats_pvals(fstats_real, fstats_shuffled)
 \item{fstats_shuffled}{numeric A vector of null F-Statistics}
 }
 \value{
-adjusted pvalues for associations of the unshuffled fibers with factor donor scores
+A vector of adjusted p-values for associations of the unshuffled fibers with
+factor donor scores.
 }
 \description{
-Calculate adjusted pvalues for gene celltype fiber-donor score associations
+Calculate adjusted p-values for gene_celltype fiber-donor score associations
 }

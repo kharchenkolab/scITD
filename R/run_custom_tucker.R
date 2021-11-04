@@ -1,5 +1,8 @@
 
-#'Tucker Decomposition adapted from rTensor but with sparsity constraints
+#'Tucker Decomposition adapted from rTensor but with sparsity constraints added. This
+#'function is still being tested, so use with caution.
+#'https://github.com/jamesyili/rTensor/blob/master/R/rTensor_Decomp.R
+#'
 #'@import rTensor
 #'
 #'@param tnsr Tensor with K modes.
@@ -8,8 +11,7 @@
 #'@param tol numeric Relative Frobenius norm error tolerance (default=1e-5)
 #'@param sparsity numeric Higher is more sparse (default=5)
 #'
-#'@return a list containing the results
-#'@export
+#'@return A list containing all the Tucker decomposition results components.
 tucker_sparse <- function(tnsr,ranks=NULL,max_iter=25,tol=1e-5,sparsity=5){
   if(is.null(ranks)) stop("ranks must be specified")
   if (sum(ranks>tnsr@modes)!=0) stop("ranks must be smaller than the corresponding mode")

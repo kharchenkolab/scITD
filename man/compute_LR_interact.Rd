@@ -9,7 +9,8 @@ compute_LR_interact(
   lr_pairs,
   sig_thresh = 0.05,
   percentile_exp_rec = 0.75,
-  add_ld_fact_sig = TRUE
+  add_ld_fact_sig = TRUE,
+  ncores = container$experiment_params$ncores
 )
 }
 \arguments{
@@ -29,9 +30,12 @@ ligand all must be expressing the receptor (default=0.75)}
 
 \item{add_ld_fact_sig}{logical Set to TRUE to append a heatmap showing significance
 of associations between each ligand hit and each factor (default=TRUE)}
+
+\item{ncores}{numeric The number of cores to use (default=container$experiment_params$ncores)}
 }
 \value{
-The results heatmap(s)
+The LR analysis results heatmap as ComplexHeatmap object. Adjusted p-values
+for all results are placed in container$lr_res.
 }
 \description{
 Compute and plot the LR interactions for one factor

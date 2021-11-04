@@ -2,7 +2,8 @@
 % Please edit documentation in R/get_prop_associations.R
 \name{get_subtype_prop_associations}
 \alias{get_subtype_prop_associations}
-\title{Compute associations between donor factor scores and donor proportions of cell subtypes}
+\title{Compute and plot associations between factor scores and cell subtype composition
+for various clustering resolution parameters}
 \usage{
 get_subtype_prop_associations(
   container,
@@ -40,9 +41,10 @@ used in the main analysis. Should match the order of container$experiment_params
 \item{n_col}{numeric The number of columns to organize the plots into (default=2)}
 }
 \value{
-the project container with a plot of association results in
-container$plots$subtype_prop_factor_associations
+The project container with a cowplot figure of cell subtype proportion-factor
+association results plots in container$plots$subtype_prop_factor_associations.
 }
 \description{
-Compute associations between donor factor scores and donor proportions of cell subtypes
+Compute and plot associations between factor scores and cell subtype composition
+for various clustering resolution parameters
 }

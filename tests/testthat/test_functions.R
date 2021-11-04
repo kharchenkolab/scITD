@@ -26,7 +26,7 @@ test_that("form_tensor() functionality", {
 
 test_that("get_lm_pvals() functionality", {
   expected_result <- test_container[["gene_score_associations"]]
-  test_container <- get_lm_pvals(test_container)
+  test_container <- get_lm_pvals(test_container, n.cores = 1)
   result <- test_container[["gene_score_associations"]]
   expect_equal(result, expected_result)
 })

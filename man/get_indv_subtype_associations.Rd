@@ -2,7 +2,8 @@
 % Please edit documentation in R/get_prop_associations.R
 \name{get_indv_subtype_associations}
 \alias{get_indv_subtype_associations}
-\title{Compute single subtype associations with a factor}
+\title{Compute subtype proportion-factor association p-values for all subclusters of
+a given major cell type}
 \usage{
 get_indv_subtype_associations(container, donor_props, factor_select)
 }
@@ -15,8 +16,10 @@ for each cell type as well as results and plots from all analyses}
 \item{factor_select}{numeric The factor to get associations for}
 }
 \value{
-the association statistics for each factor
+A vector of association statistics each cell subtype against a
+selected factor.
 }
 \description{
-Compute single subtype associations with a factor
+Compute subtype proportion-factor association p-values for all subclusters of
+a given major cell type
 }

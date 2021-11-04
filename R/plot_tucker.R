@@ -22,7 +22,7 @@
 #' (default=NULL)
 #' @param h_w numeric Vector specifying height and width (defualt=NULL)
 #'
-#' @return the project container with the plot in container$plots$donor_matrix
+#' @return The project container with a heatmap plot of donor scores in container$plots$donor_matrix.
 #' @export
 #'
 #' @examples
@@ -195,7 +195,7 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL,
 }
 
 
-#' Plot the gene x cell type loadings for a factor
+#' Plot the gene by celltype loadings for a factor
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -242,9 +242,9 @@ plot_donor_matrix <- function(container, meta_vars=NULL, cluster_by_meta=NULL,
 #' Useful if run get_all_lds_factor_plots but then only want to show one or two plots. (default=FALSE)
 #' @param draw_plot logical Set to TRUE to show the plot. Plot is stored regardless. (default=TRUE)
 #'
-#' @return container with the plot put in container$plots$all_lds_plots and the legend put in
-#' container$plots$all_legends. Use draw(<hmap obj>,annotation_legend_list = <hmap legend obj>)
-#' to re-render the plot with legend
+#' @return The project container with a heatmap of loadings for one factor put in container$plots$all_lds_plots.
+#' The legend for the heatmap is put in container$plots$all_legends. Use draw(<hmap obj>,annotation_legend_list = <hmap legend obj>)
+#' to re-render the plot with legend.
 #' @export
 #'
 #' @examples
@@ -376,30 +376,13 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
     var_annot <- NULL
   }
 
-  # color_lim <- stats::quantile(as.matrix(abs(tmp_casted_num)), c(.9999999))
   color_lim <- stats::quantile(as.matrix(abs(tmp_casted_num)), c(.99))
-  # color_lim <- stats::quantile(as.matrix(abs(tmp_casted_num)), c(.95))
   col_fun = colorRamp2(c(-color_lim, 0, color_lim), c("blue", "white", "red"))
 
 
   hm_legends[[1]] <- Legend(col_fun = col_fun, title = "loading",
                             grid_height = unit(1, "mm"), grid_width = unit(3, "mm"),
                             title_position = "leftcenter-rot")
-
-  # # 'median' clustering method works well
-  # hm_list <- Heatmap(tmp_casted_num, show_row_dend = FALSE, show_column_dend = FALSE,
-  #                    name = "loading", show_row_names = display_genes,
-  #                    column_names_gp = gpar(fontsize = 12), cluster_columns = FALSE,
-  #                    clustering_method_rows = clust_method,
-  #                    row_names_side = "left", col=col_fun,
-  #                    column_title = paste0('Factor ', factor_select),
-  #                    column_title_gp = gpar(fontsize = 20, fontface = "bold"),
-  #                    row_title = rt, row_title_gp = gpar(fontsize = 14), border = TRUE,
-  #                    row_labels = convert_gn(container,rownames(tmp_casted_num)),
-  #                    right_annotation = gene_callouts, top_annotation=var_annot,
-  #                    show_heatmap_legend = FALSE,
-  #                    width = unit(10, "cm"),
-  #                    height = unit(14, "cm")) #used to use w=10, h=20, or 6.75, 20 for combo fig. 10,14 most recently
 
   if (!is.null(h_w)) {
     hm_list <- Heatmap(tmp_casted_num, show_row_dend = FALSE, show_column_dend = FALSE,
@@ -538,8 +521,7 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
 #' @param genes character The gene identifiers corresponding to each loading
 #' @param ctypes character The cell type corresponding to each loading
 #'
-#' @return a loadings matrix with dimensions of genes by cell types
-#' @export
+#' @return A loadings matrix with dimensions of genes by cell types.
 reshape_loadings <- function(ldngs_row,genes,ctypes) {
   # create df with genes ctype and value
   tmp <- cbind(ctypes,genes,ldngs_row)
@@ -567,8 +549,7 @@ reshape_loadings <- function(ldngs_row,genes,ctypes) {
 #' @param gene_sets character Vector of gene sets to extract genes for
 #' @param tmp_casted_num matrix The gene by cell type loadings matrix
 #'
-#' @return list of the logical vectors for each pathway
-#' @export
+#' @return A list of the logical vectors for each pathway.
 get_gene_set_vectors <- function(container,gene_sets,tmp_casted_num) {
   m_df = msigdbr::msigdbr(species = "Homo sapiens")
   my_pathways = split(m_df$gene_symbol, f = m_df$gs_name)
@@ -590,8 +571,8 @@ get_gene_set_vectors <- function(container,gene_sets,tmp_casted_num) {
 #' @param ctypes character The cell types used in all the analysis ordered
 #' as they appear in the loadings matrix
 #'
-#' @return a list of pvalues for each gene in each cell type
-#' @export
+#' @return A list of the adjusted p-values for expression of each gene in each cell type in
+#' association with a factor of interest.
 get_significance_vectors <- function(container, factor_select, ctypes) {
   # parse the gene significance results to get only gene_ctype combos for factor of interest
   padj <- container$gene_score_associations
@@ -626,7 +607,7 @@ get_significance_vectors <- function(container, factor_select, ctypes) {
 }
 
 
-#' Get gene callouts annotation for a loadings heatmap
+#' Get gene callout annotations for a loadings heatmap
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -638,7 +619,7 @@ get_significance_vectors <- function(container, factor_select, ctypes) {
 #' @param ctypes character The cell types for which to get the top genes to make
 #' callouts for. If NULL then uses all cell types. (default=NULL)
 #'
-#' @return HeatmapAnnotation for the gene callouts
+#' @return A HeatmapAnnotation object for the gene callouts.
 get_callouts_annot <- function(container, tmp_casted_num, factor_select, sig_thresh, top_n_per_ctype=5, ctypes=NULL) {
 
   # extract the genes to show
@@ -709,8 +690,12 @@ get_callouts_annot <- function(container, tmp_casted_num, factor_select, sig_thr
 #' for each cell type (default=TRUE)
 #' @param reset_other_factor_plots logical If TRUE then removes any existing loadings plots (default=TRUE)
 #'
-#' @return the project container with the list of plots placed in container$plots$all_lds_plots
+#' @return The project container with the list of all loadings heatmap plots placed in 
+#' container$plots$all_lds_plots.
 #' @export
+#' 
+#' @examples
+#' test_container <- get_all_lds_factor_plots(test_container)
 get_all_lds_factor_plots <- function(container, use_sig_only=FALSE, nonsig_to_zero=FALSE, annot='none',
                                      pathways_list=NULL, sim_de_donor_group=NULL,
                                      sig_thresh=0.05, display_genes=FALSE,
@@ -746,7 +731,7 @@ get_all_lds_factor_plots <- function(container, use_sig_only=FALSE, nonsig_to_ze
   return(container)
 }
 
-#' Creates a figure of all loadings plots arranged
+#' Create a figure of all loadings plots arranged
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -755,12 +740,13 @@ get_all_lds_factor_plots <- function(container, use_sig_only=FALSE, nonsig_to_ze
 #' @param max_cols numeric The max number of columns to plot. Can only either be 2
 #' or 3 since these are large plots. (default=3)
 #'
-#' @return the multi-plot figure
+#' @return The multi-plot figure.
 #' @export
+#' 
+#' @examples
+#' test_container <- get_all_lds_factor_plots(test_container)
+#' fig <- render_multi_plots(test_container, data_type='loadings')
 render_multi_plots <- function(container,data_type,max_cols=3) {
-  # if (!(max_cols == 2 || max_cols == 3)) {
-  #   stop('max_cols can only be set to 2 or 3')
-  # }
 
   if (data_type == "loadings") {
     hm_list <- container$plots$all_lds_plots
@@ -811,7 +797,6 @@ render_multi_plots <- function(container,data_type,max_cols=3) {
     } else if (num_bottom==3) {
       bottom_row <- list(NULL,grob_lst[[num_plots-2]],grob_lst[[num_plots-1]],grob_lst[[num_plots]],NULL)
       bottom_row <- cowplot::plot_grid(plotlist=bottom_row, ncol=4, rel_widths=c((1/4)/2,(1/4),(1/4),(1/4),(1/4)/2))
-      # fig <- cowplot::plot_grid(top_rows, bottom_row, ncol=1, rel_heights=c(num_rows,1),align = "v")
       fig <- cowplot::plot_grid(top_rows, bottom_row, ncol=1,align = "v")
     } else {
       fig <- top_rows
@@ -825,8 +810,8 @@ render_multi_plots <- function(container,data_type,max_cols=3) {
 }
 
 
-#' Generate heatmap showing top genes in each cell type significantly associated
-#' with a given factor
+#' Generate a gene by donor heatmap showing scaled expression of top loading genes
+#' for a given factor
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -839,9 +824,14 @@ render_multi_plots <- function(container,data_type,max_cols=3) {
 #' @param additional_meta character Another meta variable to plot (default=NULL)
 #' @param add_genes character Additional genes to plot for all ctypes (default=NULL)
 #'
-#' @return the project container with the plot in the slot
-#' container$plots$donor_sig_genes$Factor#
+#' @return The project container with a heatmap plot in the slot
+#' container$plots$donor_sig_genes$<Factor#>. This heatmap shows scaled expression
+#' of top loading genes in each cell type for a selected factor.
 #' @export
+#' 
+#' @examples
+#' test_container <- plot_donor_sig_genes(test_container, factor_select=1,
+#' top_n_per_ctype=2)
 plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype,
                                  ctypes_use=NULL, show_donor_labels=FALSE,
                                  additional_meta=NULL, add_genes=NULL) {
@@ -912,9 +902,12 @@ plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype,
 
   colnames(donor_unfold) <- gn_ctype_cnames
   rownames(donor_unfold) <- donor_nm
-
-  # ## testing out scaling the data to unit variance
-  # donor_unfold <- scale(donor_unfold)
+  
+  # check if there were no genes passing significance threshold
+  if (length(genes_plot)==0) {
+    warning("There are no significant genes for this factor.")
+    return(container)
+  }
 
   # subset data to just genes to plot
   donor_unfold_sub <- donor_unfold[,genes_plot]
@@ -944,7 +937,6 @@ plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype,
       meta[,i] <- factor(unlist(meta[,i]),levels=unique(unlist(meta[,i]))[order(unique(unlist(meta[,i])))])
     }
 
-    set.seed(30)
     if (length(levels(meta)) < 3) {
       mycol <- RColorBrewer::brewer.pal(n = 3, name = "Paired")
     } else {
@@ -973,7 +965,6 @@ plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype,
   })
   ct_show <- factor(ct_show,levels=ctypes)
 
-  set.seed(10)
   mycol <- RColorBrewer::brewer.pal(n = length(ctypes), name = "Accent")
   names(mycol) <- ctypes
 
@@ -1003,7 +994,7 @@ plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype,
 }
 
 
-#' Pairwise comparison of factors from two separate decompositions
+#' Plot a pairwise comparison of factors from two separate decompositions
 #'
 #' @param tucker_res1 list The container$tucker_res from first decomposition
 #' @param tucker_res2 list The container$tucker_res from first decomposition
@@ -1018,7 +1009,17 @@ plot_donor_sig_genes <- function(container, factor_select, top_n_per_ctype,
 #' @param use_text logical If TRUE, then displays correlation coefficients in cells
 #' (default=TRUE)
 #'
+#' @return No return value, as the resulting plots are drawn.
 #' @export
+#' 
+#' @examples
+#' test_container <- run_tucker_ica(test_container, ranks=c(2,4),
+#' tucker_type='regular', rotation_type='hybrid')
+#' tucker_res1 <- test_container$tucker_results
+#' test_container <- run_tucker_ica(test_container, ranks=c(2,4),
+#' tucker_type='regular', rotation_type='ica_dsc')
+#' tucker_res2 <- test_container$tucker_results
+#' compare_decompositions(tucker_res1,tucker_res2,c('hybrid_method','ica_method'))
 compare_decompositions <- function(tucker_res1,tucker_res2,decomp_names,meta_anno1=NULL,
                                    meta_anno2=NULL,use_text=TRUE) {
   ## first get donor scores comparison
@@ -1206,14 +1207,14 @@ compare_decompositions <- function(tucker_res1,tucker_res2,decomp_names,meta_ann
 }
 
 
-#' Plot dotplots for each factor to compare donor scores between meta groups
+#' Plot dotplots for each factor to compare donor scores between metadata groups
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
 #' @param meta_var character The meta data variable to compare groups for
 #'
-#' @return a figure of comparison plots (one for each factor) placed in
-#' container$plots$indv_meta_scores_associations
+#' @return The project container with a figure of comparison plots (one for each factor)
+#' placed in container$plots$indv_meta_scores_associations.
 #' @export
 plot_scores_by_meta <- function(container,meta_var) {
   dscores <- container[["tucker_results"]][[1]]
@@ -1280,9 +1281,6 @@ plot_scores_by_meta <- function(container,meta_var) {
     tmp_pvals <- all_pvals[all_pvals$myfactor==j,,drop=FALSE]
     p <- ggplot(tmp_dat,aes(x=Status,y=dscore)) +
       geom_violin() +
-      # geom_dotplot(binaxis = 'y', stackdir = 'center', method = 'histodot',
-      #              dotsize = 2.5, binwidth = .005) +
-      # geom_boxplot() +
       ggpubr::stat_pvalue_manual(
         tmp_pvals,
         y.position = max(tmp$f)+.2, step.increase = .1,
@@ -1311,15 +1309,18 @@ plot_scores_by_meta <- function(container,meta_var) {
 }
 
 
-#' Compute enrichment of categorical variables at either end of a factor
+#' Compute enrichment of donor metadata categorical variables at high/low factor scores
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
 #' @param factor_use numeric The factor to test
 #' @param meta_var character The name of the metadata variable to test
 #'
-#' @return the enrichment plots
+#' @return A cowplot figure of enrichment plots.
 #' @export
+#' 
+#' @examples
+#' fig <- plot_dscore_enr(test_container, factor_use=1, meta_var='lanes')
 plot_dscore_enr <- function(container,factor_use,meta_var) {
   meta <- unique(container$scMinimal_full$metadata[,c('donors',meta_var)])
   rownames(meta) <- meta$donors
@@ -1336,9 +1337,7 @@ plot_dscore_enr <- function(container,factor_use,meta_var) {
                     stats    = myranks,
                     minSize  = 0,
                     maxSize  = 5000)
-
-  print(fgseaRes)
-
+  
   plt_lst <- list()
   for (i in 1:length(meta_vals)) {
     plt <- fgsea::plotEnrichment(mypaths[[meta_vals[i]]],
@@ -1366,7 +1365,7 @@ plot_dscore_enr <- function(container,factor_use,meta_var) {
 #' @param num_genes_per numeric The maximum number of leading edge genes to get for
 #' each gene set (default=5)
 #'
-#' @return a named character vector of gene sets, with leading edge genes as the names
+#' @return A named character vector of gene sets, with leading edge genes as the names.
 get_leading_edge_genes <- function(container,factor_select,gsets,num_genes_per=5) {
   factor_name <- paste0('Factor',as.character(factor_select))
 

@@ -17,8 +17,8 @@ for each cell type as well as results and plots from all analyses}
 \item{n_col}{numeric The number of columns to organize the figure into (default=3)}
 }
 \value{
-the project container with the figure in container$plots$subc_umap_fig and
-the individual umap plots in container$plots$subc_umaps
+The project container with a cowplot figure of all UMAP plots in
+container$plots$subc_umap_fig and the individual umap plots in container$plots$subc_umaps
 }
 \description{
 Get a figure to display subclusterings at multiple resolutions

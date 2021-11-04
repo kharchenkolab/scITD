@@ -14,7 +14,8 @@ plot_rec_errors_bar_svd(real, shuffled, mode_to_show)
 \item{mode_to_show}{numeric The mode to plot the results for}
 }
 \value{
-plot
+A ggplot object showing the difference in reconstruction errors for
+successive factors.
 }
 \description{
 Plot reconstruction errors as bar plot for svd method

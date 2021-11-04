@@ -13,7 +13,7 @@ normalize_counts(count_data, scale_factor = 10000)
 during normalization of the pseudobulked data (default=10000)}
 }
 \value{
-the normalized, log-transformed data
+The normalized, log-transformed matrix.
 }
 \description{
 Helper function to normalize and log-transform count data

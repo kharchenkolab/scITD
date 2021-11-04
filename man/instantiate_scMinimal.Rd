@@ -2,7 +2,8 @@
 % Please edit documentation in R/manage_scMinimal.R
 \name{instantiate_scMinimal}
 \alias{instantiate_scMinimal}
-\title{Create an scMinimal object}
+\title{Create an scMinimal object. Generally, this should be done through calling the
+make_new_container() wrapper function.}
 \usage{
 instantiate_scMinimal(
   count_data,
@@ -27,8 +28,13 @@ if wish to change their names. If NULL, then the preexisting column names are
 used. (default=NULL)}
 }
 \value{
-scMinimal object
+An scMinimal object holding counts and metadata for a project.
 }
 \description{
-Create an scMinimal object
+Create an scMinimal object. Generally, this should be done through calling the
+make_new_container() wrapper function.
+}
+\examples{
+scMinimal <- instantiate_scMinimal(count_data=test_container$scMinimal_full$count_data,
+meta_data=test_container$scMinimal_full$metadata)
 }

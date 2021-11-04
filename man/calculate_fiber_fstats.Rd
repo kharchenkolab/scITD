@@ -17,7 +17,8 @@ matrix as the first element and the loadings tensor unfolded as the second eleme
 \item{s_fibers}{list Gene and cell type indices for the randomly selected fibers}
 }
 \value{
-the F-Statistics for associations between all shuffled fibers and donor scores
+A numeric vector of F-statistics for associations between all shuffled fibers 
+and donor scores.
 }
 \description{
 Calculate F-Statistics for the association between donor scores for each factor

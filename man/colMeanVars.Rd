@@ -2,7 +2,8 @@
 % Please edit documentation in R/RcppExports.R
 \name{colMeanVars}
 \alias{colMeanVars}
-\title{calculates column mean and variance, optionally taking a subset of rows to operate on}
+\title{Calculates column mean and variance. Adapted from pagoda2.
+https://github.com/kharchenkolab/pagoda2/blob/main/src/misc2.cpp}
 \usage{
 colMeanVars(sY, rowSel, ncores = 1L)
 }
@@ -13,13 +14,17 @@ colMeanVars(sY, rowSel, ncores = 1L)
 
 \item{ncores}{numeric The number of cores}
 }
+\value{
+data.frame with columns of mean, variance, and number of observeatios 
+for each gene across samples
+}
 \description{
-calculates column mean and variance, optionally taking a subset of rows to operate on
+Calculates column mean and variance. Adapted from pagoda2.
+https://github.com/kharchenkolab/pagoda2/blob/main/src/misc2.cpp
 }
 \examples{
 library(Matrix)
 donor_by_gene <- rbind(c(9,2,1,5), c(3,3,1,2))
 donor_by_gene <- Matrix(donor_by_gene, sparse = TRUE)
 result <- colMeanVars(donor_by_gene, rowSel = NULL, ncores=1)
-
 }

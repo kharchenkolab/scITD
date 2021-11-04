@@ -12,7 +12,7 @@ compute_donor_props(clusts, metadata)
 \item{metadata}{data.frame The $metadata field for the given scMinimal}
 }
 \value{
-a data.frame of cluster proportions for each donor
+A data.frame of cluster proportions for each donor.
 }
 \description{
 Get donor proportions of each cell type or subtype

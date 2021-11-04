@@ -2,7 +2,8 @@
 % Please edit documentation in R/run_tucker_ica.R
 \name{tucker_ica_helper}
 \alias{tucker_ica_helper}
-\title{Tucker helper function that actually does the decomposition}
+\title{Helper function for running the decomposition. Use the run_tucker_ica()
+wrapper function instead.}
 \usage{
 tucker_ica_helper(tensor_data, ranks, tucker_type, rotation_type, sparsity)
 }
@@ -24,9 +25,10 @@ ICA rotation.}
 \item{sparsity}{numeric Higher indicates more sparse}
 }
 \value{
-list of results for tucker decomposition with donor scores matrix in first
-element and loadings matrix in second element
+The list of results for tucker decomposition with donor scores matrix in first
+element and loadings matrix in second element.
 }
 \description{
-Tucker helper function that actually does the decomposition
+Helper function for running the decomposition. Use the run_tucker_ica()
+wrapper function instead.
 }

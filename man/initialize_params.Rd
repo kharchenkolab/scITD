@@ -2,7 +2,7 @@
 % Please edit documentation in R/manage_container.R
 \name{initialize_params}
 \alias{initialize_params}
-\title{Update any of the experiment parameters}
+\title{Initialize parameters to be used throughout scITD in various functions}
 \usage{
 initialize_params(ctypes_use, ncores = 4, rand_seed = 10)
 }
@@ -15,8 +15,12 @@ initialize_params(ctypes_use, ncores = 4, rand_seed = 10)
 \item{rand_seed}{numeric Random seed to use (default=10)}
 }
 \value{
-a list of the experiment parameters to use
+A list of the experiment parameters to use.
 }
 \description{
-Update any of the experiment parameters
+Initialize parameters to be used throughout scITD in various functions
+}
+\examples{
+param_list <- initialize_params(ctypes_use = c("CD4+ T", "CD8+ T"),
+ncores = 1, rand_seed = 10)
 }

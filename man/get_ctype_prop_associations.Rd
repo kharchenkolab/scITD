@@ -2,7 +2,7 @@
 % Please edit documentation in R/get_prop_associations.R
 \name{get_ctype_prop_associations}
 \alias{get_ctype_prop_associations}
-\title{Compute associations between donor factor scores and donor proportions of major cell types}
+\title{Compute and plot associations between donor factor scores and donor proportions of major cell types}
 \usage{
 get_ctype_prop_associations(container, stat_type, n_col = 2)
 }
@@ -16,8 +16,9 @@ R-squared values, or "adj_pval" to get adjusted pvalues.}
 \item{n_col}{numeric The number of columns to organize the plots into (default=2)}
 }
 \value{
-the project container with the results plot in container$plots$ctype_prop_factor_associations
+The project container with a cowplot figure of results plots in 
+container$plots$ctype_prop_factor_associations.
 }
 \description{
-Compute associations between donor factor scores and donor proportions of major cell types
+Compute and plot associations between donor factor scores and donor proportions of major cell types
 }

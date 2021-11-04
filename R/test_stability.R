@@ -21,18 +21,24 @@ utils::globalVariables(c("ldngs", "dscores"))
 #' @param subset_type character Set to either 'subset' or 'bootstrap' (default='subset')
 #' @param sub_prop numeric The proportion of donors to keep when using subset_type='subset' (default=.75)
 #' @param n_iterations numeric The number of iterations to perform (default=100)
+#' @param ncores numeric The number of cores to use (default=container$experiment_params$ncores)
 #'
-#' @return The project container with the donor scores stability in
-#' container$plots$stability_plot_dsc and the loadings stability in
+#' @return The project container with the donor scores stability plot in
+#' container$plots$stability_plot_dsc and the loadings stability plot in
 #' container$plots$stability_plot_lds
 #' @export
+#' 
+#' @examples
+#' test_container <- run_stability_analysis(test_container, ranks=c(2,4),
+#' tucker_type='regular', rotation_type='hybrid', subset_type='subset', 
+#' sub_prop=0.75, n_iterations=5, ncores=1)
 run_stability_analysis <- function(container, ranks, tucker_type='regular',
                                    rotation_type='hybrid',  sparsity=sqrt(2),
-                                   subset_type='subset', sub_prop=.75,
-                                   n_iterations=100) {
+                                   subset_type='subset', sub_prop=0.75,
+                                   n_iterations=100, ncores=container$experiment_params$ncores) {
 
   ## run tucker with the above parameters in case they changed them
-  container <- run_tucker_ica(container, ranks=ranks,
+  container <- run_tucker_ica(container, ranks = ranks,
                               tucker_type = tucker_type,
                               rotation_type = rotation_type)
   # pca_unfolded(pbmc_container,2)
@@ -65,7 +71,6 @@ run_stability_analysis <- function(container, ranks, tucker_type='regular',
                                 tucker_type = tucker_type,
                                 rotation_type = rotation_type,
                                 sparsity=sparsity)
-    # pca_unfolded(pbmc_container,2)
 
     donor_mat <- container$tucker_results[[1]]
     ldngs <- container$tucker_results[[2]]
@@ -78,7 +83,7 @@ run_stability_analysis <- function(container, ranks, tucker_type='regular',
 
     return(list(d_max,l_max))
 
-  }, mc.preschedule=TRUE,n.cores=container$experiment_params$ncores, progress=TRUE)
+  }, mc.preschedule=TRUE, n.cores=ncores, progress=TRUE)
 
   stability_results <- do.call(rbind.data.frame, res_list)
 

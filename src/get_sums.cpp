@@ -10,10 +10,13 @@
 using namespace std;
 using namespace Rcpp;
 
-//' calculates factor-stratified sums for each column
+//' Calculates factor-stratified sums for each column. Adapted from pagoda2.
+//' https://github.com/kharchenkolab/pagoda2/blob/main/src/misc2.cpp
 //'
 //' @param sY sparse matrix Gene by cell matrix of counts
 //' @param rowSel factor The donor that each cell is from
+//' 
+//' @return matrix of summed counts per gene per sample
 //' @export
 // [[Rcpp::export]]
 NumericMatrix get_sums(SEXP sY,  IntegerVector rowSel) {

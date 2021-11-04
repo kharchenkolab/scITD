@@ -2,7 +2,7 @@
 % Please edit documentation in R/get_prop_associations.R
 \name{get_subclust_enr_hmap}
 \alias{get_subclust_enr_hmap}
-\title{Get heatmap of subtype proportion associations for each cell type and factor combo}
+\title{Get heatmap of subtype proportion associations for each celltype/subtype and each factor}
 \usage{
 get_subclust_enr_hmap(container, all_ctypes, all_res, all_factors)
 }
@@ -17,8 +17,9 @@ for each cell type as well as results and plots from all analyses}
 \item{all_factors}{numerc A vector of the factors to compute associations for}
 }
 \value{
-the association heatmap object in container$plots$subc_enr_hmap
+A ComplexHeatmap object in container$plots$subc_enr_hmap showing the
+univariate associations between cell subcluster proportions and each factor.
 }
 \description{
-Get heatmap of subtype proportion associations for each cell type and factor combo
+Get heatmap of subtype proportion associations for each celltype/subtype and each factor
 }

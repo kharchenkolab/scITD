@@ -2,7 +2,8 @@
 % Please edit documentation in R/form_tensor.R
 \name{normalize_pseudobulk}
 \alias{normalize_pseudobulk}
-\title{Normalize the pseudobulked counts matrices}
+\title{Normalize the pseudobulked counts matrices. Generally, this should be done through calling the
+form_tensor() wrapper function.}
 \usage{
 normalize_pseudobulk(container, method = "trim", scale_factor = 10000)
 }
@@ -19,8 +20,10 @@ are divided by library size times a normalization factor. (default='trim')}
 during normalization of the pseudobulked data (default=10000)}
 }
 \value{
-the project container with normalized matrices
+The project container with normalized pseudobulk matrices in 
+container$scMinimal_ctype$<ctype>$pseudobulk slots.
 }
 \description{
-Normalize the pseudobulked counts matrices
+Normalize the pseudobulked counts matrices. Generally, this should be done through calling the
+form_tensor() wrapper function.
 }

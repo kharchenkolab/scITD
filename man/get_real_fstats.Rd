@@ -13,7 +13,8 @@ for each cell type as well as results and plots from all analyses}
 \item{ncores}{numeric The number of cores to use}
 }
 \value{
-a vector F-Statistics for each gene-celltype-factor combination
+A vector F-statistics for each gene_celltype-factor association of the
+unshuffled data.
 }
 \description{
 Get F-Statistics for the real (non-shuffled) gene_ctype fibers

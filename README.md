@@ -3,6 +3,8 @@
 <!-- badges: start -->
 
 [![<kharchenkolab>](https://circleci.com/gh/kharchenkolab/scITD.svg?style=svg)](https://app.circleci.com/pipelines/github/kharchenkolab/scITD)
+[![CRAN status](https://www.r-pkg.org/badges/version/scITD)](https://cran.r-project.org/package=scITD)
+[![CRAN downloads](https://cranlogs.r-pkg.org/badges/scITD)](https://cran.r-project.org/package=scITD)
 <!-- badges: end -->
 
 # scITD
@@ -26,7 +28,13 @@ of the data.
 
 ## Installation
 
-Install scITD with the following:
+To install scITD from CRAN use:
+
+``` r
+install.packages('scITD')
+```
+
+To use the latest version of scITD from GitHub, install with the following:
 
 ``` r
 devtools::install_github("kharchenkolab/scITD")

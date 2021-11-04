@@ -2,7 +2,7 @@
 % Please edit documentation in R/form_tensor.R
 \name{form_tensor}
 \alias{form_tensor}
-\title{Form the tensor and scale the data}
+\title{Form the pseudobulk tensor as preparation for running the tensor decomposition.}
 \usage{
 form_tensor(
   container,
@@ -63,11 +63,11 @@ Overrides the default gene selection if not NULL. (default=NULL)}
 \item{verbose}{logical Set to TRUE to print out progress (default=TRUE)}
 }
 \value{
-the project container with tensor data added in the
-container$tensor_data slot
+The project container with a list of tensor data added in the
+container$tensor_data slot.
 }
 \description{
-Form the tensor and scale the data
+Form the pseudobulk tensor as preparation for running the tensor decomposition.
 }
 \examples{
 test_container <- form_tensor(test_container, donor_min_cells=0,

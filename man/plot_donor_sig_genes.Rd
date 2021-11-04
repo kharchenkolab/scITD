@@ -2,8 +2,8 @@
 % Please edit documentation in R/plot_tucker.R
 \name{plot_donor_sig_genes}
 \alias{plot_donor_sig_genes}
-\title{Generate heatmap showing top genes in each cell type significantly associated
-with a given factor}
+\title{Generate a gene by donor heatmap showing scaled expression of top loading genes
+for a given factor}
 \usage{
 plot_donor_sig_genes(
   container,
@@ -34,10 +34,15 @@ callouts for. If NULL then uses all cell types. (default=NULL)}
 \item{add_genes}{character Additional genes to plot for all ctypes (default=NULL)}
 }
 \value{
-the project container with the plot in the slot
-container$plots$donor_sig_genes$Factor#
+The project container with a heatmap plot in the slot
+container$plots$donor_sig_genes$<Factor#>. This heatmap shows scaled expression
+of top loading genes in each cell type for a selected factor.
 }
 \description{
-Generate heatmap showing top genes in each cell type significantly associated
-with a given factor
+Generate a gene by donor heatmap showing scaled expression of top loading genes
+for a given factor
+}
+\examples{
+test_container <- plot_donor_sig_genes(test_container, factor_select=1,
+top_n_per_ctype=2)
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/run_jackstraw.R
 \name{shuffle_fibers}
 \alias{shuffle_fibers}
-\title{Shuffle elements within selected fibers}
+\title{Shuffle elements within the selected fibers}
 \usage{
 shuffle_fibers(tensor_data, s_fibers)
 }
@@ -13,8 +13,8 @@ as well as the tensor array itself}
 \item{s_fibers}{list Gene and cell type indices for the randomly selected fibers}
 }
 \value{
-the tensor_data with the values for the selected fibers shuffled
+The tensor_data object with the values for the selected fibers shuffled.
 }
 \description{
-Shuffle elements within selected fibers
+Shuffle elements within the selected fibers
 }

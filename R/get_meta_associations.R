@@ -1,5 +1,5 @@
 
-#' Get metadata associations with all factors
+#' Get metadata associations with factor donor scores
 #'
 #' @param container environment Project container that stores sub-containers
 #' for each cell type as well as results and plots from all analyses
@@ -7,12 +7,16 @@
 #' @param stat_use character Set to either 'rsq' to get r-squared values or 'pval'
 #' to get adjusted pvalues (default='rsq)
 #'
-#' @return the project container with the metadata associations in container$meta_associations
+#' @return The project container with a matrix of metadata associations with each factor
+#' in container$meta_associations.
 #' @export
+#' 
+#' @examples
+#' test_container <- get_meta_associations(test_container, vars_test='lanes', stat_use='pval')
 get_meta_associations <- function(container, vars_test, stat_use='rsq') {
   # check that tucker has already been run
   if (is.null(container$tucker_results)) {
-    stop("need to run tucker first")
+    stop("Need to run tucker first")
   }
 
   meta <- container$scMinimal_full$metadata

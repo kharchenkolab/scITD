@@ -2,8 +2,8 @@
 % Please edit documentation in R/run_jackstraw.R
 \name{run_jackstraw}
 \alias{run_jackstraw}
-\title{Run tensor-based jackstraw to get gene_cell type combinations that are significantly
-associated with donor scores for factors extracted by Tucker decomposition}
+\title{Run jackstraw to get genes that are significantly associated with donor scores
+for factors extracted by Tucker decomposition}
 \usage{
 run_jackstraw(
   container,
@@ -11,7 +11,9 @@ run_jackstraw(
   n_fibers = 100,
   n_iter = 500,
   tucker_type = "regular",
-  rotation_type = "hybrid"
+  rotation_type = "hybrid",
+  seed = container$experiment_params$rand_seed,
+  ncores = container$experiment_params$ncores
 )
 }
 \arguments{
@@ -32,11 +34,19 @@ with sparsity constraints (default='regular')}
 \item{rotation_type}{character Set to 'hybrid' to perform hybrid rotation on resulting donor factor
 matrix and loadings. Otherwise set to 'ica_lds' to perform ica rotation on loadings or
 ica_dsc to perform ica on donor scores. (default='hybrid')}
+
+\item{seed}{numeric Seed passed to set.seed() (default=container$experiment_params$rand_seed)}
+
+\item{ncores}{numeric The number of cores to use (default=container$experiment_params$ncores)}
 }
 \value{
-the project container with adjusted pvalues in container$gene_score_associations
+The project container with a vector of adjusted pvalues in container$gene_score_associations.
 }
 \description{
-Run tensor-based jackstraw to get gene_cell type combinations that are significantly
-associated with donor scores for factors extracted by Tucker decomposition
+Run jackstraw to get genes that are significantly associated with donor scores
+for factors extracted by Tucker decomposition
+}
+\examples{
+test_container <- run_jackstraw(test_container, ranks=c(2,4), n_fibers=2, n_iter=10,
+tucker_type='regular', rotation_type='hybrid', ncores=1)
 }

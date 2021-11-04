@@ -1,7 +1,7 @@
 
 utils::globalVariables(c("num_ranks", "rec_error", "num_iter", "run_type", "error_diff", "total_ranks", "myrsq", "n_factors", "factor_type", "total_n_factors","Status"))
 
-#' Rank determination by svd on the tensor unfolded along each mode.
+#' Run rank determination by svd on the tensor unfolded along each mode
 #'
 #' @import ggplot2
 #' @importFrom parallel mclapply
@@ -11,8 +11,7 @@ utils::globalVariables(c("num_ranks", "rec_error", "num_iter", "run_type", "erro
 #' @param max_ranks_test numeric Vector of length 2 specifying the maximum number of
 #' donor and gene ranks to test
 #' @param shuffle_level character Either "cells" to shuffle cell-donor linkages or
-#' "tensor" to shuffle values within the tensor. Currently "tensor" only works with
-#' the svd method (default="cells")
+#' "tensor" to shuffle values within the tensor (default="cells")
 #' @param shuffle_within character A metadata variable to shuffle cell-donor linkages
 #' within (default=NULL)
 #' @param num_iter numeric Number of null iterations (default=100)
@@ -34,17 +33,24 @@ utils::globalVariables(c("num_ranks", "rec_error", "num_iter", "run_type", "erro
 #' by each gene's normalized variance (where the effect of the mean-variance
 #' dependence is taken into account) to the exponent specified here.
 #' If NULL, uses var_scale_power from container$experiment_params. (default=.5)
+#' @param seed numeric Seed passed to set.seed() (default=container$experiment_params$rand_seed)
 #'
-#' @return the project container with rank determination plot in
-#' container$plots$rank_determination_plot
+#' @return The project container with a cowplot figure of rank determination plots in
+#' container$plots$rank_determination_plot.
 #' @export
+#' 
+#' @examples
+#' test_container <- determine_ranks_tucker(test_container, max_ranks_test=c(3,5),
+#' shuffle_level='tensor', num_iter=4, norm_method='trim', scale_factor=10000,
+#' scale_var=TRUE, var_scale_power=.5)
 determine_ranks_tucker <- function(container, max_ranks_test,
                                    shuffle_level='cells', shuffle_within=NULL,
                                    num_iter=100, batch_var=NULL,
                                    norm_method='trim',
                                    scale_factor=10000,
                                    scale_var=TRUE,
-                                   var_scale_power=.5) {
+                                   var_scale_power=.5,
+                                   seed=container$experiment_params$rand_seed) {
 
   # check if run tensor formation yet...
   if (is.null(container$tensor_data)) {
@@ -53,10 +59,7 @@ determine_ranks_tucker <- function(container, max_ranks_test,
 
   # set random seed
   RNGkind("L'Ecuyer-CMRG")
-  set.seed(container$experiment_params$rand_seed)
-
-  # extract needed inputs from experiment parameters
-  ncores <- container$experiment_params$ncores
+  set.seed(seed)
 
   # generate reconstruction errors under the null condition
   null_res <- lapply(1:num_iter, function(x) {
@@ -158,8 +161,7 @@ determine_ranks_tucker <- function(container, max_ranks_test,
 #' ranks to test for donor, gene, and cell type modes in that order
 #' @param shuffle_tensor logical Set to TRUE to shuffle values within the tensor
 #'
-#' @return reconstruction errors
-#' @export
+#' @return A list of reconstruction errors for each mode of the tensor.
 get_reconstruct_errors_svd <- function(tnsr, max_ranks_test, shuffle_tensor) {
   tnsr <- rTensor::as.tensor(tnsr)
 
@@ -202,8 +204,7 @@ get_reconstruct_errors_svd <- function(tnsr, max_ranks_test, shuffle_tensor) {
 #' @param shuffled list The reconstruction errors under null model
 #' @param mode_to_show numeric The mode to plot the results for
 #'
-#' @return plot
-#' @export
+#' @return A ggplot object showing relative reconstruction errors.
 plot_rec_errors_line_svd <- function(real,shuffled,mode_to_show) {
   plot_res <- data.frame(matrix(ncol=2,nrow=0))
   for (i in 1:length(shuffled)) {
@@ -246,13 +247,14 @@ plot_rec_errors_line_svd <- function(real,shuffled,mode_to_show) {
 }
 
 #' Plot reconstruction errors as bar plot for svd method
+#' @importFrom Rmisc summarySE
 #'
 #' @param real list The real reconstruction errors
 #' @param shuffled list The reconstruction errors under null model
 #' @param mode_to_show numeric The mode to plot the results for
 #'
-#' @return plot
-#' @export
+#' @return A ggplot object showing the difference in reconstruction errors for
+#' successive factors.
 plot_rec_errors_bar_svd <- function(real,shuffled,mode_to_show) {
   plot_res <- data.frame(matrix(ncol=2,nrow=0))
   for (i in 1:length(shuffled)) {
@@ -275,7 +277,7 @@ plot_rec_errors_bar_svd <- function(real,shuffled,mode_to_show) {
   plot_res$num_ranks <- as.numeric(as.character(plot_res$num_ranks))
 
   # calculate summary stats
-  suppressWarnings(tgc <- Rmisc::summarySE(plot_res, measurevar="error_diff",
+  suppressWarnings(tgc <- summarySE(plot_res, measurevar="error_diff",
                                            groupvars=c("num_ranks","run_type")))
 
   if (mode_to_show==1) {
@@ -322,8 +324,13 @@ plot_rec_errors_bar_svd <- function(real,shuffled,mode_to_show) {
 #' on resulting donor factor matrix. Set to 'ica_lds' to optimize loadings by the
 #' ICA rotation. (default='hybrid')
 #'
-#' @return plots placed in container$plots$num_batch_factors slot
+#' @return A ggpubr figure of ggplot objects showing batch-factor associations and
+#' placed in container$plots$num_batch_factors slot
 #' @export
+#' 
+#' @examples
+#' test_container <- get_num_batch_ranks(test_container, donor_ranks_test=c(2:4), 
+#' gene_ranks=10, batch_var='lanes', thresh=0.5, tucker_type='regular', rotation_type='hybrid')
 get_num_batch_ranks <- function(container, donor_ranks_test, gene_ranks, batch_var, thresh=0.5,
                                 tucker_type='regular',rotation_type='hybrid') {
   n_ctypes <- length(container$experiment_params$ctypes_use)
