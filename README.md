@@ -7,7 +7,7 @@
 [![CRAN downloads](https://cranlogs.r-pkg.org/badges/scITD)](https://cran.r-project.org/package=scITD)
 <!-- badges: end -->
 
-<img src="https://github.com/kharchenkolab/scITD/blob/dev/inst/scITD_logo.png" align="right" height="140">
+<img src="https://github.com/kharchenkolab/scITD/blob/develop/inst/scITD_logo.png" align="right" height="140">
 
 # scITD
 
