@@ -16,7 +16,7 @@
 - [Walkthrough](#walkthrough)
 - [Citation](#citation)
 
-# Introduction
+## Introduction
 
 Single-Cell Interpretable Tensor Decomposition (scITD) is computational
 method capable of extracting multicellular gene expression programs that
