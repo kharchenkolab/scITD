@@ -536,7 +536,11 @@ apply_combat <- function(container,batch_var) {
     scMinimal <- container$scMinimal_ctype[[ct]]
 
     # need metadata at donor level
-    metadata <- unique(scMinimal$metadata)
+    metadata <- unique(scMinimal$metadata[,c('donors', batch_var)])
+    if (nrow(metadata) != length(unique(metadata$donors))) {
+      stop('Cannot apply combat to pseudobulk data because some donors are
+           found in multiple batches')
+    }
     rownames(metadata) <- metadata$donors
     metadata <- metadata[rownames(scMinimal$pseudobulk),]
 

@@ -63,14 +63,21 @@ make_new_container <- function(params, count_data=NULL, meta_data=NULL,
     if (ncol(count_data)!=nrow(meta_data)) {
       stop('ncol(count_data) must match nrow(meta_data)')
     } else if (!identical(colnames(count_data),rownames(meta_data))) {
-      stop('cell names must be identical in both count_data and meta_data')
+      stop('Cell names must be identical in both count_data and meta_data')
     }
-
+    
     scMinimal <- instantiate_scMinimal(count_data, meta_data,
                                        metadata_cols=metadata_cols,
                                        metadata_col_nm=metadata_col_nm)
   } else if (is.null(scMinimal)) {
     stop("Need to provide either a seurat object or a scMinimal object or both a count matrix and meta data matrix")
+  }
+  
+  # throw warning if cell-level metadata is included
+  metadata_test <- unique(scMinimal$metadata)
+  if (nrow(metadata_test) != length(unique(metadata_test$donors))) {
+    warning('You may have included metadata that varies across cells within each donor/sample. 
+              We recommend only including metadata that varies across donors/samples.')
   }
 
   # create new empty environment for all experiment data and results
