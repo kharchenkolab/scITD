@@ -368,7 +368,7 @@ compute_LR_interact <- function(container, lr_pairs, sig_thresh=0.05,
     fact_res2 <- matrix(p.adjust(fact_res,method='fdr'),ncol=ncol(fact_res),nrow=nrow(fact_res))
     colnames(fact_res2) <- colnames(fact_res)
     fact_res2[is.na(fact_res2)] <- 1
-    fact_res2 <- fact_res2[,colSums(fact_res2<sig_thresh)>0]
+    fact_res2 <- fact_res2[,colSums(fact_res2<sig_thresh)>0,drop=FALSE]
     fact_res2 <- -log10(fact_res2)
     col_fun = colorRamp2(c(0, -log10(.1), 10), c("white", "white", "purple"))
     myhmap2 <- Heatmap(fact_res2, name='lig_factor -log10(padj)',
