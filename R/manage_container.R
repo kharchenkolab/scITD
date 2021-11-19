@@ -74,7 +74,8 @@ make_new_container <- function(params, count_data=NULL, meta_data=NULL,
   }
   
   # throw warning if cell-level metadata is included
-  metadata_test <- unique(scMinimal$metadata)
+  metadata_test <- scMinimal$metadata[scMinimal$metadata$ctypes==params$ctypes_use[1],]
+  metadata_test <- unique(metadata_test)
   if (nrow(metadata_test) != length(unique(metadata_test$donors))) {
     warning('You may have included metadata that varies across cells within each donor/sample. 
               We recommend only including metadata that varies across donors/samples.')

@@ -543,7 +543,13 @@ apply_combat <- function(container,batch_var) {
     }
     rownames(metadata) <- metadata$donors
     metadata <- metadata[rownames(scMinimal$pseudobulk),]
-
+    
+    # check for batches with no samples
+    has_empty_batch <- length(levels(metadata[,batch_var]))!=length(unique(metadata[,batch_var]))
+    if (has_empty_batch) {
+      metadata[,batch_var] <- factor(metadata[,batch_var],levels=unique(metadata[,batch_var]))
+    }
+    
     modcombat <- stats::model.matrix(~1, data=metadata)
     tmp <- sva::ComBat(dat=t(scMinimal$pseudobulk),
                        batch=metadata[,batch_var],
