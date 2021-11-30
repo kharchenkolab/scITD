@@ -5,7 +5,14 @@
 \title{Helper function for running the decomposition. Use the run_tucker_ica()
 wrapper function instead.}
 \usage{
-tucker_ica_helper(tensor_data, ranks, tucker_type, rotation_type, sparsity)
+tucker_ica_helper(
+  tensor_data,
+  ranks,
+  tucker_type,
+  rotation_type,
+  sparsity,
+  projection_container = NULL
+)
 }
 \arguments{
 \item{tensor_data}{list The tensor data including donor, gene, and cell type labels
@@ -23,6 +30,9 @@ on resulting donor factor matrix. Set to 'ica_lds' to optimize loadings by the
 ICA rotation.}
 
 \item{sparsity}{numeric Higher indicates more sparse}
+
+\item{projection_container}{environment A project container to store projection
+data in. Currently only implemented for 'hybrid' and 'ica_dsc' rotations. (default=NULL)}
 }
 \value{
 The list of results for tucker decomposition with donor scores matrix in first
