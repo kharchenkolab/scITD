@@ -11,12 +11,15 @@
 #' one database can be used. (default="GO")
 #' @param signed logical If TRUE, uses signed gsea. If FALSE, uses unsigned gsea.
 #' Currently only works with fgsea method. (default=TRUE)
+#' @param min_gs_size numeric Minimum gene set size (default=15)
+#' @param max_gs_size numeric Maximum gene set size (default=500)
 #' @param ncores numeric The number of cores to use (default=container$experiment_params$ncores)
 #'
 #' @return A data.frame of the fgsea results for enrichment of gene sets in a given
 #' cell type for a given factor. The results contain adjusted p-values, normalized
 #' enrichment scores, leading edge genes, and other information output by fgsea.
-run_fgsea <- function(container, factor_select, ctype, db_use="GO", signed=TRUE, ncores=container$experiment_params$ncores) {
+run_fgsea <- function(container, factor_select, ctype, db_use="GO", signed=TRUE, 
+                      min_gs_size=15, max_gs_size=500, ncores=container$experiment_params$ncores) {
   donor_scores <- container$tucker_results[[1]]
 
   # select mean exp data for one cell type
@@ -49,6 +52,10 @@ run_fgsea <- function(container, factor_select, ctype, db_use="GO", signed=TRUE,
       # select the GO Biological Processes group of gene sets
       m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
                                           category = "C5", subcategory = "BP"))
+    } else if (db == "GOCC") {
+      # select the GOCC gene sets
+      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
+                                          category = "C5", subcategory = "CC"))
     } else if (db == "Reactome") {
       # select the Reactome gene sets
       m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
@@ -65,6 +72,24 @@ run_fgsea <- function(container, factor_select, ctype, db_use="GO", signed=TRUE,
       # select the BioCarts gene sets
       m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
                                           category = "H"))
+    } else if (db == "TF") {
+      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
+                                          category = "C3", subcategory = "TFT:GTRD"))
+      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
+                                          category = "C3", subcategory = "TFT:TFT_Legacy"))
+       
+      # # limit it to just sets ending in 'TARGET_GENES'
+      # target_gene_label <- sapply(m_df$gs_name, function(x) {
+      #   return(grepl('TARGET_GENES', x, fixed = TRUE))
+      # })
+      # m_df <- m_df[target_gene_label,]
+      
+      # data(dorothea_hs, package = "dorothea")
+      # regulons <- dorothea_hs %>%
+      #   filter(confidence %in% c("A", "B", "C"))
+      # colnames(regulons)[1] <- c('gs_name')
+      # colnames(regulons)[3] <- c('gene_symbol')
+      # m_df <- rbind(m_df,regulons)
     }
   }
 
@@ -74,16 +99,16 @@ run_fgsea <- function(container, factor_select, ctype, db_use="GO", signed=TRUE,
   if (signed) {
     fgsea_res <- fgsea::fgsea(pathways = my_pathways,
                               stats = exp_vals,
-                              minSize=15,
-                              maxSize=500,
+                              minSize=min_gs_size,
+                              maxSize=max_gs_size,
                               eps=0,
                               gseaParam=1,
                               nproc=ncores)
   } else {
     fgsea_res <- fgsea::fgsea(pathways = my_pathways,
                               stats = exp_vals,
-                              minSize=15,
-                              maxSize=500,
+                              minSize=min_gs_size,
+                              maxSize=max_gs_size,
                               eps=0,
                               gseaParam=1,
                               scoreType = "pos",
@@ -177,6 +202,24 @@ run_hypergeometric_gsea <- function(container, factor_select, ctype, up_down,
       # select the BioCarts gene sets
       m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
                                  category = "C2", subcategory = "CP:BIOCARTA"))
+    } else if (db == "TF") {
+      # m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
+      #                                     category = "C3", subcategory = "TFT:GTRD"))
+      # m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
+      #                                     category = "C3", subcategory = "TFT:TFT_Legacy"))
+      
+      # # limit it to just sets ending in 'TARGET_GENES'
+      # target_gene_label <- sapply(m_df$gs_name, function(x) {
+      #   return(grepl('TARGET_GENES', x, fixed = TRUE))
+      # })
+      # m_df <- m_df[target_gene_label,]
+      
+      data(dorothea_hs, package = "dorothea")
+      regulons <- dorothea_hs %>%
+        filter(confidence %in% c("A", "B", "C"))
+      colnames(regulons)[1] <- c('gs_name')
+      colnames(regulons)[3] <- c('gene_symbol')
+      m_df <- rbind(m_df,regulons)
     }
   }
 

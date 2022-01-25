@@ -666,9 +666,11 @@ get_subclust_enr_hmap <- function(container,all_ctypes,all_res,all_factors) {
 get_subclust_enr_dotplot <- function(container,ctype,res,subtype,factor_use,ctype_cur=ctype) {
   resolution_name <- paste0('res:',as.character(res))
   subclusts <- container$subclusters[[ctype]][[resolution_name]]
-
+  names_stored <- names(subclusts)
+  
   # append large cell type name to subclusters
   subclusts <- sapply(subclusts,function(x){paste0(ctype,'_',x)})
+  names(subclusts) <- names_stored
 
   # limit cells in subclusts to those that we actually have scores for
   donor_scores <- container$tucker_results[[1]]
@@ -713,6 +715,24 @@ get_subclust_enr_dotplot <- function(container,ctype,res,subtype,factor_use,ctyp
     theme(plot.title = element_text(hjust = 0.5),
           axis.text=element_text(size=12),
           axis.title=element_text(size=14))
+  
+  # print out pvalue
+  ndx_mark <- which(subclusts_num==subtype)
+  ndx_other <- which(subclusts_num!=subtype)
+  subclusts_num[ndx_mark] <- 1
+  subclusts_num[ndx_other] <- 2
+
+  donor_props <- compute_donor_props(subclusts_num,sub_meta_tmp)
+  donor_balances <- coda.base::coordinates(donor_props)
+  rownames(donor_balances) <- rownames(donor_props)
+  
+  f1 <- get_one_factor(container,factor_use)
+  f1_dsc <- f1[[1]]
+  tmp <- cbind.data.frame(f1_dsc[rownames(donor_balances),1,drop=FALSE],donor_balances)
+  colnames(tmp) <- c('dsc','my_balance')
+  lmres <- summary(lm(my_balance~dsc,data=tmp))
+  pval <- stats::pf(lmres$fstatistic[1],lmres$fstatistic[2],lmres$fstatistic[3],lower.tail=FALSE)
+  message(paste0('p-value = ',pval))
 
   return(p)
 }

@@ -65,7 +65,8 @@ Suggests:
     GO.db,
     conos,
     pagoda2,
-    betareg
+    betareg,
+    dorothea
 RoxygenNote: 7.1.2
 LinkingTo: Rcpp, RcppArmadillo, RcppProgress
 NeedsCompilation: yes

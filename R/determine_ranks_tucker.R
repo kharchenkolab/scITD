@@ -382,7 +382,8 @@ get_num_batch_ranks <- function(container, donor_ranks_test, gene_ranks, batch_v
       ylab('Number of Factors') +
       ggtitle(paste0('Threshold r^2 = ',as.character(thr))) +
       theme(plot.title = element_text(hjust = 0.5), legend.position = c(.15, 0.925)) +
-      labs(color='Factor Type')
+      labs(color='Factor Type') +
+      theme_bw()
 
     all_plots[[i+1]] <- thresh_plot
   }
