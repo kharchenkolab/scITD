@@ -11,12 +11,15 @@
 #' one database can be used. (default="GO")
 #' @param signed logical If TRUE, uses signed gsea. If FALSE, uses unsigned gsea.
 #' Currently only works with fgsea method. (default=TRUE)
+#' @param min_gs_size numeric Minimum gene set size (default=15)
+#' @param max_gs_size numeric Maximum gene set size (default=500)
 #' @param ncores numeric The number of cores to use (default=container$experiment_params$ncores)
 #'
 #' @return A data.frame of the fgsea results for enrichment of gene sets in a given
 #' cell type for a given factor. The results contain adjusted p-values, normalized
 #' enrichment scores, leading edge genes, and other information output by fgsea.
-run_fgsea <- function(container, factor_select, ctype, db_use="GO", signed=TRUE, ncores=container$experiment_params$ncores) {
+run_fgsea <- function(container, factor_select, ctype, db_use="GO", signed=TRUE, 
+                      min_gs_size=15, max_gs_size=500, ncores=container$experiment_params$ncores) {
   donor_scores <- container$tucker_results[[1]]
 
   # select mean exp data for one cell type
@@ -49,6 +52,10 @@ run_fgsea <- function(container, factor_select, ctype, db_use="GO", signed=TRUE,
       # select the GO Biological Processes group of gene sets
       m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
                                           category = "C5", subcategory = "BP"))
+    } else if (db == "GOCC") {
+      # select the GOCC gene sets
+      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
+                                          category = "C5", subcategory = "CC"))
     } else if (db == "Reactome") {
       # select the Reactome gene sets
       m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
@@ -65,6 +72,11 @@ run_fgsea <- function(container, factor_select, ctype, db_use="GO", signed=TRUE,
       # select the BioCarts gene sets
       m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
                                           category = "H"))
+    } else if (db == "TF") {
+      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
+                                          category = "C3", subcategory = "TFT:GTRD"))
+      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
+                                          category = "C3", subcategory = "TFT:TFT_Legacy"))
     }
   }
 
@@ -74,16 +86,16 @@ run_fgsea <- function(container, factor_select, ctype, db_use="GO", signed=TRUE,
   if (signed) {
     fgsea_res <- fgsea::fgsea(pathways = my_pathways,
                               stats = exp_vals,
-                              minSize=15,
-                              maxSize=500,
+                              minSize=min_gs_size,
+                              maxSize=max_gs_size,
                               eps=0,
                               gseaParam=1,
                               nproc=ncores)
   } else {
     fgsea_res <- fgsea::fgsea(pathways = my_pathways,
                               stats = exp_vals,
-                              minSize=15,
-                              maxSize=500,
+                              minSize=min_gs_size,
+                              maxSize=max_gs_size,
                               eps=0,
                               gseaParam=1,
                               scoreType = "pos",
@@ -108,6 +120,8 @@ run_fgsea <- function(container, factor_select, ctype, db_use="GO", signed=TRUE,
 #' negative loading genes.
 #' @param thresh numeric Pvalue significance threshold. Used as cutoff for calling
 #' genes as significant to use for enrichment tests. (default=0.05)
+#' @param min_gs_size numeric Minimum gene set size (default=15)
+#' @param max_gs_size numeric Maximum gene set size (default=500)
 #' @param db_use character The database of gene sets to use. Database
 #' options include "GO", "Reactome", "KEGG", and "BioCarta". More than
 #' one database can be used. (default="GO")
@@ -115,7 +129,8 @@ run_fgsea <- function(container, factor_select, ctype, db_use="GO", signed=TRUE,
 #' @return A vector of adjusted p-values for enrichment of gene sets in the 
 #' significant genes of a given cell type in a given factor.
 run_hypergeometric_gsea <- function(container, factor_select, ctype, up_down,
-                                     thresh=0.05, db_use="GO") {
+                                    thresh=0.05, min_gs_size=15, max_gs_size=500,
+                                    db_use="GO") {
 
   # make sure jackstraw has been run
   if (is.null(container[["gene_score_associations"]])) {
@@ -177,6 +192,11 @@ run_hypergeometric_gsea <- function(container, factor_select, ctype, up_down,
       # select the BioCarts gene sets
       m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
                                  category = "C2", subcategory = "CP:BIOCARTA"))
+    } else if (db == "TF") {
+      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
+                                          category = "C3", subcategory = "TFT:GTRD"))
+      m_df <- rbind(m_df,msigdbr::msigdbr(species = "Homo sapiens",
+                                          category = "C3", subcategory = "TFT:TFT_Legacy"))
     }
   }
 
@@ -193,7 +213,9 @@ run_hypergeometric_gsea <- function(container, factor_select, ctype, up_down,
     num_pth_in_df <- length(pth_in_df)
 
     # if set is too small continue
-    if (num_pth_in_df < 15) {
+    if (num_pth_in_df < min_gs_size) {
+      next
+    } else if (num_pth_in_df > max_gs_size) {
       next
     }
 
@@ -223,6 +245,8 @@ run_hypergeometric_gsea <- function(container, factor_select, ctype, up_down,
 #' one database can be used. (default="GO")
 #' @param signed logical If TRUE, uses signed gsea. If FALSE, uses unsigned gsea.
 #' Currently only works with fgsea method (default=TRUE)
+#' @param min_gs_size numeric Minimum gene set size (default=15)
+#' @param max_gs_size numeric Maximum gene set size (default=500)
 #' @param reset_other_factor_plots logical Set to TRUE to set all other gsea plots to NULL (default=FALSE)
 #' @param draw_plot logical Set to TRUE to show the plot. Plot is stored regardless. (default=TRUE)
 #' @param ncores numeric The number of cores to use (default=container$experiment_params$ncores)
@@ -238,8 +262,9 @@ run_hypergeometric_gsea <- function(container, factor_select, ctype, up_down,
 #' test_container <- run_gsea_one_factor(test_container, factor_select=1,
 #' method="fgsea", thresh=0.05, db_use="Hallmark", signed=TRUE)
 run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh=0.05,
-                                db_use="GO", signed=TRUE, reset_other_factor_plots=FALSE,
-                                draw_plot=TRUE, ncores=container$experiment_params$ncores) {
+                                db_use="GO", signed=TRUE, min_gs_size=15, max_gs_size=500,
+                                reset_other_factor_plots=FALSE, draw_plot=TRUE, 
+                                ncores=container$experiment_params$ncores) {
 
   if (reset_other_factor_plots) {
     container$plots$gsea <- NULL
@@ -252,7 +277,8 @@ run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh
   for (ct in ctypes_use) {
     if (method == 'fgsea') {
       fgsea_res <- run_fgsea(container, factor_select=factor_select,
-                             ctype=ct, db_use=db_use, signed=signed, ncores=ncores)
+                             ctype=ct, db_use=db_use, signed=signed, 
+                             min_gs_size, max_gs_size, ncores=ncores)
 
       # remove results where NES is na
       fgsea_res <- fgsea_res[!is.na(fgsea_res$NES),]
@@ -270,9 +296,11 @@ run_gsea_one_factor <- function(container, factor_select, method="fgsea", thresh
       container$gsea_res_full[[paste0('Factor',factor_select)]][[ct]] <- fgsea_res
     } else if (method == 'hypergeometric') {
       gsea_res_up <- run_hypergeometric_gsea(container, factor_select=factor_select, ctype=ct,
-                                             up_down='up', thresh=thresh, db_use=db_use)
+                                             up_down='up', thresh=thresh, 
+                                             min_gs_size, max_gs_size, db_use=db_use)
       gsea_res_down <- run_hypergeometric_gsea(container, factor_select=factor_select, ctype=ct,
-                                               up_down='down', thresh=thresh, db_use=db_use)
+                                               up_down='down', thresh=thresh, 
+                                               min_gs_size, max_gs_size, db_use=db_use)
 
       up_sets_all[[ct]] <- gsea_res_up
       down_sets_all[[ct]] <- gsea_res_down

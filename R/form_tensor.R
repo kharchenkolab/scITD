@@ -136,13 +136,16 @@ form_tensor <- function(container, donor_min_cells=5, norm_method='trim',
 #' the container$scMinimal_ctype slot
 #' @export
 parse_data_by_ctypes <- function(container) {
-  # check that ctypes_use param has been set
-  if (is.null(container$experiment_params$ctypes_use)) {
-    stop("ctypes_use parameter from container$experiment_params is NULL. Use set_experiment_params()")
-  }
-
   for (ct in container$experiment_params$ctypes_use) {
     ctype_sub <- subset_scMinimal(container$scMinimal_full, ctypes_use=ct, in_place=FALSE)
+    
+    # check for potentially misspelled cell type name
+    if (nrow(ctype_sub$metadata)==0) {
+      stop(paste0("0 cells found for cell type \"",ct,
+                  "\". Check for spelling mistakes and rerun initialize_params() 
+                  followed by make_new_container()."))
+    }
+    
     container$scMinimal_ctype[[ct]] <- ctype_sub
   }
 
@@ -536,10 +539,20 @@ apply_combat <- function(container,batch_var) {
     scMinimal <- container$scMinimal_ctype[[ct]]
 
     # need metadata at donor level
-    metadata <- unique(scMinimal$metadata)
+    metadata <- unique(scMinimal$metadata[,c('donors', batch_var)])
+    if (nrow(metadata) != length(unique(metadata$donors))) {
+      stop('Cannot apply combat to pseudobulk data because some donors are
+           found in multiple batches')
+    }
     rownames(metadata) <- metadata$donors
     metadata <- metadata[rownames(scMinimal$pseudobulk),]
-
+    
+    # check for batches with no samples
+    has_empty_batch <- length(levels(metadata[,batch_var]))!=length(unique(metadata[,batch_var]))
+    if (has_empty_batch) {
+      metadata[,batch_var] <- factor(metadata[,batch_var],levels=unique(metadata[,batch_var]))
+    }
+    
     modcombat <- stats::model.matrix(~1, data=metadata)
     tmp <- sva::ComBat(dat=t(scMinimal$pseudobulk),
                        batch=metadata[,batch_var],

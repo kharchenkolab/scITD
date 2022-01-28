@@ -10,6 +10,8 @@ run_fgsea(
   ctype,
   db_use = "GO",
   signed = TRUE,
+  min_gs_size = 15,
+  max_gs_size = 500,
   ncores = container$experiment_params$ncores
 )
 }
@@ -27,6 +29,10 @@ one database can be used. (default="GO")}
 
 \item{signed}{logical If TRUE, uses signed gsea. If FALSE, uses unsigned gsea.
 Currently only works with fgsea method. (default=TRUE)}
+
+\item{min_gs_size}{numeric Minimum gene set size (default=15)}
+
+\item{max_gs_size}{numeric Maximum gene set size (default=500)}
 
 \item{ncores}{numeric The number of cores to use (default=container$experiment_params$ncores)}
 }

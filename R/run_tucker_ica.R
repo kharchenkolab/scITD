@@ -45,7 +45,8 @@ run_tucker_ica <- function(container, ranks, tucker_type='regular', rotation_typ
   ranks[3] <- length(tensor_data[[3]])
 
   # run tucker with rotation on the tensor
-  tucker_res <- tucker_ica_helper(tensor_data, ranks, tucker_type, rotation_type, sparsity)
+  tucker_res <- tucker_ica_helper(tensor_data, ranks, tucker_type, rotation_type, 
+                                  sparsity, projection_container=container)
   container$tucker_results <- tucker_res
 
   # reorder factors by explained variance
@@ -57,6 +58,10 @@ run_tucker_ica <- function(container, ranks, tucker_type='regular', rotation_typ
   container$tucker_results[[1]] <- container$tucker_results[[1]][,order(explained_variances,decreasing=TRUE)]
   container$tucker_results[[2]] <- container$tucker_results[[2]][order(explained_variances,decreasing=TRUE),]
   container$exp_var <- explained_variances[order(explained_variances,decreasing=TRUE)]
+  
+  if (!is.null(container$projection_data)) {
+    container$projection_data[[3]] <- order(explained_variances,decreasing=TRUE)
+  }
 
   return(container)
 }
@@ -76,11 +81,14 @@ run_tucker_ica <- function(container, ranks, tucker_type='regular', rotation_typ
 #' on resulting donor factor matrix. Set to 'ica_lds' to optimize loadings by the
 #' ICA rotation.
 #' @param sparsity numeric Higher indicates more sparse
+#' @param projection_container environment A project container to store projection
+#' data in. Currently only implemented for 'hybrid' and 'ica_dsc' rotations. (default=NULL)
 #'
 #' @return The list of results for tucker decomposition with donor scores matrix in first
 #' element and loadings matrix in second element.
 #' @export
-tucker_ica_helper <- function(tensor_data, ranks, tucker_type, rotation_type, sparsity) {
+tucker_ica_helper <- function(tensor_data, ranks, tucker_type, rotation_type, 
+                              sparsity, projection_container=NULL) {
 
   # extract tensor and labels
   donor_nm <- tensor_data[[1]]
@@ -131,6 +139,9 @@ tucker_ica_helper <- function(tensor_data, ranks, tucker_type, rotation_type, sp
     # generate counter-rotated core tensor unfolded along donor dimension
     core_new <- t(as.matrix(donor_mat)) %*% rTensor::k_unfold(rTensor::as.tensor(tnsr),1)@data %*% kron_prod
 
+    # generate/store rotated loadings for later projections with new data
+    ldngs_tmp <- core_new %*% t(kron_prod)
+    
     ## optimize core by rotating it with varimax
     vari_res <- stats::varimax(t(core_new),eps = 1e-15)
     # vari_res <- stats::varimax(t(core_new))
@@ -139,12 +150,32 @@ tucker_ica_helper <- function(tensor_data, ranks, tucker_type, rotation_type, sp
 
     # counter-rotate donor scores matrix
     donor_mat <- donor_mat %*% solve(t(vari_res$rotmat))
+    
+    # store items for projecting patterns to new data
+    if (!is.null(projection_container)) {
+      projection_container$projection_data <- list(ldngs_tmp,vari_res$rotmat)
+    }
 
   } else if (rotation_type=='ica_dsc') {
     if (ranks[1]>1) {
-      ## rotate donor scores matrix by ICA
-      # donor_mat <- ica::icafast(donor_mat,ranks[1],center=FALSE,alg='def',
-      #                           maxit = 2000,tol = 1e-20)$S
+      if (!is.null(projection_container)) {
+        # getting the rotation matrix and unrotated loadings for later projections of the data
+        ica_res <- ica::icafast(donor_mat,ranks[1],center=FALSE,alg='def')
+        rot_mat <- t(ica_res$Q) %*% ica_res$R
+        # normalizing the rot_mat...
+        all_rss <- c()
+        for (j in 1:ncol(rot_mat)) {
+          rss <- sqrt(sum(rot_mat[,j]**2))
+          all_rss <- c(all_rss,rss)
+        }
+        rot_mat <- sweep(rot_mat,2,all_rss,FUN='/')
+        kron_prod_tmp <- kronecker(ctype_by_factors,gene_by_factors,make.dimnames = TRUE)
+        core_new_tmp <- t(as.matrix(donor_mat)) %*% rTensor::k_unfold(rTensor::as.tensor(tnsr),1)@data %*% kron_prod_tmp
+        ldngs_tmp <- core_new_tmp %*% t(kron_prod_tmp)
+        projection_container$projection_data <- list(ldngs_tmp,rot_mat)
+      }
+      
+      # apply ICA rotation to donor scores
       donor_mat <- ica::icafast(donor_mat,ranks[1],center=FALSE,alg='def')$S
 
       # make all vectors length 1 as ICA didn't preserve this
@@ -412,7 +443,60 @@ nmf_unfolded <- function(container, ranks) {
 }
 
 
-
+#' Project multicellular patterns to get scores on new data
+#'
+#' @param new_container environment A project container with new data to project scores
+#' for. The form_tensor() function should be run.
+#' @param old_container environment The original project container that has the multicellular
+#' gene expression patterns already extracted. These patterns will be projected onto the new data.
+#'
+#' @return The new container environment object with projected scores in new_container$projected_scores.
+#' The factors will be ordered the same as the factors in old_container.
+#' @export
+project_new_data <- function(new_container,old_container) {
+  if (is.null(old_container$projection_data)) {
+    stop('Need projection data. Run run_tucker_ica() with either hybrid method or ica_dsc.')
+  }
+  if (is.null(new_container$tensor_data)) {
+    stop('Run form_tensor() for the new_container object first.')
+  }
+  
+  genes_both <- intersect(new_container$tensor_data[[2]],old_container$tensor_data[[2]])
+  ct_both <- intersect(new_container$tensor_data[[3]],old_container$tensor_data[[3]])
+  gene_ndx_keep <- which(new_container$tensor_data[[2]] %in% genes_both)
+  ct_ndx_keep <- which(new_container$tensor_data[[3]] %in% ct_both)
+  
+  tnsr <- new_container$tensor_data[[4]]
+  tnsr <- tnsr[,gene_ndx_keep,ct_ndx_keep]
+  
+  ct_g <- sapply(ct_ndx_keep, function(x) {
+    ct <- new_container$tensor_data[[3]][x]
+    sapply(gene_ndx_keep, function(y) {
+      g <- new_container$tensor_data[[2]][y]
+      return(paste0(ct,':',g))
+    })
+  })
+  
+  ldngs <- old_container$projection_data[[1]]
+  ldngs <- ldngs[,ct_g]
+  projection <- rTensor::k_unfold(rTensor::as.tensor(tnsr),1)@data %*% t(ldngs)
+  # normalize projection
+  all_rss <- c()
+  for (j in 1:ncol(projection)) {
+    rss <- sqrt(sum(projection[,j]**2))
+    all_rss <- c(all_rss,rss)
+  }
+  projection <- sweep(projection,2,all_rss,FUN='/')
+  
+  # rotate projection the same way as the donor scores
+  rot_mat <- old_container$projection_data[[2]]
+  pr_rot <- projection %*% rot_mat
+  rownames(pr_rot) <- new_container$tensor_data[[1]]
+  reorder_ndx <- old_container$projection_data[[3]]
+  pr_rot <- pr_rot[,reorder_ndx]
+  new_container$projected_scores <- pr_rot
+  return(new_container)
+}
 
 
 
