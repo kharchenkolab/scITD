@@ -11,6 +11,8 @@ run_hypergeometric_gsea(
   ctype,
   up_down,
   thresh = 0.05,
+  min_gs_size = 15,
+  max_gs_size = 500,
   db_use = "GO"
 )
 }
@@ -28,6 +30,10 @@ negative loading genes.}
 
 \item{thresh}{numeric Pvalue significance threshold. Used as cutoff for calling
 genes as significant to use for enrichment tests. (default=0.05)}
+
+\item{min_gs_size}{numeric Minimum gene set size (default=15)}
+
+\item{max_gs_size}{numeric Maximum gene set size (default=500)}
 
 \item{db_use}{character The database of gene sets to use. Database
 options include "GO", "Reactome", "KEGG", and "BioCarta". More than

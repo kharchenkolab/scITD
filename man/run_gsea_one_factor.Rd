@@ -11,6 +11,8 @@ run_gsea_one_factor(
   thresh = 0.05,
   db_use = "GO",
   signed = TRUE,
+  min_gs_size = 15,
+  max_gs_size = 500,
   reset_other_factor_plots = FALSE,
   draw_plot = TRUE,
   ncores = container$experiment_params$ncores
@@ -34,6 +36,10 @@ one database can be used. (default="GO")}
 
 \item{signed}{logical If TRUE, uses signed gsea. If FALSE, uses unsigned gsea.
 Currently only works with fgsea method (default=TRUE)}
+
+\item{min_gs_size}{numeric Minimum gene set size (default=15)}
+
+\item{max_gs_size}{numeric Maximum gene set size (default=500)}
 
 \item{reset_other_factor_plots}{logical Set to TRUE to set all other gsea plots to NULL (default=FALSE)}
 

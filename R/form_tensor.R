@@ -136,13 +136,16 @@ form_tensor <- function(container, donor_min_cells=5, norm_method='trim',
 #' the container$scMinimal_ctype slot
 #' @export
 parse_data_by_ctypes <- function(container) {
-  # check that ctypes_use param has been set
-  if (is.null(container$experiment_params$ctypes_use)) {
-    stop("ctypes_use parameter from container$experiment_params is NULL. Use set_experiment_params()")
-  }
-
   for (ct in container$experiment_params$ctypes_use) {
     ctype_sub <- subset_scMinimal(container$scMinimal_full, ctypes_use=ct, in_place=FALSE)
+    
+    # check for potentially misspelled cell type name
+    if (nrow(ctype_sub$metadata)==0) {
+      stop(paste0("0 cells found for cell type \"",ct,
+                  "\". Check for spelling mistakes and rerun initialize_params() 
+                  followed by make_new_container()."))
+    }
+    
     container$scMinimal_ctype[[ct]] <- ctype_sub
   }
 

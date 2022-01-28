@@ -1,5 +1,17 @@
 ## Upcoming
 
+## [1.0.1] - 2022-01-28
+
+### Added
+- Optional parameters `min_gs_size` and `max_gs_size` to `run_gsea_one_factor()`
+- New function project_new_data() to project a multicellular pattern onto new data
+- Warning if cell-level metadata is included as donor-level metadata
+- Check that cell type names in `ctypes_use` are spelled correctly
+
+### Changed
+- Checks for empty batches before running ComBat batch correction
+- Fixed label issue with LR output when only have associations with 1 factor
+
 ## [1.0.0] - 2021-10-08
 
 ### Added
