@@ -732,9 +732,9 @@ ht_clusters = function(mat, cl, dend = NULL, col = c("white", "red"),
       }
       keywords = tapply(go_id, cl, function(term_id) {
         if(is.null(term)) {
-          suppressMessages(suppressWarnings(df <- simplifyEnrichment::count_word(term_id, exclude_words = exclude_words)))
+          suppressMessages(suppressWarnings(df <- count_word(term_id, exclude_words = exclude_words)))
         } else {
-          suppressMessages(suppressWarnings(df <- simplifyEnrichment::count_word(term = id2term[term_id], exclude_words = exclude_words)))
+          suppressMessages(suppressWarnings(df <- count_word(term = id2term[term_id], exclude_words = exclude_words)))
         }
         df = df[df$freq > 1, , drop = FALSE]
         if(nrow(df) > max_words) {
@@ -832,6 +832,46 @@ scale_fontsize = function(x, rg = c(1, 30), fs = c(4, 16)) {
   y[y > fs[2]] = fs[2]
   round(y)
 }
+
+
+
+
+#' count_word. From older version of simplifyEnrichment package.
+#'
+#' @param term A vector of description texts.
+#' @param exclude_words The words that should be excluded.
+#'
+#' @return  A data frame with words and frequencies.
+count_word <- function(term, exclude_words = NULL) {
+  
+  # http://www.sthda.com/english/wiki/word-cloud-generator-in-r-one-killer-function-to-do-everything-you-need
+  
+  # Load the text as a corpus
+  suppressWarnings({
+    docs = tm::Corpus(tm::VectorSource(term))
+    # Convert the text to lower case
+    docs = tm::tm_map(docs, tm::content_transformer(tolower))
+    # Remove numbers
+    docs = tm::tm_map(docs, tm::removeNumbers)
+    # Remove stopwords for the language 
+    docs = tm::tm_map(docs, tm::removeWords, tm::stopwords())
+    # Remove punctuations
+    docs = tm::tm_map(docs, tm::removePunctuation)
+    # Eliminate extra white spaces
+    docs = tm::tm_map(docs, tm::stripWhitespace)
+    # Remove your own stopwords
+    docs = tm::tm_map(docs, tm::removeWords, exclude_words)
+    
+    # Create term-document matrix
+    tdm = tm::TermDocumentMatrix(docs)
+  })
+  
+  v = sort(slam::row_sums(tdm), decreasing = TRUE)
+  d = data.frame(word = names(v), freq = v, stringsAsFactors = FALSE)
+  d
+}
+
+
 
 
 

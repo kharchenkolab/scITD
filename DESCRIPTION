@@ -65,7 +65,9 @@ Suggests:
     GO.db,
     conos,
     pagoda2,
-    betareg
+    betareg,
+    slam,
+    tm
 RoxygenNote: 7.1.2
 LinkingTo: Rcpp, RcppArmadillo, RcppProgress
 NeedsCompilation: yes
