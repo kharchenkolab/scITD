@@ -1,7 +1,7 @@
 Package: scITD
 Title: Single-Cell Interpretable Tensor Decomposition
-Version: 1.0.1
-Date: 2022-01-28
+Version: 1.0.2
+Date: 2022-03-23
 Authors@R: c(person("Jonathan", "Mitchel", email="jonathan.mitchel3@gmail.com", role=c("cre","aut")), person("Evan", "Biederstedt", email="evan.biederstedt@gmail.com", role="aut"), person("Peter", "Kharchenko", email="peter_kharchenko@hms.harvard.edu", role="aut"))
 Maintainer: Jonathan Mitchel <jonathan.mitchel3@gmail.com>
 Description: Single-cell Interpretable Tensor Decomposition (scITD) employs the 

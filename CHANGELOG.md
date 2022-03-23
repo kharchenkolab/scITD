@@ -1,5 +1,14 @@
 ## Upcoming
 
+## [1.0.2] - 2022-03-23
+
+### Added
+- Added `count_word()` function from simplifyEnrichment package as the remoevd it
+- Included necessary suggests packages for `count_word()` 
+
+### Changed
+- Updated README to include our preprint citation and new figure
+
 ## [1.0.1] - 2022-01-28
 
 ### Added
