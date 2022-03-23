@@ -35,7 +35,7 @@ we also provide an integrated suite of downstream data processing tools
 to transform the scITD output into succinct, yet informative summaries
 of the data.
 
-<img src="https://github.com/kharchenkolab/scITD/blob/develop/inst/scITD_overview.jpg" align="right" height="200">
+<img src="https://github.com/kharchenkolab/scITD/blob/develop/inst/scITD_overview.jpg" align="center" height="275">
 
 
 ## Installation
@@ -60,6 +60,6 @@ pipeline and applies it to a dataset of PBMC’s from 45 healthy donors.
 
 ## Citation
 
-If you find `scITD` useful for your publication, please cite:
+If you find scITD useful for your publication, please cite:
 
 [Jonathan Mitchel, M. Grace Gordon, Richard K. Perez, Evan Biederstedt, Raymund Bueno, Chun Jimmie Ye, Peter V. Kharchenko (2022). Tensor        decomposition reveals coordinated multicellular patterns of transcriptional variation that distinguish and stratify disease individuals.        bioRxiv 2022.](https://www.biorxiv.org/content/10.1101/2022.02.16.480703v1)
