@@ -44,7 +44,7 @@ get_meta_associations <- function(container, vars_test, stat_use='rsq') {
       meta_type <- class(meta[[vtest]])
 
       # put donor scores and meta variable in same df
-      tmp <- as.data.frame(cbind(donor_scores[,i],meta[rownames(donor_scores),vtest]))
+      tmp <- cbind.data.frame(donor_scores[,i],meta[rownames(donor_scores),vtest])
       colnames(tmp) <- c("dscore",vtest)
       if (meta_type=='factor' || meta_type=='character') {
         tmp[[vtest]] <- as.factor(tmp[[vtest]])
