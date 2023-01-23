@@ -282,7 +282,7 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
   if (use_sig_only) {
     # make sure jackstraw has been run
     if (is.null(container$gene_score_associations)) {
-      stop('Run jackstraw first to display significant genes')
+      stop('Run get_lm_pvals() first to display significant genes')
     }
 
     sig_vectors <- get_significance_vectors(container,
@@ -292,9 +292,14 @@ plot_loadings_annot <- function(container, factor_select, use_sig_only=FALSE, no
 
     # order df same way as in tmp_casted_num
     sig_df <- sig_df[rownames(tmp_casted_num),colnames(tmp_casted_num)]
+    
+    if (sum(sig_df<sig_thresh)==0) {
+      warning(paste0('No significant genes for Factor ',as.character(factor_select),'. Either ignore this factor or try with parameter use_sig_only=FALSE'))
+      return(container)
+    }
 
     # reduce tmp_casted_num to genes significant in at least one cell type
-    tmp_casted_num <- tmp_casted_num[rowSums(sig_df < sig_thresh) > 0,]
+    tmp_casted_num <- tmp_casted_num[rowSums(sig_df < sig_thresh) > 0,,drop=FALSE]
 
     if (nonsig_to_zero) {
       tmp_casted_num[sig_df[rownames(tmp_casted_num),colnames(tmp_casted_num)] > sig_thresh] <- 0

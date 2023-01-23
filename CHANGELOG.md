@@ -1,5 +1,13 @@
 ## Upcoming
 
+## [1.0.3] - 2023-01-23
+
+### Changed
+- Enabled `compute_LR_interact` to run when data contains alternate gene symbols
+- Added warning/catch in `plot_loadings_annot` if no genes are significant
+- Fixed bug in `determine_ranks_tucker` with variance scaling in wrong order
+- Updated README figure
+
 ## [1.0.2] - 2022-03-23
 
 ### Added

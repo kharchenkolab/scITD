@@ -198,13 +198,20 @@ compute_LR_interact <- function(container, lr_pairs, sig_thresh=0.05,
     rec_elements <- split_name[3:(2+n_rec_comps)]
 
     # getting ligand expression in source ctype
-    if (!(lig %in% colnames(container$scale_pb_extra[[source_ct]]))) {
+    if (!(lig %in% convert_gn(container,colnames(container$scale_pb_extra[[source_ct]])))) { # ADDED CONVERT_GN
       return(NA)
     }
 
-    lig_ct_exp <- container$scale_pb_extra[[source_ct]][,lig]
+    c_cn <- convert_gn(container,colnames(container$scale_pb_extra[[source_ct]]))  # ADDED CONVERT_GN
+    g_ndx <- which(c_cn == lig)
+    if (length(g_ndx)>1) {
+      return(NA)
+    }
+    # lig_ct_exp <- container$scale_pb_extra[[source_ct]][,lig]
+    lig_ct_exp <- container$scale_pb_extra[[source_ct]][,g_ndx]
+    
 
-    # checking ligand expressed to some minimal extent in n% of donors
+    # checking ligand expressed to some minimal extent in at least 1% of donors
     if (sum(lig_ct_exp>.2)<(.01*length(lig_ct_exp))) {
       return(NA)
     }
@@ -222,7 +229,7 @@ compute_LR_interact <- function(container, lr_pairs, sig_thresh=0.05,
 
       # check if rec elements in data
       counts <- container$scMinimal_ctype[[target_ct]]$count_data
-      if (sum(rec_elements %in% rownames(counts))!=length(rec_elements)) {
+      if (sum(rec_elements %in% unique(convert_gn(container,rownames(counts))))!=length(rec_elements)) { # ADDED CONVERT_GN
         return(NA)
       }
 
@@ -257,6 +264,8 @@ compute_LR_interact <- function(container, lr_pairs, sig_thresh=0.05,
 
   # unlist and remove duplicates
   myres2 <- unlist(myres)
+  # names are lig_source_targetmod so might be duplicates where receptor is different
+  # however, will have same association value to same modules if duplicated
   names_keep <- unique(names(myres2))
   myres2 <- myres2[names_keep]
   myres2 <- myres2[!is.na(myres2)]
@@ -350,7 +359,9 @@ compute_LR_interact <- function(container, lr_pairs, sig_thresh=0.05,
         lig <- strsplit(rownames(myres_mat)[j],split='_')[[1]][[1]]
         ct <- strsplit(rownames(myres_mat)[j],split='_')[[1]][[2]]
 
-        lig_ct_exp <- container$scale_pb_extra[[ct]][,lig]
+        c_cn <- convert_gn(container,colnames(container$scale_pb_extra[[ct]]))  # ADDED CONVERT_GN
+        g_ndx <- which(c_cn == lig)
+        lig_ct_exp <- container$scale_pb_extra[[ct]][,g_ndx]
 
         if (sum(lig_ct_exp!=0)==0) {
           pval <- NA
@@ -402,9 +413,17 @@ check_rec_pres <- function(container,lig_ct_exp,rec_elements,target_ct,percentil
 
   meta <- container$scMinimal_ctype[[target_ct]]$metadata
   counts <- container$scMinimal_ctype[[target_ct]]$count_data
+  c_rn <- convert_gn(container,rownames(counts))  # ADDED CONVERT_GN
+  g_ndx <- which(c_rn %in% rec_elements)
+  # just checking that we have a 1-to-1 mapping of gene names if converting them
+  if (length(g_ndx)!=length(rec_elements)) {
+    return(FALSE)
+  }
   for (d in d_above) {
     cells_keep <- rownames(meta)[meta$donors==d]
-    counts_sub <- counts[rec_elements,cells_keep,drop=FALSE]
+    counts_sub <- counts[g_ndx,cells_keep,drop=FALSE]
+    # counts_sub <- counts[rec_elements,cells_keep,drop=FALSE]
+    
     express_cell_counts <- colSums(counts_sub>0)
     num_cells_expressing <- sum(express_cell_counts==length(rec_elements))
     if (num_cells_expressing < 5) {
@@ -432,9 +451,9 @@ check_rec_pres <- function(container,lig_ct_exp,rec_elements,target_ct,percentil
 #' @return A vector of p-values for the tested gene sets.
 get_module_enr <- function(container,ctype,mod_select,db_use='GO',adjust_pval=TRUE) {
   mod_genes_all <- container$module_genes[[ctype]] #vector of cluster assignments for each gene
-  all_genes <- names(mod_genes_all)
-  total_num_genes <- length(all_genes)
-  mod_genes <- names(mod_genes_all)[mod_genes_all==mod_select]
+  all_genes <- convert_gn(container,names(mod_genes_all)) # ADDED CONVERT_GN
+  total_num_genes <- length(unique(all_genes))
+  mod_genes <- unique(convert_gn(container,names(mod_genes_all)[mod_genes_all==mod_select]))
 
   m_df <- data.frame()
   for (db in db_use) {
@@ -644,7 +663,9 @@ plot_multi_module_enr <- function(container, ctypes, modules, sig_thresh=0.05, d
 plot_mod_and_lig <- function(container,factor_select,mod_ct,mod,lig_ct,lig) {
 
   dsc <- container$tucker_results[[1]][,factor_select]
-  lig_exp <- container$scale_pb_extra[[lig_ct]][,lig]
+  c_cn <- convert_gn(container,colnames(container$scale_pb_extra[[lig_ct]]))  # ADDED CONVERT_GN
+  g_ndx <- which(c_cn == lig)
+  lig_exp <- container$scale_pb_extra[[lig_ct]][,g_ndx]
   MEs <- container[["module_eigengenes"]][[mod_ct]]
   ME <- MEs[,mod]
   names(ME) <- rownames(MEs)

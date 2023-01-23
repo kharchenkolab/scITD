@@ -75,15 +75,15 @@ determine_ranks_tucker <- function(container, max_ranks_test,
       # reduce to previously identified vargenes
       container <- reduce_to_vargenes(container)
 
-      # apply batch correction if specified
-      if (!is.null(batch_var)) {
-        container <- apply_combat(container,batch_var=batch_var)
-      }
-
       if (scale_var) {
         # scale gene expression
         container <- scale_variance(container,
                                     var_scale_power=var_scale_power)
+      }
+      
+      # apply batch correction if specified
+      if (!is.null(batch_var)) {
+        container <- apply_combat(container,batch_var=batch_var)
       }
 
       # build the tensor
@@ -112,15 +112,15 @@ determine_ranks_tucker <- function(container, max_ranks_test,
     # reduce to previously identified vargenes
     container <- reduce_to_vargenes(container)
 
-    # apply batch correction if specified
-    if (!is.null(batch_var)) {
-      container <- apply_combat(container,batch_var=batch_var)
-    }
-
     if (scale_var) {
       # scale gene expression
       container <- scale_variance(container,
                                   var_scale_power=var_scale_power)
+    }
+    
+    # apply batch correction if specified
+    if (!is.null(batch_var)) {
+      container <- apply_combat(container,batch_var=batch_var)
     }
 
     # build the tensor
