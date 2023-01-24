@@ -2,9 +2,13 @@
 
 ## [1.0.3] - 2023-01-23
 
+### Added
+- New function for users to easily get gene significance p-values for a factor
+- Additional url for new LR analysis tutorial in the README
+
 ### Changed
 - Enabled `compute_LR_interact` to run when data contains alternate gene symbols
-- Added warning/catch in `plot_loadings_annot` if no genes are significant
+- Included warning/catch in `plot_loadings_annot` if no genes are significant
 - Fixed bug in `determine_ranks_tucker` with variance scaling in wrong order
 - Updated README figure
 

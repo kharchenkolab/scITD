@@ -58,6 +58,8 @@ Follow the [walkthrough](http://pklab.med.harvard.edu/jonathan/) to
 learn how to use scITD. The tutorial introduces the standard processing
 pipeline and applies it to a dataset of PBMC’s from 45 healthy donors.
 
+We also created a tutorial for running [ligand-receptor analysis](http://pklab.med.harvard.edu/jonathan/LR_analysis.html). This uses the same dataset as the main walkthrough.
+
 ## Citation
 
 If you find scITD useful for your publication, please cite:

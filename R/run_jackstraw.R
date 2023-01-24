@@ -372,12 +372,39 @@ get_lm_pvals <- function(container, n.cores = container$experiment_params$ncores
 
 
 
-
-
-
-
-
-
+#' Get significant genes for a factor
+#'
+#' @param container environment Project container that stores sub-containers
+#' for each cell type as well as results and plots from all analyses
+#' @param factor_select numeric The number corresponding to the factor to extract
+#'
+#' @return A gene by cell type matrix of gene significance p-values for a factor
+#' @export
+get_one_factor_gene_pvals <- function(container, factor_select) {
+  if (is.null(container$gene_score_associations)) {
+    stop('Run get_lm_pvals() first to compute the gene p-values')
+  }
+  
+  ldngs <- container$tucker_results[[2]]
+  
+  # break down a factor from the loadings matrix
+  genes <- sapply(colnames(ldngs),function(x){strsplit(x,split=":")[[1]][2]})
+  ctypes <- sapply(colnames(ldngs),function(x){strsplit(x,split=":")[[1]][1]})
+  
+  sr_col <- ldngs[factor_select,]
+  
+  tmp_casted_num <- reshape_loadings(sr_col,genes,ctypes)
+  
+  sig_vectors <- get_significance_vectors(container,
+                                          factor_select, colnames(tmp_casted_num))
+  # convert list to df
+  sig_df <- t(as.data.frame(do.call(rbind, sig_vectors)))
+  
+  # order df same way as in tmp_casted_num
+  sig_df <- sig_df[rownames(tmp_casted_num),colnames(tmp_casted_num)]
+  
+  return(sig_df)
+}
 
 
 
