@@ -277,7 +277,7 @@ compute_LR_interact <- function(container, lr_pairs, sig_thresh=0.05,
   names(myres) <- lig_ct_rec_names
   for (i in 1:length(myres)) {
     lig_ct_rec <- names(myres)[i]
-    if (!is.na(myres[[i]])) {
+    if (!is.na(myres[i])) {
       for (j in 1:length(myres[[i]])) {
         lig_source_target_mod <- names(myres[[i]][j])
         split_nm <- strsplit(lig_source_target_mod,split='_')[[1]]
