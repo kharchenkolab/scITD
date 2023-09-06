@@ -1,5 +1,11 @@
 ## Upcoming
 
+## [1.0.4] - 2023-09-06
+
+### Changed
+- Updated readme to include instructions for installing other dependencies
+- Fixed error in LR analysis caused by genes with 0 expression
+
 ## [1.0.3] - 2023-01-23
 
 ### Added
