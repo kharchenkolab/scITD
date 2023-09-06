@@ -35,18 +35,25 @@ we also provide an integrated suite of downstream data processing tools
 to transform the scITD output into succinct, yet informative summaries
 of the data.
 
-<img src="https://github.com/kharchenkolab/scITD/blob/develop/inst/scITD_overview.jpg" align="center" height="275">
+<img src="https://github.com/kharchenkolab/scITD/blob/develop/inst/scITD_overview_v2.jpg" align="center" height="275">
 
 
 ## Installation
 
-To install scITD from CRAN use:
+The package has several dependencies from Bioconductor. To install these:
+``` r
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install(c("ComplexHeatmap", "edgeR", "sva", "Biobase"))
+```
+
+Then, to install scITD from CRAN:
 
 ``` r
 install.packages('scITD')
 ```
 
-To use the latest version of scITD from GitHub, install with the following:
+To install the latest version of scITD from GitHub:
 
 ``` r
 devtools::install_github("kharchenkolab/scITD")

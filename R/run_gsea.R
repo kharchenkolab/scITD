@@ -41,6 +41,7 @@ run_fgsea <- function(container, factor_select, ctype, db_use="GO", signed=TRUE,
   })
 
   names(exp_vals) <- convert_gn(container,colnames(tnsr_slice))
+  exp_vals <- exp_vals [is.finite(exp_vals)]
 
   # remove duplicate genes
   ndx_remove <- duplicated(names(exp_vals)) | duplicated(names(exp_vals), fromLast = TRUE)
