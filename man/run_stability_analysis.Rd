@@ -11,7 +11,6 @@ run_stability_analysis(
   ranks,
   tucker_type = "regular",
   rotation_type = "hybrid",
-  sparsity = sqrt(2),
   subset_type = "subset",
   sub_prop = 0.75,
   n_iterations = 100,
@@ -25,15 +24,13 @@ for each cell type as well as results and plots from all analyses}
 \item{ranks}{numeric The number of donor, gene, and cell type ranks, respectively,
 to decompose to using Tucker decomposition.}
 
-\item{tucker_type}{character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
+\item{tucker_type}{character The 'regular' type is the only one implemented
 with sparsity constraints (default='regular')}
 
 \item{rotation_type}{character Set to 'hybrid' to optimize loadings via our hybrid
 method (see paper for details). Set to 'ica_dsc' to perform ICA rotation
 on resulting donor factor matrix. Set to 'ica_lds' to optimize loadings by the
 ICA rotation. (default='hybrid')}
-
-\item{sparsity}{numeric To use with sparse tucker. Higher indicates more sparse (default=sqrt(2))}
 
 \item{subset_type}{character Set to either 'subset' or 'bootstrap' (default='subset')}
 

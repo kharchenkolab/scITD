@@ -11,13 +11,12 @@ utils::globalVariables(c("ldngs", "dscores"))
 #' for each cell type as well as results and plots from all analyses
 #' @param ranks numeric The number of donor, gene, and cell type ranks, respectively,
 #' to decompose to using Tucker decomposition.
-#' @param tucker_type character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
+#' @param tucker_type character The 'regular' type is the only one implemented
 #' with sparsity constraints (default='regular')
 #' @param rotation_type character Set to 'hybrid' to optimize loadings via our hybrid
 #' method (see paper for details). Set to 'ica_dsc' to perform ICA rotation
 #' on resulting donor factor matrix. Set to 'ica_lds' to optimize loadings by the
 #' ICA rotation. (default='hybrid')
-#' @param sparsity numeric To use with sparse tucker. Higher indicates more sparse (default=sqrt(2))
 #' @param subset_type character Set to either 'subset' or 'bootstrap' (default='subset')
 #' @param sub_prop numeric The proportion of donors to keep when using subset_type='subset' (default=.75)
 #' @param n_iterations numeric The number of iterations to perform (default=100)
@@ -33,7 +32,7 @@ utils::globalVariables(c("ldngs", "dscores"))
 #' tucker_type='regular', rotation_type='hybrid', subset_type='subset', 
 #' sub_prop=0.75, n_iterations=5, ncores=1)
 run_stability_analysis <- function(container, ranks, tucker_type='regular',
-                                   rotation_type='hybrid',  sparsity=sqrt(2),
+                                   rotation_type='hybrid',
                                    subset_type='subset', sub_prop=0.75,
                                    n_iterations=100, ncores=container$experiment_params$ncores) {
 
@@ -69,8 +68,7 @@ run_stability_analysis <- function(container, ranks, tucker_type='regular',
     # run tucker and rotation
     container <- run_tucker_ica(container, ranks=ranks,
                                 tucker_type = tucker_type,
-                                rotation_type = rotation_type,
-                                sparsity=sparsity)
+                                rotation_type = rotation_type)
 
     donor_mat <- container$tucker_results[[1]]
     ldngs <- container$tucker_results[[2]]
