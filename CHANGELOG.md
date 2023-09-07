@@ -3,6 +3,8 @@
 ## [1.0.4] - 2023-09-06
 
 ### Changed
+- Added a catch and correction for special characters present in cell type names
+- Removed ssvd dependency and sparse tucker implementation
 - Updated readme to include instructions for installing other dependencies
 - Fixed error in LR analysis caused by genes with 0 expression
 

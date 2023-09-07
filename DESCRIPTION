@@ -53,7 +53,6 @@ Suggests:
     testthat,
     coda.base,
     grid,
-    ssvd,
     simplifyEnrichment,
     WGCNA,
     cowplot,
@@ -68,6 +67,6 @@ Suggests:
     betareg,
     slam,
     tm
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.3
 LinkingTo: Rcpp, RcppArmadillo, RcppProgress
 NeedsCompilation: yes

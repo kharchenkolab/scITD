@@ -41,9 +41,54 @@ make_new_container <- function(params, count_data=NULL, meta_data=NULL,
                                label_donor_sex=FALSE) {
 
   if (!is.null(seurat_obj)) {
+    # check cell type names don't have special characters
+    all_ct_names <- levels(as.factor(seurat_obj@meta.data$ctypes))
+    names(all_ct_names) <- all_ct_names
+    new_ct_names <- sapply(params$ctypes_use,function(x) {
+      split_names <- strsplit(x, "[\\._:]", fixed = FALSE)[[1]]
+      if (length(split_names)>1) {
+        return(paste(split_names, collapse = ""))
+      } else {
+        return(x)
+      }
+    })
+    if (any(new_ct_names != names(new_ct_names))) {
+      warning("Cell type names cannot have special characters '.', '_', or ':'. Removing these characters and concatenating name components.")
+      all_ct_names[names(new_ct_names)] <- new_ct_names
+      seurat_obj@meta.data$ctypes <- as.factor(seurat_obj@meta.data$ctypes)
+      levels(seurat_obj@meta.data$ctypes) <- all_ct_names
+      params$ctypes_use <- new_ct_names
+      names(params$ctypes_use) <- NULL
+    }
+
     scMinimal <- seurat_to_scMinimal(seurat_obj, metadata_cols=metadata_cols,
                         metadata_col_nm=metadata_col_nm)
   } else if (!is.null(count_data) & !is.null(meta_data)) {
+    # throw error if metadata is not a dataframe
+    if (class(meta_data)[1]!='data.frame') {
+      stop('meta_data must be a data.frame')
+    }
+    
+    # check cell type names don't have special characters
+    all_ct_names <- levels(as.factor(meta_data$ctypes))
+    names(all_ct_names) <- all_ct_names
+    new_ct_names <- sapply(params$ctypes_use,function(x) {
+      split_names <- strsplit(x, "[\\._:]", fixed = FALSE)[[1]]
+      if (length(split_names)>1) {
+        return(paste(split_names, collapse = ""))
+      } else {
+        return(x)
+      }
+    })
+    if (any(new_ct_names != names(new_ct_names))) {
+      warning("Cell type names cannot have special characters '.', '_', or ':'. Removing these characters and concatenating name components.")
+      all_ct_names[names(new_ct_names)] <- new_ct_names
+      meta_data$ctypes <- as.factor(meta_data$ctypes)
+      levels(meta_data$ctypes) <- all_ct_names
+      params$ctypes_use <- new_ct_names
+      names(params$ctypes_use) <- NULL
+    }
+    
     # make counts to be dgCMatrix if not already
     if (class(count_data)[1]!='dgCMatrix') {
       count_data <- methods::as(as.matrix(count_data),'sparseMatrix')
@@ -52,11 +97,6 @@ make_new_container <- function(params, count_data=NULL, meta_data=NULL,
     # throw error if data is pre-normalized
     if (any(count_data%%1!=0)) {
       stop('It seems your count_data might already be normalized. The count_data matrix should only contain integer UMI counts.')
-    }
-
-    # throw error if metadata is not a dataframe
-    if (class(meta_data)[1]!='data.frame') {
-      stop('meta_data must be a data.frame')
     }
 
     # throw error if dimensions or cell names don't match

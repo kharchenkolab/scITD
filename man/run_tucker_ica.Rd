@@ -8,8 +8,7 @@ run_tucker_ica(
   container,
   ranks,
   tucker_type = "regular",
-  rotation_type = "hybrid",
-  sparsity = sqrt(2)
+  rotation_type = "hybrid"
 )
 }
 \arguments{
@@ -22,16 +21,12 @@ the Tucker decomposition to be 'donor centric', the number of donor factors will
 also be the total number of main factors that can be used for downstream analysis.
 The number of gene factors will only impact the quality of the decomposition.}
 
-\item{tucker_type}{character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
-with sparsity constraints. The 'sparse' method is still under development, so we recommend
-using 'regular'. (default='regular')}
+\item{tucker_type}{character The 'regular' type is the only one currently implemented}
 
 \item{rotation_type}{character Set to 'hybrid' to optimize loadings via our hybrid
 method (see paper for details). Set to 'ica_dsc' to perform ICA rotation
 on resulting donor factor matrix. Set to 'ica_lds' to optimize loadings by the
 ICA rotation. (default='hybrid')}
-
-\item{sparsity}{numeric To use with sparse tucker. Higher indicates more sparse (default=sqrt(2))}
 }
 \value{
 The project container with results of the decomposition in container$tucker_results.

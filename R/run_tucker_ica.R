@@ -8,14 +8,11 @@
 #' the Tucker decomposition to be 'donor centric', the number of donor factors will
 #' also be the total number of main factors that can be used for downstream analysis.
 #' The number of gene factors will only impact the quality of the decomposition.
-#' @param tucker_type character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
-#' with sparsity constraints. The 'sparse' method is still under development, so we recommend
-#' using 'regular'. (default='regular')
+#' @param tucker_type character The 'regular' type is the only one currently implemented
 #' @param rotation_type character Set to 'hybrid' to optimize loadings via our hybrid
 #' method (see paper for details). Set to 'ica_dsc' to perform ICA rotation
 #' on resulting donor factor matrix. Set to 'ica_lds' to optimize loadings by the
 #' ICA rotation. (default='hybrid')
-#' @param sparsity numeric To use with sparse tucker. Higher indicates more sparse (default=sqrt(2))
 #'
 #' @return The project container with results of the decomposition in container$tucker_results.
 #' The results object is a list with the donor scores matrix in the first element and the unfolded
@@ -24,15 +21,15 @@
 #'
 #' @examples
 #' test_container <- run_tucker_ica(test_container,ranks=c(2,4))
-run_tucker_ica <- function(container, ranks, tucker_type='regular', rotation_type='hybrid', sparsity=sqrt(2)) {
+run_tucker_ica <- function(container, ranks, tucker_type='regular', rotation_type='hybrid') {
 
   if (is.null(container$tensor_data)) {
     stop("need to run form_tensor() first")
   }
 
   # check that they picked a valid tucker_type and rotation type
-  if (!(tucker_type %in% c('regular','sparse'))) {
-    stop("tucker_type can only be 'regular' or 'sparse'")
+  if (!(tucker_type %in% c('regular'))) {
+    stop("tucker_type can only be 'regular'")
   }
   if (!(rotation_type %in% c('hybrid','ica_dsc','ica_lds'))) {
     stop("rotation_type can only be 'hybrid', 'ica_dsc', or 'ica_lds'")
@@ -45,8 +42,7 @@ run_tucker_ica <- function(container, ranks, tucker_type='regular', rotation_typ
   ranks[3] <- length(tensor_data[[3]])
 
   # run tucker with rotation on the tensor
-  tucker_res <- tucker_ica_helper(tensor_data, ranks, tucker_type, rotation_type, 
-                                  sparsity, projection_container=container)
+  tucker_res <- tucker_ica_helper(tensor_data, ranks, tucker_type, rotation_type, projection_container=container)
   container$tucker_results <- tucker_res
 
   # reorder factors by explained variance
@@ -74,21 +70,18 @@ run_tucker_ica <- function(container, ranks, tucker_type='regular', rotation_typ
 #' as well as the tensor array itself
 #' @param ranks numeric The number of donor and gene factors respectively,
 #' to decompose to using Tucker decomposition.
-#' @param tucker_type character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
-#' with sparsity constraints
+#' @param tucker_type character The 'regular' type is the only one currently implemented
 #' @param rotation_type character Set to 'hybrid' to optimize loadings via our hybrid
 #' method (see paper for details). Set to 'ica_dsc' to perform ICA rotation
 #' on resulting donor factor matrix. Set to 'ica_lds' to optimize loadings by the
 #' ICA rotation.
-#' @param sparsity numeric Higher indicates more sparse
 #' @param projection_container environment A project container to store projection
 #' data in. Currently only implemented for 'hybrid' and 'ica_dsc' rotations. (default=NULL)
 #'
 #' @return The list of results for tucker decomposition with donor scores matrix in first
 #' element and loadings matrix in second element.
 #' @export
-tucker_ica_helper <- function(tensor_data, ranks, tucker_type, rotation_type, 
-                              sparsity, projection_container=NULL) {
+tucker_ica_helper <- function(tensor_data, ranks, tucker_type, rotation_type, projection_container=NULL) {
 
   # extract tensor and labels
   donor_nm <- tensor_data[[1]]
@@ -100,11 +93,6 @@ tucker_ica_helper <- function(tensor_data, ranks, tucker_type, rotation_type,
     # run regular tucker
     invisible(utils::capture.output(
       tucker_decomp <- rTensor::tucker(rTensor::as.tensor(tnsr), ranks=ranks)
-    ))
-  } else if (tucker_type=='sparse') {
-    # run sparse tucker
-    invisible(utils::capture.output(
-      tucker_decomp <- tucker_sparse(rTensor::as.tensor(tnsr), ranks=ranks, sparsity=sparsity)
     ))
   }
 

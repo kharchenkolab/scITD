@@ -10,7 +10,6 @@ tucker_ica_helper(
   ranks,
   tucker_type,
   rotation_type,
-  sparsity,
   projection_container = NULL
 )
 }
@@ -21,15 +20,12 @@ as well as the tensor array itself}
 \item{ranks}{numeric The number of donor and gene factors respectively,
 to decompose to using Tucker decomposition.}
 
-\item{tucker_type}{character Set to 'regular' to run regular tucker or to 'sparse' to run tucker
-with sparsity constraints}
+\item{tucker_type}{character The 'regular' type is the only one currently implemented}
 
 \item{rotation_type}{character Set to 'hybrid' to optimize loadings via our hybrid
 method (see paper for details). Set to 'ica_dsc' to perform ICA rotation
 on resulting donor factor matrix. Set to 'ica_lds' to optimize loadings by the
 ICA rotation.}
-
-\item{sparsity}{numeric Higher indicates more sparse}
 
 \item{projection_container}{environment A project container to store projection
 data in. Currently only implemented for 'hybrid' and 'ica_dsc' rotations. (default=NULL)}
