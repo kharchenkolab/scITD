@@ -10,7 +10,7 @@ ht_clusters(
   cl,
   dend = NULL,
   col = c("white", "red"),
-  draw_word_cloud = simplifyEnrichment:::is_GO_id(rownames(mat)[1]) || !is.null(term),
+  draw_word_cloud = is_GO_id(rownames(mat)[1]) || !is.null(term),
   term = NULL,
   min_term = 5,
   order_by_size = FALSE,
